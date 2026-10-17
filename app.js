@@ -6,6 +6,7 @@ const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const { SESSION_COOKIE, requireLogin } = require('./middleware/auth');
 const csrf = require('./middleware/csrf');
+const avatarUpload = require('./middleware/avatarUpload');
 const { showFlash } = require('./middleware/flash');
 const loadShell = require('./middleware/shell');
 const authRoutes = require('./routes/auth');
@@ -47,6 +48,7 @@ app.use(
     },
   })
 );
+app.post('/settings/avatar', avatarUpload); // multipart body must be parsed before the CSRF check
 app.use(csrf);
 app.use(showFlash);
 

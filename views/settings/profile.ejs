@@ -6,6 +6,19 @@
     <h2 id="profile-heading" class="text-xl font-bold">Profile</h2>
     <p class="mt-1 text-sm text-muted">Signed in as <%= currentUser.email %></p>
 
+    <div class="mt-6 flex items-center gap-4">
+      <%- include('../partials/avatar', { user: currentUser, cls: 'size-20 text-2xl' }) %>
+      <form method="post" action="/settings/avatar" enctype="multipart/form-data">
+        <%- include('../partials/csrf') %>
+        <label class="btn h-9 rounded-full border-0 bg-fill px-4 text-primary focus-within:outline-2 focus-within:outline-primary">
+          Change photo
+          <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" data-autosubmit>
+        </label>
+        <noscript><button type="submit" class="btn btn-sm ml-2 rounded-full">Upload</button></noscript>
+        <p class="mt-1.5 text-xs text-muted">JPG, PNG, WebP or GIF, up to 2 MB.</p>
+      </form>
+    </div>
+
     <form method="post" action="/settings/profile" class="mt-6 rounded-box bg-base-100 p-5" novalidate>
       <%- include('../partials/csrf') %>
       <div class="grid gap-5 sm:grid-cols-2">

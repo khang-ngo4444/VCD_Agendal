@@ -1,7 +1,12 @@
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const sharp = require('sharp');
 const { flash } = require('../middleware/flash');
 const { isValidTimeZone, timeZoneOptions } = require('../config/timeZones');
 
 const MAX_NAME_LENGTH = 80;
+const AVATAR_SIZE_PX = 256;
+const AVATAR_DIR = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
 
 // Form fields arrive as strings, but a crafted request can send arrays or nothing at all.
 const text = (value) => (typeof value === 'string' ? value : '');
@@ -32,5 +37,31 @@ exports.updateProfile = async (req, res) => {
   Object.assign(req.user, values);
   await req.user.save();
   flash(req, 'success', 'Profile saved.');
+  res.redirect('/settings/profile');
+};
+
+exports.updateAvatar = async (req, res) => {
+  if (req.uploadError || !req.file) {
+    flash(req, 'error', req.uploadError ?? 'Choose a JPG, PNG, WebP or GIF image.');
+    return res.redirect('/settings/profile');
+  }
+
+  const fileName = `${req.user.id}.webp`;
+  await fs.mkdir(AVATAR_DIR, { recursive: true });
+  try {
+    // Re-encoding also strips metadata and rejects files that only claim to be images.
+    await sharp(req.file.buffer)
+      .rotate()
+      .resize(AVATAR_SIZE_PX, AVATAR_SIZE_PX, { fit: 'cover' })
+      .webp({ quality: 85 })
+      .toFile(path.join(AVATAR_DIR, fileName));
+  } catch {
+    flash(req, 'error', 'That file couldn’t be read as an image. Try another one.');
+    return res.redirect('/settings/profile');
+  }
+
+  req.user.avatar = `/uploads/avatars/${fileName}?v=${Date.now()}`; // new URL so browsers drop the cached photo
+  await req.user.save();
+  flash(req, 'success', 'Photo updated.');
   res.redirect('/settings/profile');
 };

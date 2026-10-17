@@ -96,3 +96,8 @@ document.addEventListener('submit', (event) => {
   confirmDialog.addEventListener('close', () => confirmDialog.returnValue === 'confirm' && form.submit(), { once: true });
   confirmDialog.showModal();
 });
+
+// Forms that should submit as soon as a value is picked, e.g. the avatar file input.
+document.addEventListener('change', (event) => {
+  if (event.target.matches('[data-autosubmit]')) event.target.form.requestSubmit();
+});
