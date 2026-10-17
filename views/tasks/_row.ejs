@@ -25,7 +25,14 @@
   </form>
   <div class="min-w-0 grow">
     <a href="/tasks/<%= task._id %>" class="block truncate font-medium hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></a>
-    <p class="mt-0.5 text-xs text-muted"><%= meta.join(' · ') %></p>
+    <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
+      <% if (dates.isOverdue(task)) { %>
+        <%# Text and icon, not colour alone %>
+        <span class="inline-flex items-center gap-1 font-semibold text-error"><%- include('../partials/icon', { icon: 'alert', cls: 'size-3.5' }) %>Overdue</span>
+        <span aria-hidden="true">·</span>
+      <% } %>
+      <%= meta.join(' · ') %>
+    </p>
   </div>
   <% if (task.priority === 'high' && !task.completedAt) { %>
     <span class="mt-0.5 text-warning" title="High priority">
