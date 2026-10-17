@@ -1,0 +1,36 @@
+<%- include('../partials/shell-top') %>
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <h1 class="text-3xl font-bold tracking-tight">Projects</h1>
+  <form method="post" action="/projects" class="flex w-full max-w-sm items-start gap-2 sm:w-auto" novalidate>
+    <%- include('../partials/csrf') %>
+    <div class="grow">
+      <label for="project-name" class="sr-only">New project name</label>
+      <input id="project-name" name="name" type="text" maxlength="<%= maxNameLength %>" placeholder="New project name"
+        value="<%= values.name %>" class="input h-10 w-full <%= errors.name ? 'input-error' : '' %>"
+        <% if (errors.name) { %>aria-invalid="true" aria-describedby="project-name-error" autofocus<% } %>>
+      <% if (errors.name) { %><p id="project-name-error" class="mt-1.5 text-sm text-error"><%= errors.name %></p><% } %>
+    </div>
+    <button type="submit" class="btn btn-primary h-10 rounded-full px-4">
+      <%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %> New project
+    </button>
+  </form>
+</div>
+
+<ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <% cards.forEach((card) => { %>
+    <li class="rounded-box bg-base-100 p-5">
+      <a href="<%= card.href %>" class="flex items-center gap-2.5 font-semibold hover:underline">
+        <% if (card.colour) { %>
+          <span class="size-3 shrink-0 rounded-full" style="background-color: <%= card.colour %>" aria-hidden="true"></span>
+        <% } else { %>
+          <%- include('../partials/icon', { icon: 'inbox', cls: 'size-4 shrink-0' }) %>
+        <% } %>
+        <span class="truncate"><%= card.name %></span>
+      </a>
+      <p class="mt-2 text-sm text-muted"><%= card.total ? `${card.done} of ${card.total} tasks done` : 'No tasks yet' %></p>
+      <progress class="progress mt-3 h-1.5 w-full" value="<%= card.done %>" max="<%= card.total || 1 %>"
+        style="color: <%= card.colour || 'var(--color-base-content)' %>" aria-label="<%= card.name %> progress"></progress>
+    </li>
+  <% }) %>
+</ul>
+<%- include('../partials/shell-bottom') %>

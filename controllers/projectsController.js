@@ -1,0 +1,44 @@
+const Project = require('../models/Project');
+const { flash } = require('../middleware/flash');
+const { PROJECT_COLOURS, taskCounts } = require('../services/projects');
+
+const MAX_NAME_LENGTH = 60;
+
+const text = (value) => (typeof value === 'string' ? value : '');
+
+async function renderIndex(req, res, { values = {}, errors = {} } = {}) {
+  const owner = req.user._id;
+  const [projects, countsFor] = await Promise.all([Project.find({ owner }).sort({ createdAt: 1 }).lean(), taskCounts(owner)]);
+  const cards = [
+    { name: 'Inbox', href: '/inbox', colour: null, ...countsFor('inbox') },
+    ...projects.map((project) => ({ name: project.name, href: `/projects/${project._id}`, colour: project.colour, ...countsFor(project._id) })),
+  ];
+  res.status(Object.keys(errors).length ? 422 : 200).render('projects/index', {
+    title: 'Projects · Agendal',
+    cards,
+    values,
+    errors,
+    maxNameLength: MAX_NAME_LENGTH,
+  });
+}
+
+function validateName(name) {
+  if (!name) return 'Give the project a name.';
+  if (name.length > MAX_NAME_LENGTH) return `Use at most ${MAX_NAME_LENGTH} characters.`;
+  return null;
+}
+
+exports.index = (req, res) => renderIndex(req, res);
+
+exports.create = async (req, res) => {
+  const name = text(req.body?.name).trim();
+  const error = validateName(name);
+  if (error) return renderIndex(req, res, { values: { name }, errors: { name: error } });
+
+  // New projects cycle through the presets so neighbours in the sidebar look different.
+  const count = await Project.countDocuments({ owner: req.user._id });
+  const project = await Project.create({ owner: req.user._id, name, colour: PROJECT_COLOURS[count % PROJECT_COLOURS.length].hex });
+  flash(req, 'success', `Project “${project.name}” created.`);
+  res.redirect(`/projects/${project._id}`);
+};
+
