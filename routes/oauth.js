@@ -8,17 +8,15 @@ const router = Router();
 
 router.param('provider', (req, res, next, provider) => (enabledProviders.has(provider) ? next() : next('route')));
 
-// `state` makes the provider echo back a value stored in the session, which blocks forged callbacks.
-router.get('/auth/:provider', (req, res, next) =>
-  passport.authenticate(req.params.provider, { session: false, state: true })(req, res, next)
-);
+router.get('/auth/:provider', (req, res, next) => passport.authenticate(req.params.provider, { session: false })(req, res, next));
 
 router.get('/auth/:provider/callback', (req, res, next) =>
   passport.authenticate(req.params.provider, { session: false }, async (err, user) => {
     try {
-      if (err) throw err;
-      if (!user) {
-        flash(req, 'error', 'Sign-in was cancelled. Try again, or use your email and password.');
+      // Provider errors (bad code, revoked client) are logged; the person just sees that it didn't work.
+      if (err) console.error(`OAuth sign-in with ${req.params.provider} failed:`, err);
+      if (err || !user) {
+        flash(req, 'error', 'Sign-in didn’t finish. Try again, or use your email and password.');
         return res.redirect('/login');
       }
       await startSession(req, user);
