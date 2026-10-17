@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
-const { requireLogin } = require('./middleware/auth');
+const { SESSION_COOKIE, requireLogin } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 app.use(
   session({
-    name: 'agendal.sid',
+    name: SESSION_COOKIE,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,

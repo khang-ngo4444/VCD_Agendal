@@ -1,6 +1,7 @@
 const User = require('../models/User');
 
 const HOME_PATH = '/today'; // the Daily List
+const SESSION_COOKIE = 'agendal.sid';
 
 // Mounted before every app route: loads the logged-in user or sends the visitor to log in.
 async function requireLogin(req, res, next) {
@@ -18,4 +19,4 @@ function guestOnly(req, res, next) {
   next();
 }
 
-module.exports = { HOME_PATH, requireLogin, guestOnly };
+module.exports = { HOME_PATH, SESSION_COOKIE, requireLogin, guestOnly };

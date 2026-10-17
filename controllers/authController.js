@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { HOME_PATH } = require('../middleware/auth');
+const { HOME_PATH, SESSION_COOKIE } = require('../middleware/auth');
 const { MIN_PASSWORD_LENGTH, validateRegistration } = require('../validators/auth');
 
 const DUPLICATE_KEY_ERROR = 11000;
@@ -7,10 +7,14 @@ const DUPLICATE_KEY_ERROR = 11000;
 // Form fields arrive as strings, but a crafted request can send arrays or nothing at all.
 const text = (value) => (typeof value === 'string' ? value : '');
 
+// Same message for an unknown email and a wrong password, so the form can't be used to find accounts.
+const LOGIN_FAILED = "That email and password don't match. Check them and try again.";
+
 // A fresh session ID on every login stops session fixation.
-async function startSession(req, user) {
+async function startSession(req, user, { remember = true } = {}) {
   await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
   req.session.userId = user.id;
+  if (!remember) req.session.cookie.maxAge = null; // cookie ends when the browser closes
 }
 
 function renderRegister(res, { values = {}, errors = {} } = {}) {
@@ -43,4 +47,30 @@ exports.register = async (req, res) => {
 
   await startSession(req, user);
   res.redirect(HOME_PATH);
+};
+
+function renderLogin(res, { values = { remember: true }, error } = {}) {
+  // Named loginError because EJS includes inherit page locals, and the field partial reads `error`.
+  res.status(error ? 401 : 200).render('auth/login', { title: 'Log in · Agendal', values, loginError: error });
+}
+
+exports.showLogin = (req, res) => renderLogin(res);
+
+exports.login = async (req, res) => {
+  const body = req.body ?? {};
+  const values = { email: text(body.email).trim().toLowerCase(), remember: body.remember === 'on' };
+
+  const user = values.email && (await User.findOne({ email: values.email }));
+  if (!user || !(await user.checkPassword(text(body.password)))) {
+    return renderLogin(res, { values, error: LOGIN_FAILED });
+  }
+
+  await startSession(req, user, { remember: values.remember });
+  res.redirect(HOME_PATH);
+};
+
+exports.logout = async (req, res) => {
+  await new Promise((resolve, reject) => req.session.destroy((err) => (err ? reject(err) : resolve())));
+  res.clearCookie(SESSION_COOKIE);
+  res.redirect('/');
 };
