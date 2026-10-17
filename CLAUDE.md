@@ -8,9 +8,10 @@ Agendal: a personal task, habit, and calendar app built as the final project for
 
 ## Workflow
 
-- **Trello is the task list:** board "VNUK - Advanced Web Design" (https://trello.com/b/QFOY5tFM/vnuk-advanced-web-design). The Backlog list is sorted in development order, so take cards from the top. Divider cards (`━━ P4 · Projects & tasks · due Oct 29 ━━`) mark the phases, and every card is due at the end of its phase. The deadline is Nov 8, 2026. Each card's description is its spec and its "Done when" line is the acceptance check. The "Roadmap & workflow" card in Introduction has the phase table.
-- **Card flow:** Backlog → In progress (branch created) → Testing (PR open into `develop`) → Done (PR merged; tick it complete). Postponed holds stretch goals.
-- **Scope:** Premium and payments are out. Statistics and CSV export are free for every user.
+- **Trello is the task list:** board "VNUK - Advanced Web Design" (https://trello.com/b/QFOY5tFM/vnuk-advanced-web-design). Each phase is its own list (`P0 · Foundation · due Oct 19` … `P13 · Quality & release`), in build order from left to right, and cards inside a list are in build order too. Every card is due at the end of its phase. The deadline is Nov 8, 2026. Each card's description is its spec, its "Done when" line is the acceptance check, and its **Figma:** line links the screen to build. The "Roadmap & workflow" card in Introduction has the overview.
+- **Card flow:** phase list → In progress (branch created) → Testing (PR open into `develop`) → Done (PR merged; tick it complete). Postponed holds stretch goals (GitHub sign-in, migrations, AI assistant).
+- **Design:** Figma file https://www.figma.com/design/yfBncVDLSo6yRWTvzBak8x/Web-Design--%C4%90%C3%ACnh-?node-id=24-604 (fileKey `yfBncVDLSo6yRWTvzBak8x`). Page "04 · Web (Desktop)" has the screens W01–W36 in light and dark; page "00 · Design System" has the tokens (Inter type, 4-pt spacing, 260 px sidebar, 1100 px max content) and components. Build UI from those tokens and components, not ad-hoc values. Figma names differ from the cards: "Today" = Daily List, "Insights" = Statistics. Habits and Admin screens are not designed yet.
+- **Scope:** Premium and payments are out. Statistics and CSV export are free for every user. Calendar events (separate from tasks), the Upcoming view, focus mode and offline sync are in scope because they are in the Figma design.
 - **`README.md` is background:** it describes the whole product. Where it disagrees with a card (e.g. README "categories" vs card "projects"), the card wins.
 - **Git Flow (README "Development Flow"):** branch `feature/<name>` or `task/<name>` from `develop`, then open a PR back into `develop`. Never commit directly to `main` or `develop`.
 
