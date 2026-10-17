@@ -104,3 +104,22 @@ exports.unschedule = async (req, res) => {
   flash(req, 'success', 'Schedule removed. The task is unscheduled again.');
   res.redirect(`/tasks/${task._id}`);
 };
+
+const listPath = (task) => (task.project ? `/projects/${task.project}` : '/inbox');
+
+// Soft delete: the task disappears at once, and the toast offers Undo for at least 5 seconds.
+exports.remove = async (req, res) => {
+  const task = await findOwnedTask(req);
+  task.deletedAt = new Date();
+  await task.save();
+  flash(req, 'success', `Deleted “${task.title}”.`, { undoUrl: `/tasks/${task._id}/restore` });
+  res.redirect(listPath(task));
+};
+
+exports.restore = async (req, res) => {
+  const task = await findOwned(Task, req.params.id, req.user._id, { deletedAt: { $ne: null } });
+  task.deletedAt = null;
+  await task.save();
+  flash(req, 'success', `Restored “${task.title}”.`);
+  res.redirect(listPath(task));
+};

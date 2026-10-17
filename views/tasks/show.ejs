@@ -85,6 +85,13 @@
         <%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %> <%= task.completedAt ? 'Reopen task' : 'Mark done' %>
       </button>
     </form>
+    <%# No confirm step: the toast after deleting offers Undo instead. %>
+    <form method="post" action="/tasks/<%= task._id %>/delete">
+      <%- include('../partials/csrf') %>
+      <button type="submit" class="btn btn-ghost h-11 w-full rounded-full text-error">
+        <%- include('../partials/icon', { icon: 'trash', cls: 'size-4' }) %> Delete task
+      </button>
+    </form>
   </aside>
 </div>
 
