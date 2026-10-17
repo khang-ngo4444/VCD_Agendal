@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const { Schema, model } = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -5,6 +6,9 @@ const BCRYPT_COST = 12;
 const MAX_FAILED_LOGINS = 10;
 const FAILED_LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOCKOUT_MS = 15 * 60 * 1000;
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+
+const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 const userSchema = new Schema(
   {
@@ -23,15 +27,19 @@ const userSchema = new Schema(
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window
     lockedUntil: Date,
     onboardedAt: { type: Date, default: null }, // set when the Welcome screen is finished or skipped
+    passwordReset: { tokenHash: String, expiresAt: Date }, // only the hash is stored, see createPasswordResetToken
   },
   { timestamps: true }
 );
+
+userSchema.index({ 'passwordReset.tokenHash': 1 }, { sparse: true });
 
 // Register, reset and change password all go through here, so the hashing stays in one place.
 // A new password also ends every existing session; the caller logs the current device back in if it wants.
 userSchema.methods.setPassword = async function (password) {
   this.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
   this.sessionVersion += 1;
+  this.passwordReset = undefined; // any outstanding reset link stops working
 };
 
 userSchema.methods.checkPassword = function (password) {
@@ -62,6 +70,19 @@ userSchema.methods.clearFailedLogins = async function () {
   this.loginFailures = { count: 0, since: null };
   this.lockedUntil = null;
   await this.save();
+};
+
+// Returns the token for the reset link. Only its hash is saved, so a leaked database can't be used to reset passwords.
+userSchema.methods.createPasswordResetToken = function (now = new Date()) {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.passwordReset = { tokenHash: sha256(token), expiresAt: new Date(now.getTime() + RESET_TOKEN_TTL_MS) };
+  return token;
+};
+
+// The user a reset link belongs to, or null when the token is unknown, used or expired.
+userSchema.statics.findByResetToken = function (token) {
+  if (typeof token !== 'string' || !token) return Promise.resolve(null);
+  return this.findOne({ 'passwordReset.tokenHash': sha256(token), 'passwordReset.expiresAt': { $gt: new Date() } });
 };
 
 module.exports = model('User', userSchema);
