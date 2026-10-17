@@ -1,4 +1,6 @@
-<div id="toast-region" class="toast toast-bottom toast-center pointer-events-none z-50" role="status" aria-live="polite"></div>
+<div id="toast-region" class="toast toast-bottom toast-center pointer-events-none z-50" role="status" aria-live="polite">
+  <% if (locals.flash) { %><%- include('toast', { ...flash, actionLabel: null }) %><% } %>
+</div>
 <% ['success', 'info', 'error'].forEach((type) => { %>
   <template id="toast-template-<%= type %>"><%- include('toast', { type, message: '', actionLabel: null }) %></template>
 <% }) %>
