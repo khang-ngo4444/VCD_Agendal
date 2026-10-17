@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession } = require('../middleware/auth');
+const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, ADMIN_LOCKED_MESSAGE, startSession } = require('../middleware/auth');
 const { PASSWORD_HINT, validateRegistration } = require('../validators/auth');
 const activity = require('../services/activity');
 
@@ -68,6 +68,12 @@ exports.login = async (req, res) => {
   if (!user || !(await user.checkPassword(password))) {
     await recordFailedLogin(req, user, values.email);
     return renderLogin(res, { values, error: LOGIN_FAILED });
+  }
+
+  // Only after the right password, so the form can't be used to find out which accounts are locked.
+  if (user.isLockedByAdmin()) {
+    await activity.record(req, { action: 'login_failed', user, details: 'Account locked by an admin' });
+    return renderLogin(res, { values, status: 403, error: ADMIN_LOCKED_MESSAGE });
   }
 
   await user.clearFailedLogins();

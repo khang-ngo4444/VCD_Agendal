@@ -5,6 +5,8 @@ const { requireAdmin, keepAdminsInConsole } = require('../middleware/auth');
 jest.mock('../controllers/adminController', () => ({
   overview: (req, res) => res.send('admin overview'),
   users: (req, res) => res.send('users'),
+  lock: (req, res) => res.send('locked'),
+  unlock: (req, res) => res.send('unlocked'),
   activity: (req, res) => res.send('activity log'),
 }));
 jest.mock('../models/User', () => ({ countDocuments: async () => 63 })); // the sidebar's account count
@@ -41,7 +43,7 @@ describe('admin middleware', () => {
 });
 
 // The same wiring as app.js: a logged-in user, the admin router, the app pages, then the 404 page.
-async function request(user, path) {
+async function request(user, path, method = 'GET') {
   const app = express();
   app.use((req, res, next) => {
     req.user = user;
@@ -54,7 +56,7 @@ async function request(user, path) {
 
   const server = app.listen(0);
   try {
-    const response = await fetch(`http://127.0.0.1:${server.address().port}${path}`, { redirect: 'manual' });
+    const response = await fetch(`http://127.0.0.1:${server.address().port}${path}`, { method, redirect: 'manual' });
     return { status: response.status, body: await response.text(), location: response.headers.get('location') };
   } finally {
     server.close();
@@ -73,6 +75,7 @@ describe('the /admin area', () => {
     expect(adminPage).toEqual(unknownPage);
     expect(await request(member, '/admin/users')).toMatchObject({ status: 404 });
     expect(await request(member, '/admin/activity')).toMatchObject({ status: 404 });
+    expect(await request(member, '/admin/users/64b000000000000000000002/lock', 'POST')).toMatchObject({ status: 404 });
   });
 
   test('an admin opens the activity log and the user list', async () => {

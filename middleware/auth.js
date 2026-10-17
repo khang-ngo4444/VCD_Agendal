@@ -4,6 +4,8 @@ const HOME_PATH = '/today'; // the Daily List
 const WELCOME_PATH = '/welcome';
 const ADMIN_PATH = '/admin'; // the admin console
 const SESSION_COOKIE = 'agendal.sid';
+// Shown wherever a login is refused because an admin locked the account (/admin/users).
+const ADMIN_LOCKED_MESSAGE = 'This account has been locked by an administrator. Contact support to have it unlocked.';
 
 // Logs the user in on this device. A fresh session ID on every login stops session fixation.
 async function startSession(req, user, { remember = true } = {}) {
@@ -20,7 +22,8 @@ async function requireLogin(req, res, next) {
   const { userId, sessionVersion } = req.session;
   const user = userId && (await User.findById(userId));
 
-  if (user && user.sessionVersion === sessionVersion) {
+  // Locking an account bumps sessionVersion; the lock check also covers a session that slipped through.
+  if (user && user.sessionVersion === sessionVersion && !user.isLockedByAdmin()) {
     // Private pages must not be cached: after logging out on a shared device, Back must not show someone's tasks.
     res.set('Cache-Control', 'no-store');
     req.user = user;
@@ -63,6 +66,7 @@ module.exports = {
   WELCOME_PATH,
   ADMIN_PATH,
   SESSION_COOKIE,
+  ADMIN_LOCKED_MESSAGE,
   startSession,
   requireLogin,
   guestOnly,

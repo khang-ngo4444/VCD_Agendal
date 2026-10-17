@@ -33,6 +33,11 @@ const userSchema = new Schema(
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window
     lockedUntil: Date,
     lastLoginAt: Date, // set by startSession (middleware/auth.js); the admin user list shows it
+    // Locked by an admin (/admin/users): no login until unlocked. Separate from lockedUntil (failed logins).
+    adminLock: {
+      type: new Schema({ at: Date, by: { type: Schema.Types.ObjectId, ref: 'User' }, reason: String }, { _id: false }),
+      default: undefined,
+    },
     onboardedAt: { type: Date, default: null }, // set when the Welcome screen is finished or skipped
     passwordReset: { tokenHash: String, expiresAt: Date, requestedAt: Date }, // only the hash is stored, see createPasswordResetToken
   },
@@ -56,6 +61,10 @@ userSchema.methods.checkPassword = function (password) {
 
 // Spends the same time as a real check, for logins with an unknown email (otherwise response time reveals who has an account).
 userSchema.statics.fakePasswordCheck = (password) => bcrypt.compare(password.slice(0, MAX_CHECKED_PASSWORD_LENGTH), DUMMY_HASH);
+
+userSchema.methods.isLockedByAdmin = function () {
+  return Boolean(this.adminLock?.at);
+};
 
 // Minutes left on a login lockout, or 0 when the account may log in.
 userSchema.methods.lockMinutesLeft = function (now = new Date()) {

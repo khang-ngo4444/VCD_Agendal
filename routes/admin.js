@@ -19,6 +19,8 @@ router.use(async (req, res, next) => {
 
 router.get('/', admin.overview);
 router.get('/users', admin.users);
+router.post('/users/:id/lock', admin.lock);
+router.post('/users/:id/unlock', admin.unlock);
 router.get('/activity', admin.activity);
 
 module.exports = router;

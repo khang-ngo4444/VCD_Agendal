@@ -3,6 +3,7 @@ const Task = require('../models/Task');
 const { RETENTION_DAYS } = require('../models/ActivityLog');
 const activity = require('../services/activity');
 const adminUsers = require('../services/adminUsers');
+const { flash } = require('../middleware/flash');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -36,7 +37,35 @@ exports.users = async (req, res) => {
     ...page,
     timeZone: req.user.timeZone || 'UTC',
     now: new Date(),
+    currentUrl: req.originalUrl,
+    maxReasonLength: adminUsers.MAX_REASON_LENGTH,
   });
+};
+
+// Back to the page, chip and search the admin was on. Only /admin/users addresses, never another site.
+const backToUsers = (value) => (typeof value === 'string' && /^\/admin\/users(\?[^\s]*)?$/.test(value) ? value : '/admin/users');
+const nameOf = (user) => user.name || user.email;
+
+const LOCK_ERRORS = {
+  self: 'You can’t lock your own account.',
+  already: 'That account is already locked.',
+  not_found: 'That account doesn’t exist any more.',
+};
+const UNLOCK_ERRORS = { ...LOCK_ERRORS, already: 'That account isn’t locked.' };
+
+// Lock account (AD-W03): the user is logged out everywhere and can't log in until unlocked.
+exports.lock = async (req, res) => {
+  const { user, error } = await adminUsers.lockUser(req, req.user, req.params.id, req.body?.reason);
+  if (error) flash(req, 'error', LOCK_ERRORS[error]);
+  else flash(req, 'success', `${nameOf(user)}’s account is locked and logged out everywhere.`);
+  res.redirect(backToUsers(req.body?.back));
+};
+
+exports.unlock = async (req, res) => {
+  const { user, error } = await adminUsers.unlockUser(req, req.user, req.params.id);
+  if (error) flash(req, 'error', UNLOCK_ERRORS[error]);
+  else flash(req, 'success', `${nameOf(user)} can log in again.`);
+  res.redirect(backToUsers(req.body?.back));
 };
 
 // Activity log (AD-W04): security events, newest first, filtered by the chips and the search box.

@@ -1,7 +1,7 @@
 // Shared OAuth routes: /auth/:provider starts the sign-in, /auth/:provider/callback finishes it.
 const { Router } = require('express');
 const { passport, enabledProviders } = require('../config/passport');
-const { HOME_PATH, WELCOME_PATH, startSession } = require('../middleware/auth');
+const { HOME_PATH, WELCOME_PATH, ADMIN_LOCKED_MESSAGE, startSession } = require('../middleware/auth');
 const { flash } = require('../middleware/flash');
 const activity = require('../services/activity');
 const { loginDetails } = require('../controllers/authController');
@@ -19,6 +19,11 @@ router.get('/auth/:provider/callback', (req, res, next) =>
       if (err) console.error(`OAuth sign-in with ${req.params.provider} failed:`, err);
       if (err || !user) {
         flash(req, 'error', 'Sign-in didn’t finish. Try again, or use your email and password.');
+        return res.redirect('/login');
+      }
+      if (user.isLockedByAdmin()) {
+        await activity.record(req, { action: 'login_failed', user, details: `${req.params.provider} · account locked by an admin` });
+        flash(req, 'error', ADMIN_LOCKED_MESSAGE);
         return res.redirect('/login');
       }
       await startSession(req, user);

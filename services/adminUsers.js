@@ -1,16 +1,21 @@
-// The queries behind /admin/users (AD-W02): filter chips, search, pages of 50, task and habit counts.
+// The queries behind /admin/users (AD-W02): filter chips, search, pages of 50, task and habit counts,
+// and locking / unlocking accounts (AD-W03).
+const { isValidObjectId } = require('mongoose');
 const User = require('../models/User');
 const Task = require('../models/Task');
 const Habit = require('../models/Habit');
 const { escapeRegex } = require('./regex');
+const activity = require('./activity');
 
 const PAGE_SIZE = 50;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_REASON_LENGTH = 200;
 
-// Chip key → MongoDB filter. "Locked" means locked out by failed logins until the lock/unlock card adds admin locks.
+// Chip key → MongoDB filter. "Locked" covers both an admin lock and a failed-login lockout.
+const isLocked = (now) => ({ $or: [{ 'adminLock.at': { $exists: true } }, { lockedUntil: { $gt: now } }] });
 const STATUS_FILTERS = {
-  active: (now) => ({ role: { $ne: 'admin' }, $or: [{ lockedUntil: null }, { lockedUntil: { $lte: now } }] }),
-  locked: (now) => ({ lockedUntil: { $gt: now } }),
+  active: (now) => ({ role: { $ne: 'admin' }, adminLock: null, $or: [{ lockedUntil: null }, { lockedUntil: { $lte: now } }] }),
+  locked: isLocked,
   admins: () => ({ role: 'admin' }),
   new: (now) => ({ createdAt: { $gte: new Date(now - WEEK_MS) } }),
 };
@@ -44,11 +49,12 @@ function pageNumber(value, total) {
   return { page: Number.isInteger(page) ? Math.min(Math.max(page, 1), pages) : 1, pages };
 }
 
-// What the Status column shows.
+// What the Status column shows, and whether the row offers Unlock instead of Lock.
 function statusOf(user, now = new Date()) {
-  if (user.role === 'admin') return { label: 'Admin', tone: 'bg-primary' };
-  if (user.lockedUntil > now) return { label: 'Locked out', tone: 'bg-warning' };
-  return { label: 'Active', tone: 'bg-success' };
+  if (user.adminLock?.at) return { label: 'Locked', tone: 'bg-error', locked: true };
+  if (user.lockedUntil > now) return { label: 'Locked out', tone: 'bg-warning', locked: true };
+  if (user.role === 'admin') return { label: 'Admin', tone: 'bg-primary', locked: false };
+  return { label: 'Active', tone: 'bg-success', locked: false };
 }
 
 // owner id → count, for the users on one page only.
@@ -66,7 +72,7 @@ async function listUsers(query = {}, now = new Date()) {
   ]);
   const { page, pages } = pageNumber(query.page, total);
 
-  const users = await User.find(filter, 'email name avatar role createdAt lastLoginAt lockedUntil')
+  const users = await User.find(filter, 'email name avatar role createdAt lastLoginAt lockedUntil adminLock')
     .sort({ createdAt: -1, _id: -1 })
     .skip((page - 1) * PAGE_SIZE)
     .limit(PAGE_SIZE)
@@ -96,4 +102,40 @@ async function listUsers(query = {}, now = new Date()) {
   };
 }
 
-module.exports = { listUsers, userFilter, pageNumber, statusOf, CHIPS, PAGE_SIZE };
+// The optional reason typed in the lock dialog: trimmed, at most 200 characters.
+const lockReason = (value) => (typeof value === 'string' ? value.trim().slice(0, MAX_REASON_LENGTH) : '');
+
+// Locks an account: it can't log in, and bumping sessionVersion ends its sessions on every device at once.
+// Returns { user } or { error: 'self' | 'not_found' | 'already' }. An admin can lock another admin, never themselves.
+async function lockUser(req, admin, userId, reason, now = new Date()) {
+  if (!isValidObjectId(userId)) return { error: 'not_found' };
+  if (String(admin._id) === String(userId)) return { error: 'self' };
+
+  const note = lockReason(reason);
+  const user = await User.findOneAndUpdate(
+    { _id: userId, 'adminLock.at': { $exists: false } },
+    { $set: { adminLock: { at: now, by: admin._id, reason: note || undefined } }, $inc: { sessionVersion: 1 } },
+    { returnDocument: 'after' }
+  );
+  if (!user) return { error: (await User.exists({ _id: userId })) ? 'already' : 'not_found' };
+
+  await activity.record(req, { action: 'admin_lock', user, actor: admin, details: [`By ${admin.email}`, note].filter(Boolean).join(' · ') });
+  return { user };
+}
+
+// Unlocks an account: lifts an admin lock and a failed-login lockout alike.
+async function unlockUser(req, admin, userId, now = new Date()) {
+  if (!isValidObjectId(userId)) return { error: 'not_found' };
+
+  const user = await User.findOneAndUpdate(
+    { _id: userId, ...isLocked(now) },
+    { $unset: { adminLock: 1 }, $set: { lockedUntil: null, loginFailures: { count: 0, since: null } } },
+    { returnDocument: 'after' }
+  );
+  if (!user) return { error: (await User.exists({ _id: userId })) ? 'already' : 'not_found' };
+
+  await activity.record(req, { action: 'admin_unlock', user, actor: admin, details: `By ${admin.email}` });
+  return { user };
+}
+
+module.exports = { listUsers, userFilter, pageNumber, statusOf, lockReason, lockUser, unlockUser, CHIPS, PAGE_SIZE, MAX_REASON_LENGTH };

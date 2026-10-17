@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { HOME_PATH, startSession } = require('../middleware/auth');
+const { HOME_PATH, ADMIN_LOCKED_MESSAGE, startSession } = require('../middleware/auth');
 const { flash } = require('../middleware/flash');
 const { sendMail } = require('../services/mailer');
 const activity = require('../services/activity');
@@ -76,9 +76,15 @@ exports.resetPassword = async (req, res) => {
   user.loginFailures = { count: 0, since: null }; // a reset also lifts a login lockout
   user.lockedUntil = null;
   await user.save();
+  await activity.record(req, { action: 'password_reset', user, details: 'Reset link used · other sessions ended' });
+
+  // The new password is saved, but a locked account still can't log in.
+  if (user.isLockedByAdmin()) {
+    flash(req, 'error', `Password updated. ${ADMIN_LOCKED_MESSAGE}`);
+    return res.redirect('/login');
+  }
 
   await startSession(req, user);
-  await activity.record(req, { action: 'password_reset', user, details: 'Reset link used · other sessions ended' });
   flash(req, 'success', 'Password updated. You’re logged in.');
   res.redirect(HOME_PATH);
 };
