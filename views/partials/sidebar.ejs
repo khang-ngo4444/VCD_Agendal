@@ -1,0 +1,33 @@
+<%
+  // Figma names: "Today" is the Daily List, "Insights" is Statistics.
+  const navItems = [
+    { href: '/today', label: 'Today', icon: 'sun' },
+    { href: '/upcoming', label: 'Upcoming', icon: 'inbox' },
+    { href: '/board', label: 'Board', icon: 'columns' },
+    { href: '/calendar', label: 'Calendar', icon: 'calendar' },
+    { href: '/habits', label: 'Habits', icon: 'repeat' },
+    { href: '/focus', label: 'Focus', icon: 'timer' },
+    { href: '/insights', label: 'Insights', icon: 'chart' },
+  ];
+  const itemClass = (href) => (currentPath === href ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-base-200');
+%>
+<nav aria-label="Main" class="flex min-h-full w-[260px] flex-col border-r border-base-300 bg-base-100 p-4">
+  <a href="/today" class="mb-5 flex items-center gap-2.5 px-1 text-lg font-bold">
+    <span class="grid size-8 place-items-center rounded-lg bg-neutral text-neutral-content">
+      <%- include('icon', { icon: 'check', cls: 'size-4' }) %>
+    </span>
+    Agendal
+  </a>
+
+  <ul class="space-y-0.5">
+    <% navItems.forEach((item) => { %>
+      <li>
+        <a href="<%= item.href %>" class="flex h-9 items-center gap-3 rounded-field px-2.5 text-sm <%= itemClass(item.href) %>"
+          <% if (currentPath === item.href) { %>aria-current="page"<% } %>>
+          <%- include('icon', { icon: item.icon, cls: 'size-4 shrink-0' }) %>
+          <%= item.label %>
+        </a>
+      </li>
+    <% }) %>
+  </ul>
+</nav>

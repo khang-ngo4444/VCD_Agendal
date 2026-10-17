@@ -6,6 +6,7 @@ const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const { SESSION_COOKIE, requireLogin } = require('./middleware/auth');
 const csrf = require('./middleware/csrf');
+const loadShell = require('./middleware/shell');
 const authRoutes = require('./routes/auth');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -49,7 +50,7 @@ app.get('/', (req, res) => res.render('home', { title: 'Agendal' }));
 app.use(authRoutes);
 
 // Everything below needs a logged-in user
-app.use(requireLogin);
+app.use(requireLogin, loadShell);
 app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
 
 module.exports = app;

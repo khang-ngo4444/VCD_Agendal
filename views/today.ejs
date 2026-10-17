@@ -1,11 +1,9 @@
-<%- include('partials/header') %>
-<main class="mx-auto max-w-[1100px] px-4 py-16">
-  <h1 class="text-3xl font-bold">Today</h1>
-  <p class="mt-2 text-muted">Hi <%= currentUser.name || currentUser.email %>. The Daily List arrives in P6.</p>
-  <%# Temporary until the app shell's user menu lands %>
-  <form method="post" action="/logout" class="mt-6">
-    <%- include('partials/csrf') %>
-    <button type="submit" class="btn btn-outline rounded-full">Log out</button>
-  </form>
-</main>
-<%- include('partials/footer') %>
+<%- include('partials/shell-top') %>
+<h1 class="text-3xl font-bold tracking-tight">Today</h1>
+<p class="mt-2 text-muted">Hi <%= currentUser.name || currentUser.email %>. The Daily List arrives in P6.</p>
+<%# Temporary until the user menu lands %>
+<form method="post" action="/logout" class="mt-6">
+  <%- include('partials/csrf') %>
+  <button type="submit" class="btn btn-outline rounded-full">Log out</button>
+</form>
+<%- include('partials/shell-bottom') %>
