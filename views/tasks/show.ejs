@@ -1,0 +1,74 @@
+<%- include('../partials/shell-top') %>
+<%# Task detail (Figma W10, as a page). Locals: task, values (form strings), errors, priorities, backHref, backLabel, overdue. %>
+<a href="<%= backHref %>" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ <%= backLabel %></a>
+
+<div class="mt-2 flex flex-wrap items-center gap-3">
+  <h1 class="text-3xl font-bold tracking-tight <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></h1>
+  <% if (task.completedAt) { %>
+    <span class="badge badge-success badge-soft">Done <%= dates.formatDay(task.completedAt, currentUser.timeZone) %></span>
+  <% } else if (overdue) { %>
+    <span class="badge badge-error badge-soft gap-1"><%- include('../partials/icon', { icon: 'alert', cls: 'size-3.5' }) %>Overdue</span>
+  <% } %>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-[1fr_260px]">
+  <form method="post" action="/tasks/<%= task._id %>" class="rounded-box bg-base-100 p-5" novalidate>
+    <%- include('../partials/csrf') %>
+
+    <label for="title" class="mb-1.5 block text-xs font-semibold">Title</label>
+    <input id="title" name="title" type="text" maxlength="200" value="<%= values.title %>"
+      class="input h-11 w-full text-base font-medium <%= errors.title ? 'input-error' : '' %>"
+      <% if (errors.title) { %>aria-invalid="true" aria-describedby="title-error"<% } %>>
+    <% if (errors.title) { %><p id="title-error" class="mt-1.5 text-sm text-error"><%= errors.title %></p><% } %>
+
+    <label for="description" class="mt-5 mb-1.5 block text-xs font-semibold">Description <span class="font-normal text-muted">(optional)</span></label>
+    <textarea id="description" name="description" rows="3" maxlength="2000" class="textarea w-full <%= errors.description ? 'textarea-error' : '' %>"
+      <% if (errors.description) { %>aria-invalid="true" aria-describedby="description-error"<% } %>><%= values.description %></textarea>
+    <% if (errors.description) { %><p id="description-error" class="mt-1.5 text-sm text-error"><%= errors.description %></p><% } %>
+
+    <div class="mt-5 grid gap-5 sm:grid-cols-3">
+      <div>
+        <label for="priority" class="mb-1.5 block text-xs font-semibold">Priority</label>
+        <select id="priority" name="priority" class="select h-10 w-full">
+          <% priorities.forEach((priority) => { %>
+            <option value="<%= priority %>" <%= values.priority === priority ? 'selected' : '' %>><%= priority[0].toUpperCase() + priority.slice(1) %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <label for="dueDate" class="mb-1.5 block text-xs font-semibold">Due date</label>
+        <input id="dueDate" name="dueDate" type="date" value="<%= values.dueDate %>" class="input h-10 w-full <%= errors.dueDate ? 'input-error' : '' %>"
+          <% if (errors.dueDate) { %>aria-invalid="true" aria-describedby="dueDate-error"<% } %>>
+        <% if (errors.dueDate) { %><p id="dueDate-error" class="mt-1.5 text-sm text-error"><%= errors.dueDate %></p><% } %>
+      </div>
+      <div>
+        <label for="project" class="mb-1.5 block text-xs font-semibold">Project</label>
+        <select id="project" name="project" class="select h-10 w-full <%= errors.project ? 'select-error' : '' %>"
+          <% if (errors.project) { %>aria-invalid="true" aria-describedby="project-error"<% } %>>
+          <% sidebarProjects.forEach((project) => { %>
+            <option value="<%= project.id || '' %>" <%= values.project === (project.id || '') ? 'selected' : '' %>><%= project.name %></option>
+          <% }) %>
+        </select>
+        <% if (errors.project) { %><p id="project-error" class="mt-1.5 text-sm text-error"><%= errors.project %></p><% } %>
+      </div>
+    </div>
+
+
+    <div class="mt-6 flex justify-end">
+      <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Save changes</button>
+    </div>
+  </form>
+
+  <aside class="space-y-3">
+    <form method="post" action="/tasks/<%= task._id %>/complete">
+      <%- include('../partials/csrf') %>
+      <input type="hidden" name="done" value="<%= task.completedAt ? '0' : '1' %>">
+      <input type="hidden" name="returnTo" value="/tasks/<%= task._id %>">
+      <button type="submit" class="btn h-11 w-full rounded-full <%= task.completedAt ? '' : 'btn-primary' %>">
+        <%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %> <%= task.completedAt ? 'Reopen task' : 'Mark done' %>
+      </button>
+    </form>
+  </aside>
+</div>
+
+<%- include('../partials/shell-bottom') %>
