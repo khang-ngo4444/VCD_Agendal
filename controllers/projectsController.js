@@ -60,3 +60,26 @@ async function renderTaskList(req, res, project) {
 exports.show = async (req, res) => renderTaskList(req, res, await findOwned(Project, req.params.id, req.user._id));
 
 exports.inbox = (req, res) => renderTaskList(req, res, null);
+
+exports.rename = async (req, res) => {
+  const project = await findOwned(Project, req.params.id, req.user._id);
+  const name = text(req.body?.name).trim();
+  const error = validateName(name);
+  if (error) flash(req, 'error', error);
+  else {
+    project.name = name;
+    await project.save();
+    flash(req, 'success', 'Project renamed.');
+  }
+  res.redirect(`/projects/${project._id}`);
+};
+
+
+// The project goes, its tasks stay: they move to the Inbox.
+exports.remove = async (req, res) => {
+  const project = await findOwned(Project, req.params.id, req.user._id);
+  await Task.updateMany({ owner: req.user._id, project: project._id }, { $set: { project: null } });
+  await project.deleteOne();
+  flash(req, 'success', `“${project.name}” deleted. Its tasks are in the Inbox.`);
+  res.redirect('/projects');
+};
