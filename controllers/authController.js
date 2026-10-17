@@ -52,9 +52,9 @@ exports.register = async (req, res) => {
   res.redirect(HOME_PATH);
 };
 
-function renderLogin(res, { values = { remember: true }, error } = {}) {
+function renderLogin(res, { values = { remember: true }, error, status = error ? 401 : 200 } = {}) {
   // Named loginError because EJS includes inherit page locals, and the field partial reads `error`.
-  res.status(error ? 401 : 200).render('auth/login', { title: 'Log in · Agendal', values, loginError: error });
+  res.status(status).render('auth/login', { title: 'Log in · Agendal', values, loginError: error });
 }
 
 exports.showLogin = (req, res) => renderLogin(res);
@@ -64,10 +64,19 @@ exports.login = async (req, res) => {
   const values = { email: text(body.email).trim().toLowerCase(), remember: body.remember === 'on' };
 
   const user = values.email && (await User.findOne({ email: values.email }));
+
+  const minutesLeft = user ? user.lockMinutesLeft() : 0;
+  if (minutesLeft) {
+    const wait = `${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}`;
+    return renderLogin(res, { values, status: 429, error: `Too many failed attempts. Try again in ${wait}.` });
+  }
+
   if (!user || !(await user.checkPassword(text(body.password)))) {
+    if (user) await user.recordFailedLogin();
     return renderLogin(res, { values, error: LOGIN_FAILED });
   }
 
+  await user.clearFailedLogins();
   await startSession(req, user, { remember: values.remember });
   res.redirect(HOME_PATH);
 };
