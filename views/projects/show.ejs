@@ -1,0 +1,36 @@
+<%- include('../partials/shell-top') %>
+<%# A project's tasks (Figma W22, cut to the card's scope). project is null for the Inbox. %>
+<header>
+  <p class="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted uppercase">
+    <% if (project) { %>
+      <span class="size-2.5 rounded-full" style="background-color: <%= project.colour %>" aria-hidden="true"></span> Project
+    <% } else { %>
+      <%- include('../partials/icon', { icon: 'inbox', cls: 'size-4' }) %> Tasks without a project
+    <% } %>
+  </p>
+  <h1 class="mt-1 text-3xl font-bold tracking-tight"><%= project ? project.name : 'Inbox' %></h1>
+  <p class="mt-1 text-sm text-muted"><%= openTasks.length + doneTasks.length ? `${doneTasks.length} of ${openTasks.length + doneTasks.length} done` : 'No tasks yet' %></p>
+</header>
+
+<section class="mt-6" aria-labelledby="open-heading">
+  <h2 id="open-heading" class="mb-2 font-semibold">Open · <%= openTasks.length %></h2>
+  <% if (openTasks.length) { %>
+    <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+      <% openTasks.forEach((task) => { %><%- include('../tasks/_row', { task, timeZone: currentUser.timeZone }) %><% }) %>
+    </ul>
+  <% } else { %>
+    <div class="rounded-box bg-base-100">
+      <%- include('../partials/empty-state', { icon: 'check', heading: 'Nothing open here', text: 'Add a task above, or enjoy the free time.' }) %>
+    </div>
+  <% } %>
+</section>
+
+<% if (doneTasks.length) { %>
+  <details class="mt-6">
+    <summary class="mb-2 cursor-pointer font-semibold text-muted">Done · <%= doneTasks.length %></summary>
+    <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+      <% doneTasks.forEach((task) => { %><%- include('../tasks/_row', { task, timeZone: currentUser.timeZone }) %><% }) %>
+    </ul>
+  </details>
+<% } %>
+<%- include('../partials/shell-bottom') %>

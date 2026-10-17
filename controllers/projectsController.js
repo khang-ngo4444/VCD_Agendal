@@ -1,4 +1,6 @@
 const Project = require('../models/Project');
+const Task = require('../models/Task');
+const { findOwned } = require('../services/ownership');
 const { flash } = require('../middleware/flash');
 const { PROJECT_COLOURS, taskCounts } = require('../services/projects');
 
@@ -42,3 +44,19 @@ exports.create = async (req, res) => {
   res.redirect(`/projects/${project._id}`);
 };
 
+
+// Shared by /projects/:id and /inbox (project = null).
+async function renderTaskList(req, res, project) {
+  const tasks = await Task.find({ owner: req.user._id, project: project?._id ?? null, deletedAt: null }).lean();
+  const byDueDate = (a, b) => (a.dueDate ?? Infinity) - (b.dueDate ?? Infinity) || a.createdAt - b.createdAt;
+  res.render('projects/show', {
+    title: `${project ? project.name : 'Inbox'} · Agendal`,
+    project,
+    openTasks: tasks.filter((task) => !task.completedAt).sort(byDueDate),
+    doneTasks: tasks.filter((task) => task.completedAt).sort((a, b) => b.completedAt - a.completedAt),
+  });
+}
+
+exports.show = async (req, res) => renderTaskList(req, res, await findOwned(Project, req.params.id, req.user._id));
+
+exports.inbox = (req, res) => renderTaskList(req, res, null);
