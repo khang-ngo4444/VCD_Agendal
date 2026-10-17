@@ -6,6 +6,8 @@
       <h1 class="text-3xl font-bold tracking-tight">Create your account</h1>
       <p class="mt-2 text-sm text-muted">Free for students. Takes about 30 seconds.</p>
 
+      <%- include('_oauth-buttons') %>
+
       <form method="post" action="/register" class="mt-6" novalidate>
         <%- include('../partials/csrf') %>
         <%- include('../partials/field', {
