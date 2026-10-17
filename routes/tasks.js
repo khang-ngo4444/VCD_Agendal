@@ -8,5 +8,6 @@ router.post('/tasks', tasks.create);
 router.get('/tasks/:id', tasks.show);
 router.post('/tasks/:id', tasks.update);
 router.post('/tasks/:id/complete', tasks.setComplete);
+router.post('/tasks/:id/unschedule', tasks.unschedule);
 
 module.exports = router;

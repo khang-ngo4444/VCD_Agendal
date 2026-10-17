@@ -66,6 +66,9 @@
       <p id="schedule-error" class="mt-1.5 text-sm <%= errors.schedule ? 'text-error' : 'text-muted' %>">
         <%= errors.schedule || 'Date, start and end, or leave all three empty.' %>
       </p>
+      <% if (task.schedule?.start) { %>
+        <button type="submit" form="unschedule-form" class="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Remove schedule</button>
+      <% } %>
     </fieldset>
 
     <div class="mt-6 flex justify-end">
@@ -85,4 +88,5 @@
   </aside>
 </div>
 
+<form id="unschedule-form" method="post" action="/tasks/<%= task._id %>/unschedule" hidden><%- include('../partials/csrf') %></form>
 <%- include('../partials/shell-bottom') %>

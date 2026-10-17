@@ -96,3 +96,11 @@ exports.update = async (req, res) => {
   res.redirect(`/tasks/${task._id}`);
 };
 
+// "Remove schedule": the task keeps its project and due date and simply becomes unscheduled again.
+exports.unschedule = async (req, res) => {
+  const task = await findOwnedTask(req);
+  task.set('schedule', undefined);
+  await task.save();
+  flash(req, 'success', 'Schedule removed. The task is unscheduled again.');
+  res.redirect(`/tasks/${task._id}`);
+};
