@@ -39,7 +39,8 @@
     <label class="input h-10 w-full rounded-field border-0 bg-fill">
       <%- include('../partials/icon', { icon: 'search', cls: 'size-4 text-muted' }) %>
       <span class="sr-only">Search by email or name</span>
-      <input type="search" name="q" value="<%= search %>" placeholder="Search by email or name" maxlength="100">
+      <input type="search" name="q" value="<%= search %>" placeholder="Search by email or name" maxlength="100" data-search>
+      <kbd class="kbd kbd-sm kbd-hint" title="Press / to search">/</kbd>
     </label>
   </form>
 </div>
@@ -74,7 +75,7 @@
         </thead>
         <tbody>
           <% users.forEach((user) => { %>
-            <tr class="border-t border-base-300">
+            <tr id="user-<%= user._id %>" class="border-t border-base-300 hover:bg-fill">
               <td class="px-4 py-2.5">
                 <span class="flex items-center gap-3">
                   <%- include('../partials/avatar', { user, cls: 'size-9 text-sm' }) %>

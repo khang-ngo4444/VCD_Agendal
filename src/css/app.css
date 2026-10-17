@@ -128,3 +128,76 @@
     min-height: max(40rem, calc(100dvh - 2rem - var(--side-gap)));
   }
 }
+
+/* Admin console micro-interactions (views/admin/_top.ejs sets .admin-console). Motion only when the person allows it. */
+
+/* Keyboard focus is always visible; mouse clicks don't draw a ring. Inputs are left out: see the search box below. */
+.admin-console :is(a, button, summary, .btn):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Search boxes: no DaisyUI outline ring when focused, just a slightly stronger fill; the caret shows where you type. */
+.admin-console .input:is(:focus, :focus-within) {
+  outline: none;
+  box-shadow: none;
+  background-color: color-mix(in oklab, var(--color-base-content) 14%, transparent);
+}
+.admin-console .input input:focus-visible {
+  outline: none;
+}
+
+/* Grey buttons (Review users, Lock, paging, Load older events) tint blue on hover, like the other buttons. */
+.admin-console .btn.bg-fill:not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--color-primary) 24%, transparent);
+}
+
+/* Shortcut hint in search boxes ("/"): hidden on touch screens, where there is no keyboard to press it on. */
+@media (hover: none) {
+  .admin-console .kbd-hint {
+    display: none;
+  }
+}
+
+/* Chart tooltip: shown while the pointer is on a bar. */
+.admin-console .bar-tip {
+  opacity: 0;
+  pointer-events: none;
+}
+.admin-console .bar:hover .bar-tip {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Table rows and buttons ease into their hover and pressed states. */
+  .admin-console tbody tr,
+  .admin-console .bar > div,
+  .admin-console .bar-tip {
+    transition:
+      background-color 150ms ease-out,
+      opacity 150ms ease-out;
+  }
+  .admin-console :is(.btn, nav a):active {
+    scale: 0.98;
+  }
+  .admin-console .btn {
+    transition-property: scale, background-color, color, box-shadow;
+    transition-duration: 150ms;
+  }
+
+  /* The row an admin just locked or unlocked: the redirect ends in #user-<id>, so it is the :target. */
+  .admin-console tr:target {
+    animation: row-flash 1.6s ease-out;
+  }
+  /* The lock dialog already fades and scales in and out: DaisyUI's .modal transitions. */
+}
+
+@keyframes row-flash {
+  0%,
+  30% {
+    background-color: color-mix(in oklab, var(--color-warning) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}

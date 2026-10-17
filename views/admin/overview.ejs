@@ -16,12 +16,12 @@
 <ul class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
   <li class="rounded-box bg-base-100 p-5">
     <p class="text-sm text-muted">Total users</p>
-    <p class="mt-1 text-4xl font-bold tabular-nums"><%= n(users.total) %></p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.total %>"><%= n(users.total) %></span></p>
     <p class="mt-1 text-xs font-medium text-success"><%= n(users.newThisWeek) %> new this week</p>
   </li>
   <li class="rounded-box bg-base-100 p-5">
     <p class="text-sm text-muted">New this week</p>
-    <p class="mt-1 text-4xl font-bold tabular-nums"><%= n(users.newThisWeek) %> <span class="text-base font-normal text-muted">users</span></p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.newThisWeek %>"><%= n(users.newThisWeek) %></span> <span class="text-base font-normal text-muted">users</span></p>
     <% if (users.newChange === null) { %>
       <p class="mt-1 text-xs text-muted">No sign-ups the week before</p>
     <% } else { %>
@@ -32,12 +32,12 @@
   </li>
   <li class="rounded-box bg-base-100 p-5">
     <p class="text-sm text-muted">Active · last 7 days</p>
-    <p class="mt-1 text-4xl font-bold tabular-nums"><%= n(users.active) %> <span class="text-base font-normal text-muted">users</span></p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.active %>"><%= n(users.active) %></span> <span class="text-base font-normal text-muted">users</span></p>
     <p class="mt-1 text-xs text-muted"><%= users.activeShare %>% of all users</p>
   </li>
   <li class="rounded-box bg-base-100 p-5">
     <p class="text-sm text-muted">Locked accounts</p>
-    <p class="mt-1 text-4xl font-bold tabular-nums"><%= n(users.locked) %></p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.locked %>"><%= n(users.locked) %></span></p>
     <p class="mt-1 text-xs <%= users.lockedOut ? 'font-medium text-warning' : 'text-muted' %>"><%= n(users.lockedOut) %> locked out by failed logins</p>
   </li>
 </ul>
@@ -51,9 +51,14 @@
     </div>
     <div class="mt-6 flex h-48 items-end gap-1 lg:h-auto lg:min-h-40 lg:flex-1" aria-hidden="true">
       <% checkIns.forEach((day, i) => { const today = i === checkIns.length - 1; %>
-        <div class="flex h-full flex-1 items-end" title="<%= shortDate(day.date) %>: <%= n(day.count) %> check-ins">
-          <div class="w-full rounded-t-sm <%= today ? 'bg-primary' : 'bg-primary/20' %>"
-            style="height: <%= checkInMax ? Math.max(2, Math.round((day.count / checkInMax) * 100)) : 2 %>%"></div>
+        <%# .bar / .bar-tip (src/css/app.css): the bar lights up and its number shows while the pointer is on it %>
+        <div class="bar group flex h-full flex-1 items-end">
+          <div class="relative w-full rounded-t-sm <%= today ? 'bg-primary' : 'bg-primary/20 group-hover:bg-primary/60' %>"
+            style="height: <%= checkInMax ? Math.max(2, Math.round((day.count / checkInMax) * 100)) : 2 %>%">
+            <span class="bar-tip absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 rounded-field bg-neutral px-2 py-1 text-xs whitespace-nowrap text-neutral-content shadow">
+              <%= shortDate(day.date) %> · <%= n(day.count) %> check-ins
+            </span>
+          </div>
         </div>
       <% }) %>
     </div>
@@ -110,14 +115,15 @@
     <% } %>
   </section>
 
-  <section class="rounded-box bg-base-100 p-6" aria-labelledby="attention-heading">
+  <section class="flex flex-col rounded-box bg-base-100 p-6" aria-labelledby="attention-heading">
     <h2 id="attention-heading" class="font-semibold">Needs attention</h2>
-    <ul class="mt-4 space-y-4 text-sm">
+    <ul class="mt-4 mb-5 space-y-4 text-sm">
       <li class="flex items-center justify-between">Locked by an admin <span class="flex items-center gap-2 tabular-nums"><span class="size-2 rounded-full bg-error" aria-hidden="true"></span><%= n(users.lockedByAdmin) %></span></li>
       <li class="flex items-center justify-between">Locked out · 10 failed logins <span class="flex items-center gap-2 tabular-nums"><span class="size-2 rounded-full bg-warning" aria-hidden="true"></span><%= n(users.lockedOut) %></span></li>
       <li class="flex items-center justify-between">Inactive for <%= inactiveDays %>+ days <span class="flex items-center gap-2 tabular-nums"><span class="size-2 rounded-full bg-muted" aria-hidden="true"></span><%= n(users.inactive) %></span></li>
     </ul>
-    <a href="/admin/users?status=locked" class="btn mt-4 h-10 w-full rounded-full border-0 bg-fill text-primary">Review users</a>
+    <%# mt-auto: the button sits at the bottom when the card is stretched to the row height %>
+    <a href="/admin/users?status=locked" class="btn mt-auto h-10 w-full rounded-full border-0 bg-fill text-primary">Review users</a>
   </section>
 </div>
 </div>

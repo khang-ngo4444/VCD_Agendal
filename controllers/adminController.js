@@ -33,6 +33,8 @@ exports.users = async (req, res) => {
 // Back to the page, chip and search the admin was on. Only /admin/users addresses, never another site.
 const backToUsers = (value) => (typeof value === 'string' && /^\/admin\/users(\?[^\s]*)?$/.test(value) ? value : '/admin/users');
 const nameOf = (user) => user.name || user.email;
+// "#user-<id>": the list scrolls to that row and flashes it (tr:target in src/css/app.css).
+const rowAnchor = (user) => (user ? `#user-${user._id}` : '');
 
 const LOCK_ERRORS = {
   self: 'You can’t lock your own account.',
@@ -46,14 +48,14 @@ exports.lock = async (req, res) => {
   const { user, error } = await adminUsers.lockUser(req, req.user, req.params.id, req.body?.reason);
   if (error) flash(req, 'error', LOCK_ERRORS[error]);
   else flash(req, 'success', `${nameOf(user)}’s account is locked and logged out everywhere.`);
-  res.redirect(backToUsers(req.body?.back));
+  res.redirect(backToUsers(req.body?.back) + rowAnchor(user));
 };
 
 exports.unlock = async (req, res) => {
   const { user, error } = await adminUsers.unlockUser(req, req.user, req.params.id);
   if (error) flash(req, 'error', UNLOCK_ERRORS[error]);
   else flash(req, 'success', `${nameOf(user)} can log in again.`);
-  res.redirect(backToUsers(req.body?.back));
+  res.redirect(backToUsers(req.body?.back) + rowAnchor(user));
 };
 
 // Activity log (AD-W04): security events, newest first, filtered by the chips and the search box.
