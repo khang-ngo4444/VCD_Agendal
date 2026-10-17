@@ -6,6 +6,8 @@ erDiagram
     USER ||--o{ REMINDER : owns
     PROJECT |o--o{ TASK : "groups (none = Inbox)"
     TASK ||--o{ REMINDER : has
+    USER ||--o{ HABIT : owns
+    HABIT ||--o{ HABIT_CHECK_IN : "has (one per day)"
 
     USER {
         ObjectId _id PK
@@ -56,6 +58,25 @@ erDiagram
         Date remindAt
         String type "push | email"
         Boolean sent
+        Date createdAt
+        Date updatedAt
+    }
+    HABIT {
+        ObjectId _id PK
+        ObjectId owner FK
+        String name
+        String colour
+        Object frequency "type: daily | weekdays | days | timesPerWeek, days, timesPerWeek"
+        String reminderTime "HH:mm"
+        Date archivedAt
+        Date createdAt
+        Date updatedAt
+    }
+    HABIT_CHECK_IN {
+        ObjectId _id PK
+        ObjectId habit FK
+        ObjectId owner FK
+        String date "YYYY-MM-DD local, unique with habit"
         Date createdAt
         Date updatedAt
     }
