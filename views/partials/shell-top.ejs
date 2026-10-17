@@ -2,10 +2,14 @@
 <%- include('header') %>
 <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-field focus:bg-base-100 focus:px-4 focus:py-2">Skip to content</a>
 <div class="drawer lg:drawer-open">
-  <input id="app-drawer" type="checkbox" class="drawer-toggle" aria-label="Show navigation">
+  <input id="app-drawer" type="checkbox" class="drawer-toggle" tabindex="-1" aria-hidden="true">
   <div class="drawer-content flex min-h-screen flex-col bg-base-200">
     <header class="sticky top-0 z-30 bg-base-200/90 backdrop-blur">
       <div class="mx-auto flex h-16 max-w-[1100px] items-center gap-3 px-4 lg:px-8">
+        <label for="app-drawer" class="btn btn-ghost btn-square -ml-2 lg:hidden" role="button" tabindex="0"
+          aria-label="Open navigation" data-key-click data-drawer-open>
+          <%- include('icon', { icon: 'menu', cls: 'size-5' }) %>
+        </label>
         <form action="/search" method="get" role="search" class="max-w-sm grow">
           <label class="input h-10 w-full border-transparent bg-fill">
             <%- include('icon', { icon: 'search', cls: 'size-4 shrink-0 text-muted' }) %>
