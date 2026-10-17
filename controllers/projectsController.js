@@ -2,7 +2,7 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const { findOwned } = require('../services/ownership');
 const { flash } = require('../middleware/flash');
-const { PROJECT_COLOURS, taskCounts } = require('../services/projects');
+const { PROJECT_COLOURS, isPresetColour, taskCounts } = require('../services/projects');
 
 const MAX_NAME_LENGTH = 60;
 
@@ -52,6 +52,7 @@ async function renderTaskList(req, res, project) {
   res.render('projects/show', {
     title: `${project ? project.name : 'Inbox'} · Agendal`,
     project,
+    projectColours: PROJECT_COLOURS,
     openTasks: tasks.filter((task) => !task.completedAt).sort(byDueDate),
     doneTasks: tasks.filter((task) => task.completedAt).sort((a, b) => b.completedAt - a.completedAt),
   });
@@ -74,6 +75,15 @@ exports.rename = async (req, res) => {
   res.redirect(`/projects/${project._id}`);
 };
 
+exports.setColour = async (req, res) => {
+  const project = await findOwned(Project, req.params.id, req.user._id);
+  if (isPresetColour(req.body?.colour)) {
+    project.colour = req.body.colour;
+    await project.save();
+    flash(req, 'success', 'Colour updated.');
+  }
+  res.redirect(`/projects/${project._id}`);
+};
 
 // The project goes, its tasks stay: they move to the Inbox.
 exports.remove = async (req, res) => {

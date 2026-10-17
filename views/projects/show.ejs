@@ -12,7 +12,7 @@
   <p class="mt-1 text-sm text-muted"><%= openTasks.length + doneTasks.length ? `${doneTasks.length} of ${openTasks.length + doneTasks.length} done` : 'No tasks yet' %></p>
 
   <% if (project) { %>
-    <%# The Inbox is built in, so only real projects can be renamed or deleted. %>
+    <%# The Inbox is built in, so only real projects can be renamed, recoloured or deleted. %>
     <% const taskCount = openTasks.length + doneTasks.length; %>
     <div class="mt-4 flex flex-wrap items-start gap-2">
       <details class="dropdown" data-dismissable>
@@ -25,6 +25,19 @@
         </form>
       </details>
 
+      <form method="post" action="/projects/<%= project._id %>/colour" class="flex items-center gap-1.5 rounded-full bg-fill px-3 py-1.5">
+        <%- include('../partials/csrf') %>
+        <span class="mr-1 text-sm text-muted">Colour</span>
+        <% projectColours.forEach((colour) => { %>
+          <label class="cursor-pointer">
+            <input type="radio" name="colour" value="<%= colour.hex %>" class="peer sr-only" aria-label="<%= colour.name %>"
+              <%= project.colour === colour.hex ? 'checked' : '' %> data-autosubmit>
+            <span class="block size-6 rounded-full border-2 border-base-100 ring-2 ring-transparent peer-checked:ring-base-content peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
+              style="background-color: <%= colour.hex %>" aria-hidden="true"></span>
+          </label>
+        <% }) %>
+        <noscript><button type="submit" class="btn btn-xs ml-1">Save</button></noscript>
+      </form>
 
       <form method="post" action="/projects/<%= project._id %>/delete" class="ml-auto"
         data-confirm="Delete “<%= project.name %>”?"

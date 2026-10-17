@@ -7,6 +7,7 @@ router.get('/projects', projects.index);
 router.post('/projects', projects.create);
 router.get('/projects/:id', projects.show);
 router.post('/projects/:id/rename', projects.rename);
+router.post('/projects/:id/colour', projects.setColour);
 router.post('/projects/:id/delete', projects.remove);
 router.get('/inbox', projects.inbox);
 
