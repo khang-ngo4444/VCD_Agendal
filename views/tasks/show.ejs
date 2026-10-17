@@ -53,6 +53,20 @@
       </div>
     </div>
 
+    <fieldset class="mt-5" <% if (errors.schedule) { %>aria-describedby="schedule-error"<% } %>>
+      <legend class="mb-1.5 text-xs font-semibold">Scheduled time <span class="font-normal text-muted">(when you’ll work on it)</span></legend>
+      <div class="grid grid-cols-[1fr_auto_auto] items-center gap-2">
+        <label for="scheduleDate" class="sr-only">Date</label>
+        <input id="scheduleDate" name="scheduleDate" type="date" value="<%= values.scheduleDate %>" class="input h-10 w-full <%= errors.schedule ? 'input-error' : '' %>">
+        <label for="scheduleStart" class="sr-only">Start time</label>
+        <input id="scheduleStart" name="scheduleStart" type="time" value="<%= values.scheduleStart %>" class="input h-10 w-28 <%= errors.schedule ? 'input-error' : '' %>">
+        <label for="scheduleEnd" class="sr-only">End time</label>
+        <input id="scheduleEnd" name="scheduleEnd" type="time" value="<%= values.scheduleEnd %>" class="input h-10 w-28 <%= errors.schedule ? 'input-error' : '' %>">
+      </div>
+      <p id="schedule-error" class="mt-1.5 text-sm <%= errors.schedule ? 'text-error' : 'text-muted' %>">
+        <%= errors.schedule || 'Date, start and end, or leave all three empty.' %>
+      </p>
+    </fieldset>
 
     <div class="mt-6 flex justify-end">
       <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Save changes</button>

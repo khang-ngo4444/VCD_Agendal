@@ -88,8 +88,9 @@ exports.update = async (req, res) => {
   if (values.project && !project) errors.project = 'Pick a project from the list.';
   if (Object.keys(errors).length) return renderTask(req, res, task, { values, errors });
 
-  const { schedule, ...fields } = changes; // the schedule isn't on this form yet
+  const { schedule, ...fields } = changes;
   task.set({ ...fields, project: project?._id ?? null });
+  task.set('schedule', schedule ?? undefined);
   await task.save();
   flash(req, 'success', 'Task saved.');
   res.redirect(`/tasks/${task._id}`);
