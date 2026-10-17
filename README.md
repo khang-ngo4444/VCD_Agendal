@@ -223,6 +223,12 @@ The main components are:
 - A habit can have many check-ins.
 - A task or habit can have reminders.
 
+### Database ERD
+
+![Agendal ERD](docs/erd.png)
+
+The diagram is generated from [`docs/erd.mmd`](docs/erd.mmd); the re-render command is at the top of that file.
+
 ## Security
 
 The application includes the following security measures:
