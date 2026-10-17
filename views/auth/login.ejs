@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+<div class="grid min-h-screen lg:grid-cols-[4fr_5fr]">
+  <%- include('_aside') %>
+  <main class="flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-sm">
+      <h1 class="text-3xl font-bold tracking-tight">Log in</h1>
+      <p class="mt-2 text-sm text-muted">Welcome back. Your tasks are waiting.</p>
+
+      <% if (loginError) { %>
+        <div role="alert" class="mt-6 flex items-start gap-2 rounded-field border border-error px-3 py-2.5 text-sm text-error">
+          <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+          <span><%= loginError %></span>
+        </div>
+      <% } %>
+
+      <form method="post" action="/login" class="mt-6" novalidate>
+        <%- include('../partials/field', {
+          name: 'email', label: 'Email', type: 'email', icon: 'mail', autocomplete: 'email', value: values.email,
+        }) %>
+        <%- include('../partials/field', {
+          name: 'password', label: 'Password', type: 'password', icon: 'lock', autocomplete: 'current-password',
+        }) %>
+        <label class="mb-4 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="remember" class="checkbox checkbox-primary checkbox-sm" <%= values.remember ? 'checked' : '' %>>
+          Remember me for 30 days
+        </label>
+        <button type="submit" class="btn btn-primary h-11 w-full rounded-full">Log in</button>
+      </form>
+
+      <p class="mt-4 text-sm text-muted">
+        New to Agendal? <a href="/register" class="font-semibold text-primary hover:underline">Create an account</a>
+      </p>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>
