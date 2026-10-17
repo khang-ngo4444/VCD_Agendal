@@ -3,6 +3,7 @@ const path = require('node:path');
 const sharp = require('sharp');
 const { flash } = require('../middleware/flash');
 const { isValidTimeZone, timeZoneOptions } = require('../config/timeZones');
+const { MIN_PASSWORD_LENGTH } = require('../validators/auth');
 
 const User = require('../models/User');
 
@@ -84,4 +85,35 @@ exports.updateAppearance = async (req, res) => {
   await req.user.save();
   flash(req, 'success', 'Appearance saved.');
   res.redirect('/settings/appearance');
+};
+
+function renderAccount(req, res, errors = {}) {
+  res.status(Object.keys(errors).length ? 422 : 200).render('settings/account', {
+    title: 'Account · Settings · Agendal',
+    errors,
+    hasPassword: Boolean(req.user.passwordHash), // Google-only accounts set a first password instead
+    minPasswordLength: MIN_PASSWORD_LENGTH,
+  });
+}
+
+exports.showAccount = (req, res) => renderAccount(req, res);
+
+exports.changePassword = async (req, res) => {
+  const body = req.body ?? {};
+  const [currentPassword, newPassword, confirmPassword] = [body.currentPassword, body.newPassword, body.confirmPassword].map(text);
+
+  const errors = {};
+  if (req.user.passwordHash && !(await req.user.checkPassword(currentPassword))) {
+    errors.currentPassword = 'That isn’t your current password.';
+  }
+  if (newPassword.length < MIN_PASSWORD_LENGTH) errors.newPassword = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+  else if (confirmPassword !== newPassword) errors.confirmPassword = 'The two new passwords don’t match.';
+  if (Object.keys(errors).length) return renderAccount(req, res, errors);
+
+  await req.user.setPassword(newPassword); // also bumps sessionVersion, which signs out every other device
+  await req.user.save();
+  req.session.sessionVersion = req.user.sessionVersion; // ...but keeps this one signed in
+
+  flash(req, 'success', 'Password updated. Other devices have been signed out.');
+  res.redirect('/settings/account');
 };

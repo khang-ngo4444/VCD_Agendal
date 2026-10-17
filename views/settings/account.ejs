@@ -1,0 +1,33 @@
+<%- include('../partials/shell-top') %>
+<h1 class="text-3xl font-bold tracking-tight">Settings</h1>
+<div class="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
+  <%- include('_nav') %>
+  <section aria-labelledby="account-heading">
+    <h2 id="account-heading" class="text-xl font-bold">Account &amp; security</h2>
+    <p class="mt-1 text-sm text-muted">Signed in as <%= currentUser.email %></p>
+
+    <form method="post" action="/settings/password" class="mt-6 max-w-xl rounded-box bg-base-100 p-5" novalidate>
+      <%- include('../partials/csrf') %>
+      <h3 class="mb-4 text-xs font-semibold tracking-wide text-muted uppercase"><%= hasPassword ? 'Change password' : 'Set a password' %></h3>
+      <% if (hasPassword) { %>
+        <%- include('../partials/field', {
+          name: 'currentPassword', label: 'Current password', type: 'password', icon: 'lock',
+          autocomplete: 'current-password', error: errors.currentPassword,
+        }) %>
+      <% } %>
+      <%- include('../partials/field', {
+        name: 'newPassword', label: 'New password', type: 'password', icon: 'lock', autocomplete: 'new-password',
+        error: errors.newPassword, hint: `At least ${minPasswordLength} characters.`,
+      }) %>
+      <%- include('../partials/field', {
+        name: 'confirmPassword', label: 'Confirm new password', type: 'password', icon: 'lock',
+        autocomplete: 'new-password', error: errors.confirmPassword,
+      }) %>
+      <p class="mb-4 text-sm text-muted">You’ll stay signed in here. Other devices will be signed out.</p>
+      <div class="flex justify-end">
+        <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Update password</button>
+      </div>
+    </form>
+  </section>
+</div>
+<%- include('../partials/shell-bottom') %>

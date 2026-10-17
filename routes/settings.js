@@ -9,5 +9,7 @@ router.post('/settings/profile', settings.updateProfile);
 router.post('/settings/avatar', settings.updateAvatar); // body parsed by avatarUpload in app.js
 router.get('/settings/appearance', settings.showAppearance);
 router.post('/settings/appearance', settings.updateAppearance);
+router.get('/settings/account', settings.showAccount);
+router.post('/settings/password', settings.changePassword);
 
 module.exports = router;
