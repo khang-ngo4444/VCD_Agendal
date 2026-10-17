@@ -118,3 +118,13 @@
 .textarea:not(.textarea-error):focus {
   --input-color: var(--color-base-content);
 }
+
+/* Admin overview (views/admin/overview.ejs): on large screens it fills at least the screen, and the gap under it
+ equals the gap beside it: the 2rem padding plus whatever the 1440px max width leaves next to the 260px sidebar. */
+@media (min-width: 64rem) {
+  .admin-fit {
+    --side-gap: max(2rem, calc((100vw - 260px - 1440px) / 2 + 2rem));
+    /* min-height, not height: a short screen makes the page longer instead of squeezing the cards together */
+    min-height: max(40rem, calc(100dvh - 2rem - var(--side-gap)));
+  }
+}

@@ -4,6 +4,7 @@ const HOME_PATH = '/today'; // the Daily List
 const WELCOME_PATH = '/welcome';
 const ADMIN_PATH = '/admin'; // the admin console
 const SESSION_COOKIE = 'agendal.sid';
+const SEEN_EVERY_MS = 60 * 60 * 1000; // lastSeenAt is written at most once an hour per user
 // Shown wherever a login is refused because an admin locked the account (/admin/users).
 const ADMIN_LOCKED_MESSAGE = 'This account has been locked by an administrator. Contact support to have it unlocked.';
 
@@ -12,8 +13,8 @@ async function startSession(req, user, { remember = true } = {}) {
   await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
   req.session.userId = user.id;
   req.session.sessionVersion = user.sessionVersion;
-  user.lastLoginAt = new Date();
-  await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: user.lastLoginAt } });
+  user.lastLoginAt = user.lastSeenAt = new Date();
+  await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: user.lastLoginAt, lastSeenAt: user.lastSeenAt } });
   if (!remember) req.session.cookie.maxAge = null; // cookie ends when the browser closes
 }
 
@@ -28,6 +29,12 @@ async function requireLogin(req, res, next) {
     res.set('Cache-Control', 'no-store');
     req.user = user;
     res.locals.currentUser = user;
+    // Sessions last 30 days, so "active" can't rely on lastLoginAt alone.
+    const now = new Date();
+    if (!user.lastSeenAt || now - user.lastSeenAt > SEEN_EVERY_MS) {
+      user.lastSeenAt = now;
+      await User.updateOne({ _id: user._id }, { $set: { lastSeenAt: now } });
+    }
     return next();
   }
 

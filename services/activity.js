@@ -18,11 +18,11 @@ const FILTERS = [
 
 // How each action reads in the table, and the colour of its dot.
 const ACTION_LABELS = {
-  signup: { label: 'Sign-up', tone: 'bg-success' },
-  login: { label: 'Login', tone: 'bg-muted' },
+  signup: { label: 'Sign-up', tone: 'bg-primary' },
+  login: { label: 'Login', tone: 'bg-success' }, // green: the account is in use
   login_failed: { label: 'Failed login', tone: 'bg-error' },
   lockout: { label: 'Lockout', tone: 'bg-error' },
-  password_reset: { label: 'Password reset', tone: 'bg-primary' },
+  password_reset: { label: 'Password reset', tone: 'bg-muted' },
   account_deleted: { label: 'Account deleted', tone: 'bg-error' },
   admin_lock: { label: 'Admin lock', tone: 'bg-warning' },
   admin_unlock: { label: 'Admin unlock', tone: 'bg-warning' },

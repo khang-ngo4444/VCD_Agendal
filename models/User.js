@@ -33,6 +33,7 @@ const userSchema = new Schema(
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window
     lockedUntil: Date,
     lastLoginAt: Date, // set by startSession (middleware/auth.js); the admin user list shows it
+    lastSeenAt: Date, // last request, at most hourly (requireLogin); "active users" on the admin overview
     // Locked by an admin (/admin/users): no login until unlocked. Separate from lockedUntil (failed logins).
     adminLock: {
       type: new Schema({ at: Date, by: { type: Schema.Types.ObjectId, ref: 'User' }, reason: String }, { _id: false }),
