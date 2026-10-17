@@ -7,6 +7,7 @@ const Task = require('../models/Task');
 const Reminder = require('../models/Reminder');
 
 const DEMO_EMAIL = 'demo@agendal.app';
+const DEMO_PASSWORD = 'demo1234';
 
 const PROJECTS = [
   ['University', '#3b82f6'],
@@ -75,8 +76,9 @@ async function seed() {
     await old.deleteOne();
   }
 
-  // ponytail: no password yet, set it once the "Hash and salt passwords" card lands
-  const user = await User.create({ email: DEMO_EMAIL, name: 'Demo User' });
+  const user = new User({ email: DEMO_EMAIL, name: 'Demo User' });
+  await user.setPassword(DEMO_PASSWORD);
+  await user.save();
   const projects = await Project.insertMany(PROJECTS.map(([name, colour]) => ({ owner: user._id, name, colour })));
 
   const columnSize = {};
@@ -104,7 +106,7 @@ async function seed() {
     upcoming.map((t) => ({ task: t._id, owner: user._id, remindAt: new Date(t.schedule.start - 15 * 60 * 1000) }))
   );
 
-  console.log(`Seeded ${DEMO_EMAIL}: ${projects.length} projects, ${tasks.length} tasks, ${upcoming.length} reminders`);
+  console.log(`Seeded ${DEMO_EMAIL} (password ${DEMO_PASSWORD}): ${projects.length} projects, ${tasks.length} tasks, ${upcoming.length} reminders`);
 }
 
 seed()

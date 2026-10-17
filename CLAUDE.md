@@ -40,7 +40,7 @@ Agendal: a personal task, habit, and calendar app built as the final project for
 
 ## Commands
 
-- `npm run seed`: replaces the demo user (`demo@agendal.app`) and its 4 projects, 40 tasks and 4 reminders. It's idempotent.
+- `npm run seed`: replaces the demo user (`demo@agendal.app`, password `demo1234`) and its 4 projects, 40 tasks and 4 reminders. It's idempotent.
 - `npm test` is still the npm placeholder and always fails.
 - Env vars are loaded with Node's native `--env-file-if-exists=.env` flag in npm scripts, not dotenv. Use the same flag for new scripts. A variable set in the shell overrides `.env`.
 - ERD: edit `docs/erd.mmd`, then re-render `docs/erd.png` with the command at the top of that file.
