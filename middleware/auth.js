@@ -5,12 +5,18 @@ const SESSION_COOKIE = 'agendal.sid';
 
 // Mounted before every app route: loads the logged-in user or sends the visitor to log in.
 async function requireLogin(req, res, next) {
-  const user = req.session.userId && (await User.findById(req.session.userId));
-  if (!user) return res.redirect('/login');
+  const { userId, sessionVersion } = req.session;
+  const user = userId && (await User.findById(userId));
 
-  req.user = user;
-  res.locals.currentUser = user;
-  next();
+  if (user && user.sessionVersion === sessionVersion) {
+    req.user = user;
+    res.locals.currentUser = user;
+    return next();
+  }
+
+  // Logged out on another device, password changed, or account gone: drop this stale session too.
+  if (userId) return req.session.destroy((err) => (err ? next(err) : res.redirect('/login')));
+  res.redirect('/login');
 }
 
 // Logged-in users have no reason to see the login or register page again.

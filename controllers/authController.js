@@ -14,6 +14,7 @@ const LOGIN_FAILED = "That email and password don't match. Check them and try ag
 async function startSession(req, user, { remember = true } = {}) {
   await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
   req.session.userId = user.id;
+  req.session.sessionVersion = user.sessionVersion;
   if (!remember) req.session.cookie.maxAge = null; // cookie ends when the browser closes
 }
 
@@ -69,7 +70,9 @@ exports.login = async (req, res) => {
   res.redirect(HOME_PATH);
 };
 
+// Logging out ends the user's sessions on every device, not just this one.
 exports.logout = async (req, res) => {
+  if (req.session.userId) await User.updateOne({ _id: req.session.userId }, { $inc: { sessionVersion: 1 } });
   await new Promise((resolve, reject) => req.session.destroy((err) => (err ? reject(err) : resolve())));
   res.clearCookie(SESSION_COOKIE);
   res.redirect('/');
