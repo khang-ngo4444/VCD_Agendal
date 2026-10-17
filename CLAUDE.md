@@ -41,7 +41,7 @@ Agendal: a personal task, habit, and calendar app built as the final project for
 ## Commands
 
 - `npm run seed`: replaces the demo user (`demo@agendal.app`, password `demo1234`) and its 4 projects, 40 tasks and 4 reminders. It's idempotent.
-- `npm test` is still the npm placeholder and always fails.
+- `npm test` runs Jest (unit tests in `tests/`). Supertest and a test database are still to come (P0 "Test setup" card).
 - Env vars are loaded with Node's native `--env-file-if-exists=.env` flag in npm scripts, not dotenv. Use the same flag for new scripts. A variable set in the shell overrides `.env`.
 - ERD: edit `docs/erd.mmd`, then re-render `docs/erd.png` with the command at the top of that file.
 - Planned: Tailwind v4 CLI (`npx @tailwindcss/cli -i <input.css> -o public/css/style.css --watch`) and `node --watch app.js` (Node 22 doesn't need nodemon).
