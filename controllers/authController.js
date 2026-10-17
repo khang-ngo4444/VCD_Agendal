@@ -1,6 +1,5 @@
 const User = require('../models/User');
-const { HOME_PATH, SESSION_COOKIE } = require('../middleware/auth');
-const { flash } = require('../middleware/flash');
+const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE } = require('../middleware/auth');
 const { MIN_PASSWORD_LENGTH, validateRegistration } = require('../validators/auth');
 
 const DUPLICATE_KEY_ERROR = 11000;
@@ -48,8 +47,7 @@ exports.register = async (req, res) => {
   }
 
   await startSession(req, user);
-  flash(req, 'success', 'Welcome to Agendal! Your account is ready.');
-  res.redirect(HOME_PATH);
+  res.redirect(WELCOME_PATH);
 };
 
 function renderLogin(res, { values = { remember: true }, error, status = error ? 401 : 200 } = {}) {

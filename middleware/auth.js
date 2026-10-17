@@ -1,6 +1,7 @@
 const User = require('../models/User');
 
 const HOME_PATH = '/today'; // the Daily List
+const WELCOME_PATH = '/welcome';
 const SESSION_COOKIE = 'agendal.sid';
 
 // Mounted before every app route: loads the logged-in user or sends the visitor to log in.
@@ -25,4 +26,10 @@ function guestOnly(req, res, next) {
   next();
 }
 
-module.exports = { HOME_PATH, SESSION_COOKIE, requireLogin, guestOnly };
+// A new account sees the Welcome screen once, before any other app page.
+function requireOnboarding(req, res, next) {
+  if (!req.user.onboardedAt && req.path !== WELCOME_PATH) return res.redirect(WELCOME_PATH);
+  next();
+}
+
+module.exports = { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, requireLogin, guestOnly, requireOnboarding };

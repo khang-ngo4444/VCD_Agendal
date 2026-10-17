@@ -4,13 +4,14 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
-const { SESSION_COOKIE, requireLogin } = require('./middleware/auth');
+const { SESSION_COOKIE, WELCOME_PATH, requireLogin, requireOnboarding } = require('./middleware/auth');
 const csrf = require('./middleware/csrf');
 const avatarUpload = require('./middleware/avatarUpload');
 const { showFlash } = require('./middleware/flash');
 const loadShell = require('./middleware/shell');
 const authRoutes = require('./routes/auth');
 const settingsRoutes = require('./routes/settings');
+const welcome = require('./controllers/welcomeController');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -64,7 +65,9 @@ app.get('/', (req, res) =>
 app.use(authRoutes);
 
 // Everything below needs a logged-in user
-app.use(requireLogin, loadShell);
+app.use(requireLogin, requireOnboarding, loadShell);
+app.get(WELCOME_PATH, welcome.show);
+app.post(WELCOME_PATH, welcome.complete);
 app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
 app.use(settingsRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));

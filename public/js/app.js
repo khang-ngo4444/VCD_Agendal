@@ -101,3 +101,10 @@ document.addEventListener('submit', (event) => {
 document.addEventListener('change', (event) => {
   if (event.target.matches('[data-autosubmit]')) event.target.form.requestSubmit();
 });
+
+// Welcome screen: preselect the browser's time zone when the list has it.
+const timeZoneSelect = document.querySelector('[data-detect-time-zone]');
+const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+if (timeZoneSelect && [...timeZoneSelect.options].some((option) => option.value === browserTimeZone)) {
+  timeZoneSelect.value = browserTimeZone;
+}
