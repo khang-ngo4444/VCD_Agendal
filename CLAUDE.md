@@ -15,6 +15,29 @@ Agendal: a personal task, habit, and calendar app built as the final project for
 - **`README.md` is background:** it describes the whole product. Where it disagrees with a card (e.g. README "categories" vs card "projects"), the card wins.
 - **Git Flow (README "Development Flow"):** branch `feature/<name>` or `task/<name>` from `develop`, then open a PR back into `develop`. Never commit directly to `main` or `develop`.
 
+## Working rules (3-person team)
+
+1. **Sync before any work.**
+   - Run `git fetch --prune origin` and fast-forward `develop` (`git merge --ff-only origin/develop`).
+   - Note any new teammate commits or branches, and which of our branches have merged.
+   - On Trello, check "In progress", "Testing", card members and recent board activity, so you don't take a card someone else already has.
+   - Report a short status before starting.
+2. **Start a card:**
+   - Read its description, "Done when" line and Figma screen; use the README for background only.
+   - Branch from the fresh `develop`, move the card to "In progress", and add yourself to it.
+3. **One card per branch** (closely related cards may share one, with one commit per card). The work is finished when the card's "Done when" check passes, verified by running it.
+4. **Ask before every commit, push and PR.**
+   - Show the files and the commit message first.
+   - End commit messages with the `Co-Authored-By:` line when Claude wrote the change.
+5. **PRs:**
+   - The `gh` CLI isn't installed. After pushing, give the compare link with `develop` as the base: `https://github.com/khang-ngo4444/VCD_Agendal/compare/develop...<branch>?expand=1`. GitHub's default "pull/new" link targets `main`.
+   - Move the card to "Testing" when the PR is open, and to "Done" (ticked complete) once it's merged.
+   - Delete merged branches only when asked.
+6. **Trello API quirks (Trello MCP tools):**
+   - Card `pos` must be an integer; fractional values get scrambled, so space positions by 1000.
+   - The tools can't untick "complete", rename labels or add card members; ask a person to do those.
+   - Due dates are 10:00 UTC (17:00 ICT) at the end of the card's phase.
+
 ## Commands
 
 - `npm run seed`: replaces the demo user (`demo@agendal.app`) and its 4 projects, 40 tasks and 4 reminders. It's idempotent.
