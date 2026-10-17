@@ -16,6 +16,8 @@ const app = express();
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// Absolute base URL for canonical links and social preview images.
+app.locals.appUrl = (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
 
 // Helmet's default CSP already allows https: styles and fonts (Google Fonts) and blocks inline scripts.
 // Over plain http on localhost, upgrade-insecure-requests would break every asset, so it is production-only.
@@ -48,7 +50,14 @@ app.use(csrf);
 app.use(showFlash);
 
 // Public routes
-app.get('/', (req, res) => res.render('home', { title: 'Agendal' }));
+app.get('/', (req, res) =>
+  res.render('home', {
+    title: 'Agendal: plan the week, live the day',
+    description:
+      'A free planner for students: tasks, habits and projects in one place, with a Kanban board, a calendar and a daily list that stay in sync.',
+    canonicalPath: '/',
+  })
+);
 app.use(authRoutes);
 
 // Everything below needs a logged-in user

@@ -68,4 +68,4 @@ User, Project, Task and Reminder. Every document except User has an `owner` fiel
 
 Server-rendered MVC: routes → controllers → services → models, with EJS views in feature folders. Reminders, recurring-task generation and daily summaries run as background jobs, outside the request cycle. `/admin` routes need an administrator.
 
-Environment variables (`.env`, gitignored; template `.env.example`): `PORT`, `NODE_ENV`, `MONGODB_URI`, `SESSION_SECRET`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
+Environment variables (`.env`, gitignored; template `.env.example`): `PORT`, `APP_URL` (absolute base URL for canonical and social tags), `NODE_ENV`, `MONGODB_URI`, `SESSION_SECRET`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
