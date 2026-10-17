@@ -283,8 +283,67 @@ A possible project structure is:
 └── README.md
 ```
 
+## Development Flow
 
-### Configure Environment Variables
+This project follows **Git Flow** to maintain a structured development process and keep the production-ready codebase stable.
+
+### Branches
+
+| Branch | Purpose |
+|---|---|
+| `main` | Contains stable, production-ready code. |
+| `feature/<name>` | Develops new features. Branched from `develop` and merged back into `develop`. |
+| `task/<name>` | Handles small tasks, improvements, refactoring, or non-feature work. Branched from `develop` and merged back into `develop`. |
+| `hotfix/<name>` | Fixes critical production issues. Branched from `main` and merged back into both `main` and `develop`. |
+
+### Workflow
+
+1. **Create a branch:** Create a `feature/<name>` or `task/<name>` branch from `develop` for each feature or task.
+2. **Develop and commit:** Make changes on the dedicated branch using clear, descriptive commit messages.
+3. **Submit a Pull Request:** Open a PR targeting `develop` when the work is complete. Review and test changes before merging.
+4. **Plan a release:** Create a GitHub Milestone for each planned release (e.g., `v1.0.0`). Assign the relevant issues and tasks to the milestone and track their progress.
+5. **Release:** Once the milestone's required work is complete and tests pass, merge `develop` into `main` through a Pull Request. Tag the release commit (e.g., `v1.0.0`) and publish a GitHub Release.
+6. **Handle hotfixes:** For urgent production issues, create a `hotfix/<name>` branch from `main`. Merge the fix into both `main` and `develop`.
+
+### Branch Naming Convention
+
+Use lowercase names with hyphens to separate words.
+
+```text
+main
+develop
+feature/user-authentication
+feature/dashboard-ui
+task/update-dependencies
+task/refactor-api
+hotfix/login-error
+```
+
+### Rules
+
+- Never commit directly to `main` or `develop`; use Pull Requests.
+- Keep each feature or task branch focused on a single objective.
+- Ensure changes pass the relevant tests before merging.
+- Delete merged feature and task branches after integration.
+- Use semantic versioning (`MAJOR.MINOR.PATCH`) for releases where applicable.
+- Use GitHub Milestones to organize and track work planned for each release.
+- Use Git tags to identify release commits on `main`.
+- Keep `main` stable and deployable at all times.
+
+### Branch Overview
+
+```text
+main
+ ├── hotfix/login-error
+ └── develop
+      ├── feature/user-authentication
+      ├── feature/dashboard-ui
+      └── task/update-dependencies
+```
+
+Feature and task branches merge into `develop`. When a milestone is ready for release, merge `develop` into `main` and tag the release. Hotfixes originate from `main` and are merged into both `main` and `develop`.
+
+## Configure Environment Variables
 
 Create a `.env` file based on `.env.example`.
 
