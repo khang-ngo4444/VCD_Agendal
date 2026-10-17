@@ -13,7 +13,8 @@
     <h1 class="text-3xl font-bold tracking-tight">Activity log</h1>
     <p class="mt-1 text-sm text-muted">Security events, newest first · kept for <%= retentionDays %> days</p>
   </div>
-  <form method="get" action="/admin/activity" role="search" class="w-full sm:w-80">
+  <%# data-live-search: public/js/admin.js reloads the chips and results below as you type (Enter still works without JS) %>
+  <form method="get" action="/admin/activity" role="search" class="w-full sm:w-80" data-live-search>
     <% if (chip) { %><input type="hidden" name="action" value="<%= chip %>"><% } %>
     <label class="input h-10 w-full rounded-field border-0 bg-fill">
       <%- include('../partials/icon', { icon: 'search', cls: 'size-4 text-muted' }) %>
@@ -24,7 +25,7 @@
   </form>
 </div>
 
-<nav aria-label="Filter by action" class="mt-5 flex flex-wrap gap-2">
+<nav aria-label="Filter by action" class="mt-5 flex flex-wrap gap-2" data-live="chips">
   <a href="<%= link({ q: search }) %>" class="<%= chipClass(!chip) %>" <% if (!chip) { %>aria-current="page"<% } %>>All actions</a>
   <% filters.forEach((filter) => { %>
     <a href="<%= link({ action: filter.key, q: search }) %>" class="<%= chipClass(chip === filter.key) %>"
@@ -32,7 +33,8 @@
   <% }) %>
 </nav>
 
-<section class="mt-5 overflow-hidden rounded-box bg-base-100" aria-label="Events">
+<p class="sr-only" aria-live="polite" data-live-status></p>
+<section class="mt-5 overflow-hidden rounded-box bg-base-100" aria-label="Events" data-live="results">
   <% if (!entries.length) { %>
     <%- include('../partials/empty-state', {
       icon: 'clock',

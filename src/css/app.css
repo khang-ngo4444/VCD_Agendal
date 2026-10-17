@@ -159,6 +159,70 @@
   }
 }
 
+/* Loading bar (views/admin/_top.ejs, public/js/admin.js): while the next page is on its way it creeps towards 85%;
+   the new page starts without it. Fast pages never show it (admin.js waits 150 ms first). */
+.admin-console .nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  height: 3px;
+  width: 0;
+  opacity: 0;
+  background-color: var(--color-primary);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--color-primary) 60%, transparent);
+  pointer-events: none;
+}
+.admin-console .nav-progress.is-loading {
+  opacity: 1;
+  width: 85%;
+  transition:
+    width 8s cubic-bezier(0.1, 0.7, 0.2, 1),
+    opacity 150ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-console .nav-progress.is-loading {
+    width: 100%; /* a still bar instead of a moving one */
+    transition: opacity 150ms ease-out;
+  }
+}
+
+/* Skeleton bars in the results table while live search loads (public/js/admin.js builds them, so they are
+   plain CSS here: Tailwind doesn't scan public/js). The shimmer only runs when motion is allowed. */
+.admin-console .skel {
+  display: block;
+  height: 0.875rem;
+  width: 70%;
+  border-radius: 9999px;
+  background: var(--color-fill);
+}
+.admin-console tr:nth-child(odd) td:nth-child(even) .skel {
+  width: 45%;
+}
+.admin-console td:first-child .skel {
+  width: 85%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .admin-console .skel {
+    background: linear-gradient(
+        90deg,
+        var(--color-fill) 0%,
+        color-mix(in oklab, var(--color-base-content) 18%, transparent) 50%,
+        var(--color-fill) 100%
+      )
+      0 0 / 200% 100%;
+    animation: skel-shimmer 1.2s linear infinite;
+  }
+}
+@keyframes skel-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
 /* Chart tooltip: shown while the pointer is on a bar. */
 .admin-console .bar-tip {
   opacity: 0;

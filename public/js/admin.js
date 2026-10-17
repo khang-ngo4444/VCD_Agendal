@@ -2,6 +2,25 @@
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Loading bar along the top edge (.nav-progress): shown only if the next page takes longer than 150 ms.
+const progressBar = document.querySelector('.nav-progress');
+const PROGRESS_DELAY_MS = 150;
+let progressTimer;
+
+function startProgress() {
+  if (!progressBar) return;
+  clearTimeout(progressTimer);
+  progressTimer = setTimeout(() => progressBar.classList.add('is-loading'), PROGRESS_DELAY_MS);
+}
+
+function stopProgress() {
+  clearTimeout(progressTimer);
+  progressBar?.classList.remove('is-loading');
+}
+
+// A new page starts without the bar; this also clears it when Back restores a page from the cache.
+window.addEventListener('pageshow', stopProgress);
+
 // A button whose form is on its way: spinner, disabled, so a second click can't send it twice.
 function showPending(button) {
   if (!button || button.disabled) return;
@@ -41,7 +60,8 @@ document.addEventListener('submit', (event) => {
       if (lockDialog.returnValue !== 'confirm') return;
       form.elements.reason.value = reasonInput.value.trim();
       showPending(form.querySelector('button'));
-      form.submit(); // form.submit() fires no submit event, so the pending state is set here
+      startProgress();
+      form.submit(); // form.submit() fires no submit event, so the pending state and loading bar start here
     },
     { once: true }
   );
@@ -101,3 +121,87 @@ if (!reducedMotion) {
     requestAnimationFrame(step);
   });
 }
+
+// Live search (Users, Activity log): 300 ms after the last keystroke the chips and results are fetched and swapped in,
+// and the address bar follows (?q=…), so Back, Reload and shared links still match. Enter and Esc use it too.
+// Any failure falls back to a normal page load. Without JS the form simply submits on Enter.
+const liveForm = document.querySelector('form[data-live-search]');
+const LIVE_DELAY_MS = 300;
+const SKELETON_DELAY_MS = 150; // fast answers swap straight in, without a flash of grey rows
+const SKELETON_ROWS = 6;
+let liveTimer;
+let liveRequest;
+
+// Grey placeholder rows in the table body while results load (one bar per column).
+function showSkeleton(results) {
+  const columns = results.querySelectorAll('thead th').length || 4;
+  const row = `<tr class="border-t border-base-300">${'<td class="px-4 py-3.5"><span class="skel"></span></td>'.repeat(columns)}</tr>`;
+  const body = results.querySelector('tbody');
+  if (body) body.innerHTML = row.repeat(SKELETON_ROWS);
+  else results.innerHTML = `<table class="w-full"><tbody>${row.repeat(SKELETON_ROWS)}</tbody></table>`;
+}
+
+async function liveSearch() {
+  // getAttribute, not .action: the Activity form has a hidden field named "action", which .action would return.
+  const url = new URL(liveForm.getAttribute('action'), window.location.href);
+  url.search = new URLSearchParams(new FormData(liveForm)).toString();
+  if (url.href === window.location.href) return;
+
+  liveRequest?.abort(); // an older, slower answer must not overwrite a newer one
+  const request = new AbortController();
+  liveRequest = request;
+  const results = document.querySelector('[data-live="results"]');
+  results.setAttribute('aria-busy', 'true');
+  const skeletonTimer = setTimeout(() => showSkeleton(results), SKELETON_DELAY_MS);
+
+  try {
+    const response = await fetch(url, { signal: request.signal, headers: { Accept: 'text/html' } });
+    if (!response.ok || !response.url.startsWith(url.origin + url.pathname)) throw new Error(`HTTP ${response.status}`);
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+    for (const name of ['chips', 'results']) {
+      const fresh = page.querySelector(`[data-live="${name}"]`);
+      if (!fresh) throw new Error(`no ${name} in the response`);
+      document.querySelector(`[data-live="${name}"]`).replaceWith(fresh);
+    }
+    window.history.replaceState(null, '', url);
+    // Screen readers hear the new count ("Showing 1–3 of 3") or the empty-state heading.
+    const fresh = document.querySelector('[data-live="results"]');
+    const summary = fresh.querySelector('.border-t > span, h2');
+    document.querySelector('[data-live-status]').textContent = summary?.textContent.trim() ?? '';
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    window.location.assign(url); // e.g. the session ended: let the server answer with a real page
+  } finally {
+    clearTimeout(skeletonTimer);
+    if (liveRequest === request) document.querySelector('[data-live="results"]')?.removeAttribute('aria-busy');
+  }
+}
+
+liveForm?.addEventListener('input', () => {
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(liveSearch, LIVE_DELAY_MS);
+});
+
+// Enter (and Esc, which calls requestSubmit) search straight away instead of loading a new page.
+liveForm?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  clearTimeout(liveTimer);
+  liveSearch();
+});
+
+// Start the loading bar for links to other admin pages (not new tabs, downloads or anchors on this page)
+// and for forms that really send. Registered last, so the Lock form's own handler has already run.
+document.addEventListener('click', (event) => {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const link = event.target.closest('a[href]');
+  if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+  const url = new URL(link.href, window.location.href);
+  if (url.origin !== window.location.origin) return;
+  if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) return;
+  startProgress();
+});
+
+document.addEventListener('submit', (event) => {
+  if (event.defaultPrevented || event.target.method === 'dialog') return;
+  startProgress();
+});

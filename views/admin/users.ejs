@@ -34,7 +34,8 @@
       <%= plural(chips[0].count, 'account') %> · <%= count('locked') %> locked · <%= plural(chips.find((item) => item.key === 'admins').count, 'administrator') %>
     </p>
   </div>
-  <form method="get" action="/admin/users" role="search" class="w-full sm:w-80">
+  <%# data-live-search: public/js/admin.js reloads the chips and results below as you type (Enter still works without JS) %>
+  <form method="get" action="/admin/users" role="search" class="w-full sm:w-80" data-live-search>
     <% if (chip) { %><input type="hidden" name="status" value="<%= chip %>"><% } %>
     <label class="input h-10 w-full rounded-field border-0 bg-fill">
       <%- include('../partials/icon', { icon: 'search', cls: 'size-4 text-muted' }) %>
@@ -45,14 +46,15 @@
   </form>
 </div>
 
-<nav aria-label="Filter users" class="mt-5 flex flex-wrap gap-2">
+<nav aria-label="Filter users" class="mt-5 flex flex-wrap gap-2" data-live="chips">
   <% chips.forEach((item) => { %>
     <a href="<%= link({ status: item.key, q: search }) %>" class="<%= chipClass(chip === item.key) %>"
       <% if (chip === item.key) { %>aria-current="page"<% } %>><%= item.label %> · <%= item.count.toLocaleString('en-US') %></a>
   <% }) %>
 </nav>
 
-<section class="mt-5 overflow-hidden rounded-box bg-base-100" aria-label="Accounts">
+<p class="sr-only" aria-live="polite" data-live-status></p>
+<section class="mt-5 overflow-hidden rounded-box bg-base-100" aria-label="Accounts" data-live="results">
   <% if (!users.length) { %>
     <%- include('../partials/empty-state', {
       icon: 'user',
