@@ -2,7 +2,7 @@
   <% if (locals.flash) { %><%- include('toast', { ...flash, actionLabel: null }) %><% } %>
 </div>
 <% ['success', 'info', 'error'].forEach((type) => { %>
-  <template id="toast-template-<%= type %>"><%- include('toast', { type, message: '', actionLabel: null }) %></template>
+  <template id="toast-template-<%= type %>"><%- include('toast', { type, message: '', actionLabel: null, undoUrl: null }) %></template>
 <% }) %>
 <%- include('confirm-dialog') %>
 </body>

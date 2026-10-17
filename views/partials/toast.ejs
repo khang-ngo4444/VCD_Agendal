@@ -1,5 +1,6 @@
 <%#
-  One toast on the inverse surface (Figma DS 10). Locals: type ('success' | 'info' | 'error'), message, actionLabel?
+  One toast on the inverse surface (Figma DS 10). Locals: type ('success' | 'info' | 'error'), message, actionLabel?,
+  undoUrl? (server-rendered Undo: a small form, so it works without JavaScript)
   The server renders it for flash messages; public/js/app.js clones it from the templates in footer.ejs.
 %>
 <%
@@ -16,6 +17,13 @@
     <%- include('icon', { icon: variant.icon, cls: 'size-3' }) %>
   </span>
   <span class="grow" data-toast-message><%= message %></span>
-  <button type="button" class="min-h-8 font-semibold text-inverse-primary hover:underline" data-toast-action
-    <% if (!locals.actionLabel) { %>hidden<% } %>><%= locals.actionLabel || '' %></button>
+  <% if (locals.undoUrl) { %>
+    <form method="post" action="<%= undoUrl %>">
+      <%- include('csrf') %>
+      <button type="submit" class="min-h-8 font-semibold text-inverse-primary hover:underline">Undo</button>
+    </form>
+  <% } else { %>
+    <button type="button" class="min-h-8 font-semibold text-inverse-primary hover:underline" data-toast-action
+      <% if (!locals.actionLabel) { %>hidden<% } %>><%= locals.actionLabel || '' %></button>
+  <% } %>
 </div>
