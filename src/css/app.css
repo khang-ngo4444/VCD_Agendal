@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@source "../../views";
+
+@plugin "daisyui" {
+  themes: false;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tokens from Figma "00 · Design System" → DS 01 Colour tokens */
+@plugin "daisyui/theme" {
+  name: "agendal";
+  default: true;
+  color-scheme: light;
+  --color-base-100: #ffffff; /* Base/Surface */
+  --color-base-200: #f5f5f7; /* Base/Canvas */
+  --color-base-300: #d2d2d7; /* Neutral/Border */
+  --color-base-content: #1d1d1f; /* Neutral/Text Primary */
+  --color-primary: #0071e3; /* Primary/Accent */
+  --color-primary-content: #ffffff;
+  --color-neutral: #1d1d1f;
+  --color-neutral-content: #ffffff;
+  --color-error: #ff3b30;
+  --color-error-content: #ffffff;
+  --color-success: #34c759;
+  --color-success-content: #ffffff;
+  --color-warning: #ff9f0a;
+  --color-warning-content: #1d1d1f;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+}
+
+@plugin "daisyui/theme" {
+  name: "agendal-dark";
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #1c1c1e;
+  --color-base-200: #000000;
+  --color-base-300: #424245;
+  --color-base-content: #f5f5f7;
+  --color-primary: #2997ff;
+  --color-primary-content: #ffffff;
+  --color-neutral: #f5f5f7;
+  --color-neutral-content: #1d1d1f;
+  --color-error: #ff453a;
+  --color-error-content: #ffffff;
+  --color-success: #30d158;
+  --color-success-content: #1d1d1f;
+  --color-warning: #ff9f0a;
+  --color-warning-content: #1d1d1f;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+}
