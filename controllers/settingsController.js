@@ -4,7 +4,11 @@ const sharp = require('sharp');
 const { flash } = require('../middleware/flash');
 const { isValidTimeZone, timeZoneOptions } = require('../config/timeZones');
 
+const User = require('../models/User');
+
 const MAX_NAME_LENGTH = 80;
+const THEMES = User.schema.path('preferences.theme').enumValues;
+const ACCENTS = User.schema.path('preferences.accentColour').enumValues;
 const AVATAR_SIZE_PX = 256;
 const AVATAR_DIR = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
 
@@ -64,4 +68,20 @@ exports.updateAvatar = async (req, res) => {
   await req.user.save();
   flash(req, 'success', 'Photo updated.');
   res.redirect('/settings/profile');
+};
+
+exports.showAppearance = (req, res) =>
+  res.render('settings/appearance', { title: 'Appearance · Settings · Agendal', values: req.user.preferences });
+
+exports.updateAppearance = async (req, res) => {
+  const body = req.body ?? {};
+  // Radio buttons can only send a listed value, so anything else is a crafted request: keep the old setting.
+  const { preferences } = req.user;
+  if (THEMES.includes(body.theme)) preferences.theme = body.theme;
+  if (ACCENTS.includes(body.accentColour)) preferences.accentColour = body.accentColour;
+  if (body.weekStartsOn === '0' || body.weekStartsOn === '1') preferences.weekStartsOn = Number(body.weekStartsOn);
+
+  await req.user.save();
+  flash(req, 'success', 'Appearance saved.');
+  res.redirect('/settings/appearance');
 };
