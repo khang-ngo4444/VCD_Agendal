@@ -13,6 +13,7 @@
 @theme inline {
   --color-muted: var(--muted); /* Neutral/Text Secondary */
   --color-fill: var(--fill); /* Neutral/Fill: input backgrounds */
+  --color-inverse-primary: var(--inverse-primary); /* links on the inverse (toast) surface */
 }
 
 /* Tokens from Figma "00 · Design System" → DS 01 Colour tokens */
@@ -26,6 +27,7 @@
   --color-base-content: #1d1d1f; /* Neutral/Text Primary */
   --muted: #6e6e73;
   --fill: #7878801f;
+  --inverse-primary: #2997ff;
   --color-primary: #0071e3; /* Primary/Accent */
   --color-primary-content: #ffffff;
   --color-neutral: #1d1d1f;
@@ -56,6 +58,7 @@
   --color-base-content: #f5f5f7;
   --muted: #a1a1a6;
   --fill: #7878803d;
+  --inverse-primary: #0071e3;
   --color-primary: #2997ff;
   --color-primary-content: #ffffff;
   --color-neutral: #f5f5f7;
