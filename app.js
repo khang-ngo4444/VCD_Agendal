@@ -1,6 +1,10 @@
 const path = require('node:path');
 const express = require('express');
 const mongoose = require('mongoose');
+const session = require('express-session');
+const { MongoStore } = require('connect-mongo');
+
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const app = express();
 
@@ -9,6 +13,22 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
+app.use(
+  session({
+    name: 'agendal.sid',
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    rolling: true, // each visit restarts the 30 days
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI, ttl: SESSION_MAX_AGE_MS / 1000 }),
+    cookie: {
+      maxAge: SESSION_MAX_AGE_MS,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    },
+  })
+);
 
 app.get('/', (req, res) => res.render('home', { title: 'Agendal' }));
 
