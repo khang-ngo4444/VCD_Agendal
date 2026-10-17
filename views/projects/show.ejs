@@ -54,6 +54,17 @@
 
 <section class="mt-6" aria-labelledby="open-heading">
   <h2 id="open-heading" class="mb-2 font-semibold">Open · <%= openTasks.length %></h2>
+  <form method="post" action="/tasks" class="mb-3 flex gap-2" novalidate>
+    <%- include('../partials/csrf') %>
+    <input type="hidden" name="project" value="<%= project ? project._id : '' %>">
+    <input type="hidden" name="returnTo" value="<%= currentPath %>">
+    <label for="project-quick-add" class="sr-only">Add a task to <%= project ? project.name : 'the Inbox' %></label>
+    <input id="project-quick-add" name="title" type="text" maxlength="200" required
+      placeholder="Add a task to <%= project ? project.name : 'the Inbox' %> and press Enter" class="input h-11 grow bg-base-100">
+    <button type="submit" class="btn btn-primary h-11 rounded-full px-4" aria-label="Add task">
+      <%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %><span class="hidden sm:inline">Add</span>
+    </button>
+  </form>
   <% if (openTasks.length) { %>
     <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
       <% openTasks.forEach((task) => { %><%- include('../tasks/_row', { task, timeZone: currentUser.timeZone }) %><% }) %>
