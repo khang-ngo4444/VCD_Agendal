@@ -16,13 +16,16 @@ const userSchema = new Schema(
       weekStartsOn: { type: Number, enum: [0, 1], default: 1 }, // 0 = Sunday, 1 = Monday
     },
     googleId: { type: String, unique: true, sparse: true },
+    sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)
   },
   { timestamps: true }
 );
 
 // Register, reset and change password all go through here, so the hashing stays in one place.
+// A new password also ends every existing session; the caller logs the current device back in if it wants.
 userSchema.methods.setPassword = async function (password) {
   this.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+  this.sessionVersion += 1;
 };
 
 userSchema.methods.checkPassword = function (password) {
