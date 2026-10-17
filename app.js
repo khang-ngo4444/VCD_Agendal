@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const { SESSION_COOKIE, requireLogin } = require('./middleware/auth');
+const csrf = require('./middleware/csrf');
 const authRoutes = require('./routes/auth');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -41,6 +42,7 @@ app.use(
     },
   })
 );
+app.use(csrf);
 
 // Public routes
 app.get('/', (req, res) => res.render('home', { title: 'Agendal' }));

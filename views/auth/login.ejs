@@ -14,6 +14,7 @@
       <% } %>
 
       <form method="post" action="/login" class="mt-6" novalidate>
+        <%- include('../partials/csrf') %>
         <%- include('../partials/field', {
           name: 'email', label: 'Email', type: 'email', icon: 'mail', autocomplete: 'email', value: values.email,
         }) %>

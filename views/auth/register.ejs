@@ -7,6 +7,7 @@
       <p class="mt-2 text-sm text-muted">Free for students. Takes about 30 seconds.</p>
 
       <form method="post" action="/register" class="mt-6" novalidate>
+        <%- include('../partials/csrf') %>
         <%- include('../partials/field', {
           name: 'name', label: 'Full name', type: 'text', icon: 'user', autocomplete: 'name',
           value: values.name, error: errors.name,
