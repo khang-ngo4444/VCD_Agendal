@@ -1,4 +1,7 @@
 const { Schema, model } = require('mongoose');
+const bcrypt = require('bcryptjs');
+
+const BCRYPT_COST = 12;
 
 const userSchema = new Schema(
   {
@@ -16,5 +19,15 @@ const userSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Register, reset and change password all go through here, so the hashing stays in one place.
+userSchema.methods.setPassword = async function (password) {
+  this.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+};
+
+userSchema.methods.checkPassword = function (password) {
+  if (!this.passwordHash) return Promise.resolve(false); // Google-only account
+  return bcrypt.compare(password, this.passwordHash);
+};
 
 module.exports = model('User', userSchema);
