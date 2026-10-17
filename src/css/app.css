@@ -28,8 +28,8 @@
   --muted: #6e6e73;
   --fill: #7878801f;
   --inverse-primary: #2997ff;
-  --color-primary: #0071e3; /* Primary/Accent */
-  --color-primary-content: #ffffff;
+  --color-primary: var(--accent, #0071e3); /* Primary/Accent, or the user's accent colour */
+  --color-primary-content: var(--accent-content, #ffffff);
   --color-neutral: #1d1d1f;
   --color-neutral-content: #ffffff;
   --color-error: #ff3b30;
@@ -59,8 +59,8 @@
   --muted: #a1a1a6;
   --fill: #7878803d;
   --inverse-primary: #0071e3;
-  --color-primary: #2997ff;
-  --color-primary-content: #ffffff;
+  --color-primary: var(--accent-dark, #2997ff);
+  --color-primary-content: var(--accent-dark-content, #ffffff);
   --color-neutral: #f5f5f7;
   --color-neutral-content: #1d1d1f;
   --color-error: #ff453a;
@@ -77,4 +77,27 @@
   --border: 1px;
   --depth: 0;
   --noise: 0;
+}
+
+/* Accent colours from Figma W31 (Settings → Appearance), picked with <html data-accent="…">.
+   Each has a light-theme and a dark-theme value; blue is the theme default above. */
+[data-accent="purple"] {
+  --accent: #8b5cf6;
+  --accent-dark: #a78bfa;
+  --accent-dark-content: #1d1d1f;
+}
+[data-accent="green"] {
+  --accent: #2e9e6a;
+  --accent-dark: #30d158;
+  --accent-dark-content: #1d1d1f;
+}
+[data-accent="orange"] {
+  --accent: #e8730c;
+  --accent-dark: #ff9f0a;
+  --accent-dark-content: #1d1d1f;
+}
+[data-accent="graphite"] {
+  --accent: #1d1d1f;
+  --accent-dark: #f5f5f7;
+  --accent-dark-content: #1d1d1f;
 }
