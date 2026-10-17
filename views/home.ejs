@@ -59,5 +59,28 @@
       <% }) %>
     </ul>
   </section>
+
+  <%
+    const steps = [
+      { name: 'Capture it', text: 'Type a title and press Enter. The details can wait until you need them.' },
+      { name: 'Plan it', text: 'Move it on the board, or drag it into a free slot on the calendar.' },
+      { name: 'Get it done', text: 'Work through your Daily List and tick things off as you go.' },
+    ];
+  %>
+  <section id="how-it-works" class="scroll-mt-20 bg-base-200 py-20" aria-labelledby="how-heading">
+    <div class="mx-auto max-w-[1120px] px-4">
+      <p class="text-sm font-semibold text-primary">How it works</p>
+      <h2 id="how-heading" class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Three steps, every day.</h2>
+      <ol class="mt-10 grid gap-4 md:grid-cols-3">
+        <% steps.forEach((step, index) => { %>
+          <li class="rounded-box bg-base-100 p-7">
+            <span class="grid size-10 place-items-center rounded-full bg-primary font-semibold text-primary-content" aria-hidden="true"><%= index + 1 %></span>
+            <h3 class="mt-6 text-xl font-semibold"><%= step.name %></h3>
+            <p class="mt-2 text-sm text-muted"><%= step.text %></p>
+          </li>
+        <% }) %>
+      </ol>
+    </div>
+  </section>
 </main>
 <%- include('partials/footer') %>
