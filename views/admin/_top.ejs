@@ -1,0 +1,81 @@
+<%#
+  Admin console layout (Figma page 05 · Admin, AD-W01 desktop / AD-M01 phone). Pair with admin/_bottom.
+  Its own navigation: no Today, Board, Calendar or Projects. Each admin card adds its page to adminNav.
+%>
+<%
+  const adminNav = [
+    { href: '/admin', label: 'Overview', icon: 'chart' },
+    // Next cards: { href: '/admin/users', label: 'Users', icon: 'user' }, { href: '/admin/activity', label: 'Activity log', icon: 'inbox' }
+  ];
+  const displayName = currentUser.name || currentUser.email;
+  const isCurrent = (href) => currentPath === href;
+%>
+<%- include('../partials/header') %>
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-field focus:bg-base-100 focus:px-4 focus:py-2">Skip to content</a>
+<div class="flex min-h-screen bg-base-200">
+  <nav aria-label="Admin" class="hidden w-[260px] shrink-0 flex-col border-r border-base-300 bg-base-100 p-4 lg:flex">
+    <a href="/admin" class="mb-4 flex items-center gap-2.5 px-1 text-lg font-bold">
+      <span class="grid size-8 place-items-center rounded-lg bg-neutral text-neutral-content">
+        <%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %>
+      </span>
+      Agendal
+      <span class="rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-primary-content">ADMIN</span>
+    </a>
+    <div class="rounded-box bg-primary/10 px-3 py-2.5">
+      <p class="text-sm font-semibold text-primary">Admin console</p>
+      <p class="text-xs text-muted">Separate from the app. Every action is recorded.</p>
+    </div>
+
+    <h2 class="mt-6 mb-1 px-2.5 text-xs font-semibold text-muted">Manage</h2>
+    <ul class="space-y-0.5">
+      <% adminNav.forEach((item) => { %>
+        <li>
+          <a href="<%= item.href %>" class="flex h-9 items-center gap-3 rounded-field px-2.5 text-sm <%= isCurrent(item.href) ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-base-200' %>"
+            <% if (isCurrent(item.href)) { %>aria-current="page"<% } %>>
+            <%- include('../partials/icon', { icon: item.icon, cls: 'size-4 shrink-0' }) %>
+            <%= item.label %>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
+
+    <div class="mt-auto flex items-center gap-3 border-t border-base-300 pt-4">
+      <%- include('../partials/avatar', { user: currentUser, cls: 'size-9 text-sm' }) %>
+      <span class="min-w-0 grow">
+        <span class="block truncate text-sm font-semibold"><%= displayName %></span>
+        <span class="block text-xs text-muted">Administrator</span>
+      </span>
+      <button type="submit" form="logout-form" class="btn btn-ghost btn-sm rounded-full text-error">Log out</button>
+    </div>
+  </nav>
+
+  <div class="flex min-w-0 grow flex-col">
+    <header class="sticky top-0 z-30 border-b border-base-300 bg-base-100/90 backdrop-blur lg:hidden">
+      <div class="flex h-14 items-center gap-2 px-4">
+        <a href="/admin" class="flex items-center gap-2 font-bold">
+          <span class="grid size-8 place-items-center rounded-lg bg-neutral text-neutral-content">
+            <%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %>
+          </span>
+          Agendal
+          <span class="rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-primary-content">ADMIN</span>
+        </a>
+        <details class="dropdown dropdown-end ml-auto" data-dismissable>
+          <summary class="list-none cursor-pointer rounded-full" aria-label="Account menu for <%= displayName %>">
+            <%- include('../partials/avatar', { user: currentUser, cls: 'size-9 text-sm' }) %>
+          </summary>
+          <ul class="menu dropdown-content z-50 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+            <li class="menu-title truncate"><%= displayName %></li>
+            <li><button type="submit" form="logout-form" class="text-error">Log out</button></li>
+          </ul>
+        </details>
+      </div>
+      <% if (adminNav.length > 1) { %>
+        <nav aria-label="Admin sections" class="flex overflow-x-auto px-2">
+          <% adminNav.forEach((item) => { %>
+            <a href="<%= item.href %>" class="flex h-11 grow items-center justify-center whitespace-nowrap border-b-2 px-3 text-sm <%= isCurrent(item.href) ? 'border-primary font-semibold text-primary' : 'border-transparent text-muted' %>"
+              <% if (isCurrent(item.href)) { %>aria-current="page"<% } %>><%= item.label %></a>
+          <% }) %>
+        </nav>
+      <% } %>
+    </header>
+    <main id="main" class="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 lg:px-8 lg:py-8">

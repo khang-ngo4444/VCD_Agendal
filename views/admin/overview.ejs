@@ -1,0 +1,14 @@
+<%- include('_top') %>
+<h1 class="text-3xl font-bold tracking-tight">Admin overview</h1>
+<p class="mt-1 text-sm text-muted">System numbers, updated each time you open this page.</p>
+
+<ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <% stats.forEach((stat) => { %>
+    <li class="rounded-box bg-base-100 p-5">
+      <p class="text-sm text-muted"><%= stat.label %></p>
+      <p class="mt-1 text-4xl font-bold tabular-nums"><%= stat.value.toLocaleString('en-US') %></p>
+      <% if (stat.hint) { %><p class="mt-1 text-xs text-muted"><%= stat.hint %></p><% } %>
+    </li>
+  <% }) %>
+</ul>
+<%- include('_bottom') %>

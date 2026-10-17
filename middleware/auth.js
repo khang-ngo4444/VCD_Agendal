@@ -2,6 +2,7 @@ const User = require('../models/User');
 
 const HOME_PATH = '/today'; // the Daily List
 const WELCOME_PATH = '/welcome';
+const ADMIN_PATH = '/admin'; // the admin console
 const SESSION_COOKIE = 'agendal.sid';
 
 // Logs the user in on this device. A fresh session ID on every login stops session fixation.
@@ -42,4 +43,28 @@ function requireOnboarding(req, res, next) {
   next();
 }
 
-module.exports = { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession, requireLogin, guestOnly, requireOnboarding };
+// Admin accounts only use the admin console: any app page (and so every login redirect) sends them to /admin.
+function keepAdminsInConsole(req, res, next) {
+  if (req.user.role === 'admin') return res.redirect(ADMIN_PATH);
+  next();
+}
+
+// Used inside the admin router. Anyone else skips the whole router and ends up at the normal 404 page,
+// exactly like any unknown address, so /admin doesn't reveal that it exists.
+function requireAdmin(req, res, next) {
+  if (req.user?.role === 'admin') return next();
+  next('router');
+}
+
+module.exports = {
+  HOME_PATH,
+  WELCOME_PATH,
+  ADMIN_PATH,
+  SESSION_COOKIE,
+  startSession,
+  requireLogin,
+  guestOnly,
+  requireOnboarding,
+  keepAdminsInConsole,
+  requireAdmin,
+};

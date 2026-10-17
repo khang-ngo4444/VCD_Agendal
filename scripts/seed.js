@@ -1,4 +1,5 @@
-// Demo data: one user, 4 projects, 40 tasks across the Daily List, Kanban and Calendar, a few reminders.
+// Demo data: one user, 4 projects, 40 tasks across the Daily List, Kanban and Calendar, a few reminders,
+// plus the admin account for the /admin console.
 // Run with `npm run seed`. Re-running replaces the previous demo data.
 const mongoose = require('mongoose');
 const User = require('../models/User');
@@ -8,6 +9,8 @@ const Reminder = require('../models/Reminder');
 
 const DEMO_EMAIL = 'demo@agendal.app';
 const DEMO_PASSWORD = 'demo1234';
+const ADMIN_EMAIL = 'admin@agendal.app';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234'; // set ADMIN_PASSWORD in .env for anything but local demos
 
 const PROJECTS = [
   ['University', '#3b82f6'],
@@ -107,6 +110,14 @@ async function seed() {
   );
 
   console.log(`Seeded ${DEMO_EMAIL} (password ${DEMO_PASSWORD}): ${projects.length} projects, ${tasks.length} tasks, ${upcoming.length} reminders`);
+
+  // The admin account only uses the console, so it gets no projects or tasks. Re-running resets its password.
+  const admin = (await User.findOne({ email: ADMIN_EMAIL })) ?? new User({ email: ADMIN_EMAIL, name: 'Agendal Admin' });
+  admin.role = 'admin';
+  admin.onboardedAt ??= new Date();
+  await admin.setPassword(ADMIN_PASSWORD);
+  await admin.save();
+  console.log(`Seeded ${ADMIN_EMAIL} (password ${process.env.ADMIN_PASSWORD ? 'from ADMIN_PASSWORD' : ADMIN_PASSWORD}): opens /admin`);
 }
 
 seed()

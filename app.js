@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
-const { SESSION_COOKIE, WELCOME_PATH, requireLogin, requireOnboarding } = require('./middleware/auth');
+const { SESSION_COOKIE, WELCOME_PATH, requireLogin, requireOnboarding, keepAdminsInConsole } = require('./middleware/auth');
 const csrf = require('./middleware/csrf');
 const avatarUpload = require('./middleware/avatarUpload');
 const { showFlash } = require('./middleware/flash');
@@ -15,6 +15,7 @@ const { passport, enabledProviders } = require('./config/passport');
 const settingsRoutes = require('./routes/settings');
 const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
+const adminRoutes = require('./routes/admin');
 const welcome = require('./controllers/welcomeController');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -86,8 +87,11 @@ app.get('/terms', (req, res) =>
 app.use(authRoutes);
 app.use(oauthRoutes);
 
-// Everything below needs a logged-in user
-app.use(requireLogin, requireOnboarding, loadShell);
+// Admin console: its own layout and routes. Non-admins fall through to the 404 below.
+app.use('/admin', requireLogin, adminRoutes);
+
+// Everything below needs a logged-in user. Admin accounts are sent to /admin instead.
+app.use(requireLogin, keepAdminsInConsole, requireOnboarding, loadShell);
 app.get(WELCOME_PATH, welcome.show);
 app.post(WELCOME_PATH, welcome.complete);
 app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
@@ -95,6 +99,9 @@ app.use(settingsRoutes);
 app.use(projectRoutes);
 app.use(taskRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
+
+// No route matched: the same page for every unknown address (and for /admin when you are not an admin).
+app.use((req, res) => res.status(404).render('errors/404', { title: 'Page not found · Agendal' }));
 
 module.exports = app;
 

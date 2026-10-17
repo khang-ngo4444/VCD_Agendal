@@ -21,6 +21,7 @@ const userSchema = new Schema(
     name: { type: String, trim: true },
     avatar: String,
     timeZone: { type: String, default: 'Asia/Ho_Chi_Minh' },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' }, // admins only use the /admin console
     preferences: {
       theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
       accentColour: { type: String, enum: ['blue', 'purple', 'green', 'orange', 'graphite'], default: 'blue' },
