@@ -53,8 +53,9 @@
       <% checkIns.forEach((day, i) => { const today = i === checkIns.length - 1; %>
         <%# .bar / .bar-tip (src/css/app.css): the bar lights up and its number shows while the pointer is on it %>
         <div class="bar group flex h-full flex-1 items-end">
-          <div class="relative w-full rounded-t-sm <%= today ? 'bg-primary' : 'bg-primary/20 group-hover:bg-primary/60' %>"
-            style="height: <%= checkInMax ? Math.max(2, Math.round((day.count / checkInMax) * 100)) : 2 %>%">
+          <%# grow-up + --i: the bars rise one after another, left to right (src/css/app.css) %>
+          <div class="grow-up relative w-full rounded-t-sm <%= today ? 'bg-primary' : 'bg-primary/20 group-hover:bg-primary/60' %>"
+            style="--i: <%= i %>; height: <%= checkInMax ? Math.max(2, Math.round((day.count / checkInMax) * 100)) : 2 %>%">
             <span class="bar-tip absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 rounded-field bg-neutral px-2 py-1 text-xs whitespace-nowrap text-neutral-content shadow">
               <%= shortDate(day.date) %> · <%= n(day.count) %> check-ins
             </span>
@@ -80,14 +81,14 @@
   <section class="rounded-box bg-base-100 p-6" aria-labelledby="content-heading">
     <h2 id="content-heading" class="font-semibold">Content created · all time</h2>
     <ul class="mt-4 space-y-4">
-      <% content.forEach((item) => { %>
+      <% content.forEach((item, i) => { %>
         <li>
           <div class="flex items-center justify-between text-sm">
             <span class="flex items-center gap-2 font-medium"><span class="size-2.5 rounded-full <%= contentTone[item.key] %>" aria-hidden="true"></span><%= item.label %></span>
             <span class="text-muted tabular-nums"><%= n(item.count) %></span>
           </div>
           <div class="mt-1.5 h-1.5 rounded-full bg-fill" aria-hidden="true">
-            <div class="h-full rounded-full <%= contentTone[item.key] %>" style="width: <%= Math.round((item.count / contentMax) * 100) %>%"></div>
+            <div class="grow-x h-full rounded-full <%= contentTone[item.key] %>" style="--i: <%= i %>; width: <%= Math.round((item.count / contentMax) * 100) %>%"></div>
           </div>
         </li>
       <% }) %>

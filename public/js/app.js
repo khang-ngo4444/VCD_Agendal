@@ -40,9 +40,18 @@ drawer?.addEventListener('change', () => {
 // Toasts (views/partials/toast.ejs). Undo actions need the full 5 seconds, so hover or focus pauses the timer.
 const TOAST_DURATION_MS = 5000;
 
+// Pages that animate toasts out (the admin console, src/css/app.css) get [data-leaving] and a moment to play it;
+// elsewhere there is no animation and the toast goes at once, as before.
+function removeToast(toastElement) {
+  toastElement.dataset.leaving = '';
+  if (getComputedStyle(toastElement).animationName === 'none') return toastElement.remove();
+  toastElement.addEventListener('animationend', () => toastElement.remove(), { once: true });
+  setTimeout(() => toastElement.remove(), 400); // in case the animation never runs (e.g. a background tab)
+}
+
 function dismissLater(toastElement) {
   let timer;
-  const start = () => (timer = setTimeout(() => toastElement.remove(), TOAST_DURATION_MS));
+  const start = () => (timer = setTimeout(() => removeToast(toastElement), TOAST_DURATION_MS));
   const pause = () => clearTimeout(timer);
   toastElement.addEventListener('mouseenter', pause);
   toastElement.addEventListener('mouseleave', start);
