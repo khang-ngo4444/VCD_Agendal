@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Task = require('../models/Task');
 const { RETENTION_DAYS } = require('../models/ActivityLog');
 const activity = require('../services/activity');
+const adminUsers = require('../services/adminUsers');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -24,6 +25,17 @@ exports.overview = async (req, res) => {
       { label: 'Locked out now', value: lockedOut, hint: '10 failed logins · 15 minutes' },
       { label: 'Tasks created', value: tasksCreated, hint: 'Not counting deleted tasks' },
     ],
+  });
+};
+
+// Users (AD-W02): every account, newest first, with chips, search and pages of 50.
+exports.users = async (req, res) => {
+  const page = await adminUsers.listUsers(req.query);
+  res.render('admin/users', {
+    title: 'Users · Agendal Admin',
+    ...page,
+    timeZone: req.user.timeZone || 'UTC',
+    now: new Date(),
   });
 };
 

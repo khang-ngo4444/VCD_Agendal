@@ -10,6 +10,8 @@ async function startSession(req, user, { remember = true } = {}) {
   await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
   req.session.userId = user.id;
   req.session.sessionVersion = user.sessionVersion;
+  user.lastLoginAt = new Date();
+  await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: user.lastLoginAt } });
   if (!remember) req.session.cookie.maxAge = null; // cookie ends when the browser closes
 }
 

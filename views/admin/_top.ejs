@@ -5,7 +5,7 @@
 <%
   const adminNav = [
     { href: '/admin', label: 'Overview', icon: 'chart' },
-    // Next card: { href: '/admin/users', label: 'Users', icon: 'user' }
+    { href: '/admin/users', label: 'Users', icon: 'user', count: locals.userCount },
     { href: '/admin/activity', label: 'Activity log', icon: 'clock' },
   ];
   const displayName = currentUser.name || currentUser.email;
@@ -34,7 +34,8 @@
           <a href="<%= item.href %>" class="flex h-9 items-center gap-3 rounded-field px-2.5 text-sm <%= isCurrent(item.href) ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-base-200' %>"
             <% if (isCurrent(item.href)) { %>aria-current="page"<% } %>>
             <%- include('../partials/icon', { icon: item.icon, cls: 'size-4 shrink-0' }) %>
-            <%= item.label %>
+            <span class="grow"><%= item.label %></span>
+            <% if (item.count != null) { %><span class="text-xs text-muted tabular-nums"><%= item.count.toLocaleString('en-US') %></span><% } %>
           </a>
         </li>
       <% }) %>

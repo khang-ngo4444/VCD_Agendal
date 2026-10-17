@@ -32,6 +32,7 @@ const userSchema = new Schema(
     sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window
     lockedUntil: Date,
+    lastLoginAt: Date, // set by startSession (middleware/auth.js); the admin user list shows it
     onboardedAt: { type: Date, default: null }, // set when the Welcome screen is finished or skipped
     passwordReset: { tokenHash: String, expiresAt: Date, requestedAt: Date }, // only the hash is stored, see createPasswordResetToken
   },

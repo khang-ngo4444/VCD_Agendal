@@ -1,6 +1,7 @@
 // The activity log: recording security events, and the queries behind /admin/activity.
 const ActivityLog = require('../models/ActivityLog');
 const { dayRange, formatDay } = require('./dates');
+const { escapeRegex } = require('./regex');
 
 const PAGE_SIZE = 50;
 
@@ -63,8 +64,6 @@ async function record(req, { action, user = null, email, actor = null, details }
     console.error(`[activity] could not record ${action}:`, err.message);
   }
 }
-
-const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // The MongoDB filter for the page's query string: ?action=<chip key>&q=<email or IP>&before=<ISO date>.
 // Unknown chip keys and bad dates are ignored, so a hand-edited URL just shows everything.

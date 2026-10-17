@@ -4,8 +4,10 @@ const { requireAdmin, keepAdminsInConsole } = require('../middleware/auth');
 // The real admin router, with the database-backed page swapped for a stub.
 jest.mock('../controllers/adminController', () => ({
   overview: (req, res) => res.send('admin overview'),
+  users: (req, res) => res.send('users'),
   activity: (req, res) => res.send('activity log'),
 }));
+jest.mock('../models/User', () => ({ countDocuments: async () => 63 })); // the sidebar's account count
 const adminRoutes = require('../routes/admin');
 
 const admin = { role: 'admin' };
@@ -73,8 +75,9 @@ describe('the /admin area', () => {
     expect(await request(member, '/admin/activity')).toMatchObject({ status: 404 });
   });
 
-  test('an admin opens the activity log', async () => {
+  test('an admin opens the activity log and the user list', async () => {
     expect(await request(admin, '/admin/activity')).toMatchObject({ status: 200, body: 'activity log' });
+    expect(await request(admin, '/admin/users')).toMatchObject({ status: 200, body: 'users' });
   });
 
   test('an admin opening an app page (e.g. after logging in) lands on /admin', async () => {
