@@ -8,13 +8,23 @@
       </span>
       Agendal
     </a>
-    <ul class="flex gap-7 text-sm text-muted">
+    <ul class="hidden gap-7 whitespace-nowrap text-sm text-muted md:flex">
       <li><a href="#features" class="hover:text-base-content">Features</a></li>
       <li><a href="#how-it-works" class="hover:text-base-content">How it works</a></li>
     </ul>
-    <div class="ml-auto flex items-center gap-6">
-      <a href="/login" class="text-sm font-semibold text-primary hover:underline">Log in</a>
+    <div class="ml-auto flex items-center gap-2 whitespace-nowrap md:gap-6">
+      <a href="/login" class="hidden text-sm font-semibold text-primary hover:underline md:inline">Log in</a>
       <a href="/register" class="btn btn-primary btn-sm h-9 rounded-full px-4">Get started</a>
+      <details class="dropdown dropdown-end md:hidden" data-dismissable>
+        <summary class="btn btn-ghost btn-square list-none" aria-label="Menu">
+          <%- include('partials/icon', { icon: 'menu', cls: 'size-5' }) %>
+        </summary>
+        <ul class="menu dropdown-content z-40 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="/login" class="font-semibold text-primary">Log in</a></li>
+        </ul>
+      </details>
     </div>
   </nav>
 </header>
@@ -29,7 +39,7 @@
     </p>
     <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
       <a href="/register" class="btn btn-primary h-12 rounded-full px-7 text-base">Get started — it’s free</a>
-      <a href="#how-it-works" class="font-semibold text-primary hover:underline">See how it works</a>
+      <a href="#how-it-works" class="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">See how it works</a>
     </div>
   </section>
 
@@ -96,7 +106,7 @@
       <p class="mt-1">Built by Ho Anh Tuan, Ngo Hoang Nhat Khang and Nguyen Nghia Tuan.</p>
     </div>
     <div class="md:max-w-xs md:text-right">
-      <a href="https://github.com/khang-ngo4444/VCD_Agendal" class="font-semibold text-primary hover:underline">GitHub</a>
+      <a href="https://github.com/khang-ngo4444/VCD_Agendal" class="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">GitHub</a>
       <p class="mt-1">Privacy: your tasks are visible only to your account, and we never share them.</p>
     </div>
   </div>

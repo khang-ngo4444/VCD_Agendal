@@ -26,8 +26,10 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// A click outside an open menu closes it.
-document.addEventListener('click', (event) => closeOpenMenus(event.target.closest('details')));
+// A click outside an open menu closes it, and so does following a link inside it (e.g. an in-page anchor).
+document.addEventListener('click', (event) => {
+  closeOpenMenus(event.target.closest('a') ? null : event.target.closest('details'));
+});
 
 // Keyboard users land inside the drawer when it opens, and back on the menu button when it closes.
 drawer?.addEventListener('change', () => {
