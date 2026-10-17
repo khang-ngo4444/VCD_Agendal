@@ -12,5 +12,7 @@ router.post('/login', guestOnly, auth.login);
 router.post('/logout', auth.logout);
 router.get('/forgot-password', guestOnly, passwordReset.showForgot);
 router.post('/forgot-password', guestOnly, passwordReset.sendResetLink);
+router.get('/reset-password/:token', passwordReset.showReset);
+router.post('/reset-password/:token', passwordReset.resetPassword);
 
 module.exports = router;
