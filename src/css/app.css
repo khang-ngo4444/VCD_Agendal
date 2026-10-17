@@ -9,6 +9,12 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Figma tokens DaisyUI has no slot for; each theme below sets the values */
+@theme inline {
+  --color-muted: var(--muted); /* Neutral/Text Secondary */
+  --color-fill: var(--fill); /* Neutral/Fill: input backgrounds */
+}
+
 /* Tokens from Figma "00 · Design System" → DS 01 Colour tokens */
 @plugin "daisyui/theme" {
   name: "agendal";
@@ -18,6 +24,8 @@
   --color-base-200: #f5f5f7; /* Base/Canvas */
   --color-base-300: #d2d2d7; /* Neutral/Border */
   --color-base-content: #1d1d1f; /* Neutral/Text Primary */
+  --muted: #6e6e73;
+  --fill: #7878801f;
   --color-primary: #0071e3; /* Primary/Accent */
   --color-primary-content: #ffffff;
   --color-neutral: #1d1d1f;
@@ -40,6 +48,8 @@
   --color-base-200: #000000;
   --color-base-300: #424245;
   --color-base-content: #f5f5f7;
+  --muted: #a1a1a6;
+  --fill: #7878803d;
   --color-primary: #2997ff;
   --color-primary-content: #ffffff;
   --color-neutral: #f5f5f7;
