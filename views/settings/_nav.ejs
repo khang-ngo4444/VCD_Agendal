@@ -1,0 +1,21 @@
+<%
+  const settingsPages = [
+    { href: '/settings/profile', label: 'Profile', icon: 'user' },
+    { href: '/settings/appearance', label: 'Appearance', icon: 'sun' },
+    { href: '/settings/account', label: 'Account', icon: 'lock' },
+  ];
+%>
+<nav aria-label="Settings">
+  <ul class="flex gap-1 overflow-x-auto md:flex-col">
+    <% settingsPages.forEach((page) => { %>
+      <li>
+        <a href="<%= page.href %>"
+          class="flex h-9 items-center gap-2.5 whitespace-nowrap rounded-field px-2.5 text-sm <%= currentPath === page.href ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-base-100' %>"
+          <% if (currentPath === page.href) { %>aria-current="page"<% } %>>
+          <%- include('../partials/icon', { icon: page.icon, cls: 'size-4 shrink-0' }) %>
+          <%= page.label %>
+        </a>
+      </li>
+    <% }) %>
+  </ul>
+</nav>

@@ -9,6 +9,7 @@ const csrf = require('./middleware/csrf');
 const { showFlash } = require('./middleware/flash');
 const loadShell = require('./middleware/shell');
 const authRoutes = require('./routes/auth');
+const settingsRoutes = require('./routes/settings');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -63,6 +64,7 @@ app.use(authRoutes);
 // Everything below needs a logged-in user
 app.use(requireLogin, loadShell);
 app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
+app.use(settingsRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
 
 module.exports = app;
