@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const Task = require('../models/Task');
+const { RETENTION_DAYS } = require('../models/ActivityLog');
+const activity = require('../services/activity');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -22,5 +24,20 @@ exports.overview = async (req, res) => {
       { label: 'Locked out now', value: lockedOut, hint: '10 failed logins · 15 minutes' },
       { label: 'Tasks created', value: tasksCreated, hint: 'Not counting deleted tasks' },
     ],
+  });
+};
+
+// Activity log (AD-W04): security events, newest first, filtered by the chips and the search box.
+exports.activity = async (req, res) => {
+  const page = await activity.listActivity(req.query);
+  const timeZone = req.user.timeZone || 'UTC';
+  res.render('admin/activity', {
+    title: 'Activity log · Agendal Admin',
+    ...page,
+    days: activity.groupByDay(page.entries, timeZone),
+    timeZone,
+    filters: activity.FILTERS,
+    labels: activity.ACTION_LABELS,
+    retentionDays: RETENTION_DAYS,
   });
 };

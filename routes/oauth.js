@@ -3,6 +3,8 @@ const { Router } = require('express');
 const { passport, enabledProviders } = require('../config/passport');
 const { HOME_PATH, WELCOME_PATH, startSession } = require('../middleware/auth');
 const { flash } = require('../middleware/flash');
+const activity = require('../services/activity');
+const { loginDetails } = require('../controllers/authController');
 
 const router = Router();
 
@@ -20,6 +22,12 @@ router.get('/auth/:provider/callback', (req, res, next) =>
         return res.redirect('/login');
       }
       await startSession(req, user);
+      const provider = req.params.provider[0].toUpperCase() + req.params.provider.slice(1);
+      await activity.record(req, {
+        action: user.$locals.signedUp ? 'signup' : 'login',
+        user,
+        details: loginDetails(req, user, provider),
+      });
       if (user.$locals?.passwordRemoved) {
         flash(req, 'info', 'Google is now linked to your account. For safety we removed the old password; set a new one in Settings.');
       }

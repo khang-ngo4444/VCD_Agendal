@@ -2,6 +2,7 @@ const User = require('../models/User');
 const { HOME_PATH, startSession } = require('../middleware/auth');
 const { flash } = require('../middleware/flash');
 const { sendMail } = require('../services/mailer');
+const activity = require('../services/activity');
 const { EMAIL_PATTERN, MAX_EMAIL_LENGTH, PASSWORD_HINT, validatePassword } = require('../validators/auth');
 
 const text = (value) => (typeof value === 'string' ? value : '');
@@ -77,6 +78,7 @@ exports.resetPassword = async (req, res) => {
   await user.save();
 
   await startSession(req, user);
+  await activity.record(req, { action: 'password_reset', user, details: 'Reset link used · other sessions ended' });
   flash(req, 'success', 'Password updated. You’re logged in.');
   res.redirect(HOME_PATH);
 };

@@ -8,6 +8,7 @@ erDiagram
     TASK ||--o{ REMINDER : has
     USER ||--o{ HABIT : owns
     HABIT ||--o{ HABIT_CHECK_IN : "has (one per day)"
+    USER |o--o{ ACTIVITY_LOG : "account (null = unknown email)"
 
     USER {
         ObjectId _id PK
@@ -80,4 +81,14 @@ erDiagram
         String date "YYYY-MM-DD local, unique with habit"
         Date createdAt
         Date updatedAt
+    }
+    ACTIVITY_LOG {
+        ObjectId _id PK
+        String action "signup | login | login_failed | lockout | password_reset | account_deleted | admin_lock | admin_unlock"
+        ObjectId account FK "null for unknown emails"
+        String email "copied, survives account deletion"
+        ObjectId actor FK "the admin, for lock / unlock"
+        String details
+        String ip
+        Date createdAt "TTL: removed after 90 days"
     }

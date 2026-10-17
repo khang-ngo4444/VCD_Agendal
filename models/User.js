@@ -101,3 +101,4 @@ userSchema.statics.findByResetToken = function (token) {
 };
 
 module.exports = model('User', userSchema);
+module.exports.MAX_FAILED_LOGINS = MAX_FAILED_LOGINS;

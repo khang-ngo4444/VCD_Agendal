@@ -2,7 +2,10 @@ const express = require('express');
 const { requireAdmin, keepAdminsInConsole } = require('../middleware/auth');
 
 // The real admin router, with the database-backed page swapped for a stub.
-jest.mock('../controllers/adminController', () => ({ overview: (req, res) => res.send('admin overview') }));
+jest.mock('../controllers/adminController', () => ({
+  overview: (req, res) => res.send('admin overview'),
+  activity: (req, res) => res.send('activity log'),
+}));
 const adminRoutes = require('../routes/admin');
 
 const admin = { role: 'admin' };
@@ -67,6 +70,11 @@ describe('the /admin area', () => {
     expect(adminPage).toMatchObject({ status: 404, body: 'Page not found' });
     expect(adminPage).toEqual(unknownPage);
     expect(await request(member, '/admin/users')).toMatchObject({ status: 404 });
+    expect(await request(member, '/admin/activity')).toMatchObject({ status: 404 });
+  });
+
+  test('an admin opens the activity log', async () => {
+    expect(await request(admin, '/admin/activity')).toMatchObject({ status: 200, body: 'activity log' });
   });
 
   test('an admin opening an app page (e.g. after logging in) lands on /admin', async () => {

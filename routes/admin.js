@@ -12,5 +12,6 @@ router.use((req, res, next) => {
 });
 
 router.get('/', admin.overview);
+router.get('/activity', admin.activity);
 
 module.exports = router;

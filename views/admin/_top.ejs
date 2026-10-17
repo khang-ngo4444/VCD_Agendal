@@ -5,7 +5,8 @@
 <%
   const adminNav = [
     { href: '/admin', label: 'Overview', icon: 'chart' },
-    // Next cards: { href: '/admin/users', label: 'Users', icon: 'user' }, { href: '/admin/activity', label: 'Activity log', icon: 'inbox' }
+    // Next card: { href: '/admin/users', label: 'Users', icon: 'user' }
+    { href: '/admin/activity', label: 'Activity log', icon: 'clock' },
   ];
   const displayName = currentUser.name || currentUser.email;
   const isCurrent = (href) => currentPath === href;

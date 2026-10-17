@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession } = require('../middleware/auth');
 const { PASSWORD_HINT, validateRegistration } = require('../validators/auth');
+const activity = require('../services/activity');
 
 const DUPLICATE_KEY_ERROR = 11000;
 
@@ -39,6 +40,7 @@ exports.register = async (req, res) => {
   }
 
   await startSession(req, user);
+  await activity.record(req, { action: 'signup', user, details: 'Email and password' });
   res.redirect(WELCOME_PATH);
 };
 
@@ -64,14 +66,35 @@ exports.login = async (req, res) => {
   const password = text(body.password);
   if (!user) await User.fakePasswordCheck(password);
   if (!user || !(await user.checkPassword(password))) {
-    if (user) await user.recordFailedLogin();
+    await recordFailedLogin(req, user, values.email);
     return renderLogin(res, { values, error: LOGIN_FAILED });
   }
 
   await user.clearFailedLogins();
   await startSession(req, user, { remember: values.remember });
+  await activity.record(req, { action: 'login', user, details: loginDetails(req, user) });
   res.redirect(HOME_PATH);
 };
+
+// "Chrome on Windows", plus where an admin signed in to.
+const loginDetails = (req, user, method) =>
+  [method, activity.describeDevice(req.get('user-agent')), user.role === 'admin' && 'admin console'].filter(Boolean).join(' · ');
+exports.loginDetails = loginDetails;
+
+// Counts the failure on the account (10 in 15 minutes locks it) and logs it, or the lockout it caused.
+async function recordFailedLogin(req, user, email) {
+  if (!user) {
+    if (email) await activity.record(req, { action: 'login_failed', email, details: 'No account with this email' });
+    return;
+  }
+  await user.recordFailedLogin();
+  if (user.lockMinutesLeft()) {
+    await activity.record(req, { action: 'lockout', user, details: `${User.MAX_FAILED_LOGINS} failed logins · locked for ${user.lockMinutesLeft()} minutes` });
+  } else {
+    const attempt = user.loginFailures.count;
+    await activity.record(req, { action: 'login_failed', user, details: `Wrong password · attempt ${attempt} of ${User.MAX_FAILED_LOGINS}` });
+  }
+}
 
 // Logging out ends the user's sessions on every device, not just this one.
 exports.logout = async (req, res) => {
