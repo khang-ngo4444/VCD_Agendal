@@ -8,7 +8,9 @@ Agendal: a personal task, habit, and calendar app built as the final project for
 
 ## Workflow
 
-- **Trello is the task list:** board "VNUK - Advanced Web Design" (https://trello.com/b/QFOY5tFM/vnuk-advanced-web-design). The Backlog list is sorted in development order, so take cards from the top. Each card's description is its spec and its "Done when" line is the acceptance check. Move the card to Done when its work is committed.
+- **Trello is the task list:** board "VNUK - Advanced Web Design" (https://trello.com/b/QFOY5tFM/vnuk-advanced-web-design). The Backlog list is sorted in development order, so take cards from the top. Divider cards (`━━ P4 · Projects & tasks · due Oct 29 ━━`) mark the phases, and every card is due at the end of its phase. The deadline is Nov 8, 2026. Each card's description is its spec and its "Done when" line is the acceptance check. The "Roadmap & workflow" card in Introduction has the phase table.
+- **Card flow:** Backlog → In progress (branch created) → Testing (PR open into `develop`) → Done (PR merged; tick it complete). Postponed holds stretch goals.
+- **Scope:** Premium and payments are out. Statistics and CSV export are free for every user.
 - **`README.md` is background:** it describes the whole product. Where it disagrees with a card (e.g. README "categories" vs card "projects"), the card wins.
 - **Git Flow (README "Development Flow"):** branch `feature/<name>` or `task/<name>` from `develop`, then open a PR back into `develop`. Never commit directly to `main` or `develop`.
 

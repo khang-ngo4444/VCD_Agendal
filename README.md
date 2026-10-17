@@ -121,7 +121,7 @@ The dashboard provides an overview of a user's productivity, including:
 - Tasks grouped by category
 - Productivity trends
 
-Premium users can access advanced statistics and export selected data as CSV files.
+Users can export their tasks and habit check-ins as CSV files.
 
 ### Reminders and Notifications
 
@@ -158,7 +158,6 @@ Administrators can access a separate administration area to:
 
 - View users
 - Lock or unlock user accounts
-- View payment records
 - Review basic system statistics
 - Monitor application activity
 
