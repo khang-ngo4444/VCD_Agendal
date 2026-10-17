@@ -1,0 +1,7 @@
+<%- include('../partials/shell-top') %>
+<%# Fallback for the New task dialog when JavaScript is off. %>
+<h1 class="text-3xl font-bold tracking-tight">New task</h1>
+<div class="mt-6 max-w-lg rounded-box bg-base-100 p-5">
+  <%- include('_quick-add-form', { projects: sidebarProjects, returnTo: '/inbox', idPrefix: 'new-task', autofocus: true }) %>
+</div>
+<%- include('../partials/shell-bottom') %>

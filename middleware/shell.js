@@ -8,8 +8,9 @@ async function loadShell(req, res, next) {
 
   res.locals.currentPath = req.path;
   res.locals.sidebarProjects = [
-    { href: '/inbox', name: 'Inbox', colour: null, ...countsFor('inbox') },
+    { id: null, href: '/inbox', name: 'Inbox', colour: null, ...countsFor('inbox') },
     ...projects.map((project) => ({
+      id: String(project._id),
       href: `/projects/${project._id}`,
       name: project.name,
       colour: project.colour,

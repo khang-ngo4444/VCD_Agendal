@@ -14,6 +14,7 @@ const oauthRoutes = require('./routes/oauth');
 const { passport, enabledProviders } = require('./config/passport');
 const settingsRoutes = require('./routes/settings');
 const projectRoutes = require('./routes/projects');
+const taskRoutes = require('./routes/tasks');
 const welcome = require('./controllers/welcomeController');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -78,6 +79,7 @@ app.post(WELCOME_PATH, welcome.complete);
 app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
 app.use(settingsRoutes);
 app.use(projectRoutes);
+app.use(taskRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
 
 module.exports = app;
