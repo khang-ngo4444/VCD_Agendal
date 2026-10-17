@@ -10,6 +10,8 @@ const avatarUpload = require('./middleware/avatarUpload');
 const { showFlash } = require('./middleware/flash');
 const loadShell = require('./middleware/shell');
 const authRoutes = require('./routes/auth');
+const oauthRoutes = require('./routes/oauth');
+const { passport, enabledProviders } = require('./config/passport');
 const settingsRoutes = require('./routes/settings');
 const welcome = require('./controllers/welcomeController');
 
@@ -52,6 +54,8 @@ app.use(
 app.post('/settings/avatar', avatarUpload); // multipart body must be parsed before the CSRF check
 app.use(csrf);
 app.use(showFlash);
+app.use(passport.initialize());
+app.locals.oauthProviders = enabledProviders; // which sign-in buttons the auth pages show
 
 // Public routes
 app.get('/', (req, res) =>
@@ -63,6 +67,7 @@ app.get('/', (req, res) =>
   })
 );
 app.use(authRoutes);
+app.use(oauthRoutes);
 
 // Everything below needs a logged-in user
 app.use(requireLogin, requireOnboarding, loadShell);
