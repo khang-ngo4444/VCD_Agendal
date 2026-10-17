@@ -12,6 +12,7 @@
     "helmet": "^8.3.0",
     "mongoose": "^9.11.2",
     "multer": "^2.4.0",
+    "nodemailer": "^10.1.2",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3"
   },
