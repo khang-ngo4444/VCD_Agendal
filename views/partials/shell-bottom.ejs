@@ -5,4 +5,9 @@
     <%- include('sidebar') %>
   </div>
 </div>
+<%- include('modal', {
+  id: 'new-task-dialog',
+  heading: 'New task',
+  body: include('../tasks/_quick-add-form', { projects: sidebarProjects, returnTo: currentPath, idPrefix: 'dialog-task', autofocus: true }),
+}) %>
 <%- include('footer') %>

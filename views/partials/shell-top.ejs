@@ -16,7 +16,7 @@
             <input type="search" name="q" placeholder="Search tasks…" aria-label="Search tasks" class="grow">
           </label>
         </form>
-        <a href="/tasks/new" class="btn btn-primary ml-auto h-10 rounded-full px-4" aria-label="New task">
+        <a href="/tasks/new" class="btn btn-primary ml-auto h-10 rounded-full px-4" aria-label="New task" data-open-modal="new-task-dialog">
           <%- include('icon', { icon: 'plus', cls: 'size-4' }) %>
           <span class="hidden sm:inline">New task</span>
         </a>

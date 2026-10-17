@@ -78,7 +78,9 @@ window.agendal = { toast };
 // Modals (views/partials/modal.ejs)
 document.addEventListener('click', (event) => {
   const opener = event.target.closest('[data-open-modal]');
-  if (opener) document.getElementById(opener.dataset.openModal)?.showModal();
+  if (!opener) return;
+  event.preventDefault(); // an opener can be a link to a no-JS fallback page
+  document.getElementById(opener.dataset.openModal)?.showModal();
 });
 
 // Confirm destructive actions (views/partials/confirm-dialog.ejs). Without JS the form submits directly.
