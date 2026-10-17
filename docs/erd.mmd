@@ -1,0 +1,56 @@
+%% Source for docs/erd.png. Re-render after editing:
+%% npx -y @mermaid-js/mermaid-cli -i docs/erd.mmd -o docs/erd.png -b white -s 2
+erDiagram
+    USER ||--o{ PROJECT : owns
+    USER ||--o{ TASK : owns
+    USER ||--o{ REMINDER : owns
+    PROJECT |o--o{ TASK : "groups (none = Inbox)"
+    TASK ||--o{ REMINDER : has
+
+    USER {
+        ObjectId _id PK
+        String email UK
+        String passwordHash
+        String name
+        String avatar
+        String timeZone
+        Object preferences "theme, accentColour, weekStartsOn"
+        String googleId UK
+        Date createdAt
+        Date updatedAt
+    }
+    PROJECT {
+        ObjectId _id PK
+        ObjectId owner FK
+        String name
+        String colour
+        Date createdAt
+        Date updatedAt
+    }
+    TASK {
+        ObjectId _id PK
+        ObjectId owner FK
+        ObjectId project FK "null = Inbox"
+        String title
+        String description
+        String priority "low | medium | high"
+        Date dueDate
+        Object schedule "start, end"
+        String status "backlog | upcoming | active | done"
+        Number order
+        Date completedAt
+        Object repeat "frequency, until"
+        Date deletedAt "soft delete"
+        Date createdAt
+        Date updatedAt
+    }
+    REMINDER {
+        ObjectId _id PK
+        ObjectId task FK
+        ObjectId owner FK
+        Date remindAt
+        String type "push | email"
+        Boolean sent
+        Date createdAt
+        Date updatedAt
+    }
