@@ -79,3 +79,18 @@ document.addEventListener('click', (event) => {
   if (opener) document.getElementById(opener.dataset.openModal)?.showModal();
 });
 
+// Confirm destructive actions (views/partials/confirm-dialog.ejs). Without JS the form submits directly.
+const confirmDialog = document.getElementById('confirm-dialog');
+
+document.addEventListener('submit', (event) => {
+  const form = event.target;
+  if (!form.dataset.confirm || !confirmDialog) return;
+
+  event.preventDefault();
+  confirmDialog.querySelector('#confirm-heading').textContent = form.dataset.confirm;
+  confirmDialog.querySelector('#confirm-detail').textContent = form.dataset.confirmDetail ?? '';
+  confirmDialog.querySelector('[data-confirm-button]').textContent = form.dataset.confirmButton ?? 'Delete';
+  confirmDialog.returnValue = '';
+  confirmDialog.addEventListener('close', () => confirmDialog.returnValue === 'confirm' && form.submit(), { once: true });
+  confirmDialog.showModal();
+});

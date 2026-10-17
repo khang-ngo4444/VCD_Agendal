@@ -1,0 +1,17 @@
+<%#
+  Shared alert dialog for destructive actions (Figma DS 11). Any form with data-confirm="Delete project?"
+  (optional data-confirm-detail, data-confirm-button) asks here first; public/js/app.js fills in the text.
+  Cancel gets focus, so pressing Enter by reflex never deletes anything.
+%>
+<dialog id="confirm-dialog" class="modal" aria-labelledby="confirm-heading" aria-describedby="confirm-detail">
+  <div class="modal-box max-w-xs p-0 text-center">
+    <div class="px-6 pt-5 pb-4">
+      <h2 id="confirm-heading" class="font-semibold"></h2>
+      <p id="confirm-detail" class="mt-1 text-sm text-muted"></p>
+    </div>
+    <form method="dialog" class="grid grid-cols-2 border-t border-base-300">
+      <button value="cancel" class="h-11 rounded-bl-box text-primary hover:bg-base-200" autofocus>Cancel</button>
+      <button value="confirm" class="h-11 rounded-br-box border-l border-base-300 font-semibold text-error hover:bg-base-200" data-confirm-button></button>
+    </form>
+  </div>
+</dialog>

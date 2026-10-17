@@ -4,5 +4,6 @@
 <% ['success', 'info', 'error'].forEach((type) => { %>
   <template id="toast-template-<%= type %>"><%- include('toast', { type, message: '', actionLabel: null }) %></template>
 <% }) %>
+<%- include('confirm-dialog') %>
 </body>
 </html>
