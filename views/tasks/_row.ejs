@@ -1,0 +1,24 @@
+<%#
+  One task in a list. Locals: task (lean), timeZone. Dates read in the user's time zone (services/dates.js).
+%>
+<%
+  const meta = [];
+  if (task.completedAt) meta.push(`Done ${dates.formatDay(task.completedAt, timeZone)}`);
+  else {
+    if (task.schedule?.start) meta.push(`${dates.formatDay(task.schedule.start, timeZone)}, ${dates.formatTime(task.schedule.start, timeZone)}–${dates.formatTime(task.schedule.end, timeZone)}`);
+    if (task.dueDate) meta.push(`Due ${dates.formatDay(task.dueDate, timeZone)}`);
+    if (!meta.length) meta.push('No date');
+  }
+%>
+<li class="flex items-start gap-3 px-4 py-3">
+  <span class="mt-0.5 size-5 shrink-0 rounded-full border-2 <%= task.completedAt ? 'border-success bg-success' : 'border-base-300' %>" aria-hidden="true"></span>
+  <div class="min-w-0 grow">
+    <a href="/tasks/<%= task._id %>" class="block truncate font-medium hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></a>
+    <p class="mt-0.5 text-xs text-muted"><%= meta.join(' · ') %></p>
+  </div>
+  <% if (task.priority === 'high' && !task.completedAt) { %>
+    <span class="mt-0.5 text-warning" title="High priority">
+      <%- include('../partials/icon', { icon: 'flag', cls: 'size-4' }) %><span class="sr-only">High priority</span>
+    </span>
+  <% } %>
+</li>
