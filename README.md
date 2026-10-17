@@ -4,14 +4,6 @@ Agendal is a personal productivity and task management web application developed
 
 The application helps users organize tasks, manage projects, schedule activities, track habits, and monitor their productivity from one centralized workspace.
 
-## Team Members
-
-| Name | Student ID |
-| :--- | :--- |
-| Ho Anh Tuan | 23020016 |
-| Ngo Hoang Nhat Khang | 23020004 |
-| Nguyen Nghia Tuan | 23020003 |
-
 ## Project Overview
 
 Managing tasks, schedules, projects, and personal routines across multiple applications can be inconvenient. Users may need one application for calendars, another for task lists, and another for tracking long-term goals.
@@ -207,6 +199,7 @@ Only users with administrator privileges can access administrative features.
 | Styling | Tailwind CSS |
 | UI Components | DaisyUI |
 | Backend | Node.js and Express.js |
+| Architecture Style | MVC |
 | Database | MongoDB |
 | Version Control | Git and GitHub |
 | Design | Figma |
