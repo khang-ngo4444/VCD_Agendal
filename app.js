@@ -54,6 +54,7 @@ app.use(authRoutes);
 // Everything below needs a logged-in user
 app.use(requireLogin, loadShell);
 app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
+if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
 
 module.exports = app;
 
