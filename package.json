@@ -12,8 +12,10 @@
   "name": "advanced-web-design",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env app.js",
+    "start": "node --env-file-if-exists=.env app.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node --env-file-if-exists=.env scripts/seed.js"
   },
