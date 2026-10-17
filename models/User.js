@@ -15,7 +15,7 @@ const userSchema = new Schema(
     timeZone: { type: String, default: 'Asia/Ho_Chi_Minh' },
     preferences: {
       theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
-      accentColour: String,
+      accentColour: { type: String, enum: ['blue', 'purple', 'green', 'orange', 'graphite'], default: 'blue' },
       weekStartsOn: { type: Number, enum: [0, 1], default: 1 }, // 0 = Sunday, 1 = Monday
     },
     googleId: { type: String, unique: true, sparse: true },

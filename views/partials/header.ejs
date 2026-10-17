@@ -1,5 +1,10 @@
 <!doctype html>
-<html lang="en">
+<%
+  // Logged-in pages follow the user's saved appearance; "system" leaves the theme to the OS (DaisyUI prefersdark).
+  const prefs = locals.currentUser?.preferences ?? {};
+  const themeName = { light: 'agendal', dark: 'agendal-dark' }[prefs.theme];
+%>
+<html lang="en"<% if (themeName) { %> data-theme="<%= themeName %>"<% } %><% if (prefs.accentColour && prefs.accentColour !== 'blue') { %> data-accent="<%= prefs.accentColour %>"<% } %>>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
