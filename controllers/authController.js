@@ -1,0 +1,46 @@
+const User = require('../models/User');
+const { HOME_PATH } = require('../middleware/auth');
+const { MIN_PASSWORD_LENGTH, validateRegistration } = require('../validators/auth');
+
+const DUPLICATE_KEY_ERROR = 11000;
+
+// Form fields arrive as strings, but a crafted request can send arrays or nothing at all.
+const text = (value) => (typeof value === 'string' ? value : '');
+
+// A fresh session ID on every login stops session fixation.
+async function startSession(req, user) {
+  await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
+  req.session.userId = user.id;
+}
+
+function renderRegister(res, { values = {}, errors = {} } = {}) {
+  res.status(Object.keys(errors).length ? 422 : 200).render('auth/register', {
+    title: 'Create your account · Agendal',
+    values,
+    errors,
+    minPasswordLength: MIN_PASSWORD_LENGTH,
+  });
+}
+
+exports.showRegister = (req, res) => renderRegister(res);
+
+exports.register = async (req, res) => {
+  const body = req.body ?? {};
+  const values = { name: text(body.name).trim(), email: text(body.email).trim().toLowerCase() };
+  const password = text(body.password);
+
+  const errors = validateRegistration({ ...values, password });
+  if (Object.keys(errors).length) return renderRegister(res, { values, errors });
+
+  const user = new User(values);
+  await user.setPassword(password);
+  try {
+    await user.save();
+  } catch (err) {
+    if (err.code !== DUPLICATE_KEY_ERROR) throw err;
+    return renderRegister(res, { values, errors: { email: 'This email already has an account.', emailTaken: true } });
+  }
+
+  await startSession(req, user);
+  res.redirect(HOME_PATH);
+};
