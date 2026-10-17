@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE } = require('../middleware/auth');
+const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession } = require('../middleware/auth');
 const { MIN_PASSWORD_LENGTH, validateRegistration } = require('../validators/auth');
 
 const DUPLICATE_KEY_ERROR = 11000;
@@ -9,14 +9,6 @@ const text = (value) => (typeof value === 'string' ? value : '');
 
 // Same message for an unknown email and a wrong password, so the form can't be used to find accounts.
 const LOGIN_FAILED = "That email and password don't match. Check them and try again.";
-
-// A fresh session ID on every login stops session fixation.
-async function startSession(req, user, { remember = true } = {}) {
-  await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
-  req.session.userId = user.id;
-  req.session.sessionVersion = user.sessionVersion;
-  if (!remember) req.session.cookie.maxAge = null; // cookie ends when the browser closes
-}
 
 function renderRegister(res, { values = {}, errors = {} } = {}) {
   res.status(Object.keys(errors).length ? 422 : 200).render('auth/register', {

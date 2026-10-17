@@ -4,6 +4,14 @@ const HOME_PATH = '/today'; // the Daily List
 const WELCOME_PATH = '/welcome';
 const SESSION_COOKIE = 'agendal.sid';
 
+// Logs the user in on this device. A fresh session ID on every login stops session fixation.
+async function startSession(req, user, { remember = true } = {}) {
+  await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
+  req.session.userId = user.id;
+  req.session.sessionVersion = user.sessionVersion;
+  if (!remember) req.session.cookie.maxAge = null; // cookie ends when the browser closes
+}
+
 // Mounted before every app route: loads the logged-in user or sends the visitor to log in.
 async function requireLogin(req, res, next) {
   const { userId, sessionVersion } = req.session;
@@ -32,4 +40,4 @@ function requireOnboarding(req, res, next) {
   next();
 }
 
-module.exports = { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, requireLogin, guestOnly, requireOnboarding };
+module.exports = { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession, requireLogin, guestOnly, requireOnboarding };
