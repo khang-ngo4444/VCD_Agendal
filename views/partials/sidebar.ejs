@@ -10,7 +10,6 @@
     { href: '/insights', label: 'Insights', icon: 'chart' },
   ];
   const displayName = currentUser.name || currentUser.email;
-  const initials = displayName.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
   const itemClass = (href) => (currentPath === href ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-base-200');
 %>
 <nav aria-label="Main" class="flex min-h-full w-[260px] flex-col border-r border-base-300 bg-base-100 p-4">
@@ -58,7 +57,7 @@
 
   <details class="dropdown dropdown-top mt-auto pt-4" data-dismissable>
     <summary class="flex cursor-pointer list-none items-center gap-3 rounded-field p-2 hover:bg-base-200" aria-label="Account menu for <%= displayName %>">
-      <span class="grid size-9 shrink-0 place-items-center rounded-full bg-fill text-sm font-semibold" aria-hidden="true"><%= initials %></span>
+      <%- include('avatar', { user: currentUser, cls: 'size-9 text-sm' }) %>
       <span class="min-w-0 grow">
         <span class="block truncate text-sm font-semibold"><%= displayName %></span>
         <span class="block text-xs text-muted">Settings</span>

@@ -1,0 +1,12 @@
+<%#
+  The user's photo, or their initials when there is none. Decorative: the name is always shown next to it.
+  Locals: user, cls (size and text classes)
+%>
+<%
+  const initials = (user.name || user.email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+%>
+<% if (user.avatar) { %>
+  <img src="<%= user.avatar %>" alt="" class="<%= cls %> shrink-0 rounded-full object-cover">
+<% } else { %>
+  <span class="<%= cls %> grid shrink-0 place-items-center rounded-full bg-fill font-semibold" aria-hidden="true"><%= initials %></span>
+<% } %>
