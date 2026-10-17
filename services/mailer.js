@@ -17,12 +17,21 @@ const transport = process.env.MAIL_HOST
   : nodemailer.createTransport({ jsonTransport: true });
 
 // One email in the Agendal layout, with a plain-text copy for clients that don't show HTML.
-// action: { label, url } renders as a button; footnote is the small print underneath.
-async function sendMail({ to, subject, heading, paragraphs, action, footnote }) {
-  const html = await ejs.renderFile(LAYOUT, { heading, paragraphs, action, footnote });
-  const text = [heading, ...paragraphs, action && `${action.label}: ${action.url}`, footnote].filter(Boolean).join('\n\n');
+// action: { label, url } renders as a button; footnote is the small print underneath;
+// footerLinks: [{ label, url }] under the footnote; headers adds raw mail headers (List-Unsubscribe on reminder emails).
+async function sendMail({ to, subject, heading, paragraphs, action, footnote, footerLinks = [], headers }) {
+  const html = await ejs.renderFile(LAYOUT, { heading, paragraphs, action, footnote, footerLinks });
+  const text = [
+    heading,
+    ...paragraphs,
+    action && `${action.label}: ${action.url}`,
+    footnote,
+    ...footerLinks.map((link) => `${link.label}: ${link.url}`),
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
-  const info = await transport.sendMail({ from: FROM, to, subject, text, html });
+  const info = await transport.sendMail({ from: FROM, to, subject, text, html, headers });
   if (!process.env.MAIL_HOST) console.log(`[mail] to ${to}: ${subject}\n${text}\n`);
   return info;
 }

@@ -17,6 +17,7 @@ erDiagram
         String avatar
         String timeZone
         Object preferences "theme, accentColour, weekStartsOn"
+        Object notifications "push, email (on by default), lastEmailAt, emailDay, emailsToday"
         String googleId UK
         Number sessionVersion "bumped to end all sessions"
         Object loginFailures "count, since"
@@ -56,8 +57,13 @@ erDiagram
         ObjectId task FK
         ObjectId owner FK
         Date remindAt
-        String type "push | email"
-        Boolean sent
+        String type "push | email (legacy, not used for routing)"
+        Boolean sent "every channel done"
+        Date sentAt
+        Date pushedAt "push channel claimed / done"
+        Date emailedAt "email channel claimed / done"
+        Number attempts "failed sends, max 3"
+        String lastError
         Date createdAt
         Date updatedAt
     }

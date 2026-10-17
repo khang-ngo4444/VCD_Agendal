@@ -5,8 +5,15 @@ const reminderSchema = new Schema(
     task: { type: Schema.Types.ObjectId, ref: 'Task', required: true, index: true },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     remindAt: { type: Date, required: true },
+    // Kept for existing data only: the user's notification settings decide the channels (services/reminders.js).
     type: { type: String, enum: ['push', 'email'], default: 'push' },
-    sent: { type: Boolean, default: false },
+    sent: { type: Boolean, default: false }, // true once every channel is done, skipped, or given up on
+    sentAt: Date,
+    // Each channel is claimed by setting its date before sending, so two job runs never send the same reminder twice.
+    pushedAt: { type: Date, default: null },
+    emailedAt: { type: Date, default: null },
+    attempts: { type: Number, default: 0 }, // failed sends; the job stops retrying at MAX_ATTEMPTS
+    lastError: String, // why the last send failed or why the reminder was closed without sending
   },
   { timestamps: true }
 );

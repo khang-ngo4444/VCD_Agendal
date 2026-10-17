@@ -1,0 +1,46 @@
+<%- include('../partials/shell-top') %>
+<h1 class="text-3xl font-bold tracking-tight">Settings</h1>
+<div class="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
+  <%- include('_nav') %>
+  <section aria-labelledby="notifications-heading">
+    <h2 id="notifications-heading" class="text-xl font-bold">Notifications</h2>
+    <p class="mt-1 text-sm text-muted">Reminders are sent at the time you choose on each task.</p>
+
+    <form method="post" action="/settings/notifications" class="mt-6 max-w-xl space-y-6">
+      <%- include('../partials/csrf') %>
+
+      <fieldset class="rounded-box bg-base-100 p-5">
+        <legend class="sr-only">How reminders reach you</legend>
+        <h3 class="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">How reminders reach you</h3>
+
+        <label class="flex cursor-pointer items-center gap-4 border-b border-base-300 py-3">
+          <%- include('../partials/icon', { icon: 'bell', cls: 'size-5 shrink-0 text-muted' }) %>
+          <span class="flex-1">
+            <span class="block font-medium">Browser notifications</span>
+            <span class="block text-sm text-muted">Windows / Mac notification center, Android lock screen, iPhone app on the Home Screen.</span>
+          </span>
+          <input type="checkbox" name="push" class="toggle toggle-success" <%= values.push ? 'checked' : '' %>>
+        </label>
+
+        <label class="flex cursor-pointer items-center gap-4 py-3">
+          <%- include('../partials/icon', { icon: 'mail', cls: 'size-5 shrink-0 text-muted' }) %>
+          <span class="flex-1">
+            <span class="block font-medium">Email reminders</span>
+            <span class="block text-sm text-muted">Sent to <%= currentUser.email %>.</span>
+          </span>
+          <input type="checkbox" name="email" class="toggle toggle-success" <%= values.email ? 'checked' : '' %>>
+        </label>
+
+        <p class="mt-2 rounded-field bg-base-200 px-3 py-2 text-sm text-muted">
+          Reminders due together arrive in one email: at most 1 every <%= limits.emailGapMinutes %> minutes and <%= limits.emailsPerDay %> a day.
+          Every email has a link to turn email reminders off.
+        </p>
+      </fieldset>
+
+      <div class="flex justify-end">
+        <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Save changes</button>
+      </div>
+    </form>
+  </section>
+</div>
+<%- include('../partials/shell-bottom') %>

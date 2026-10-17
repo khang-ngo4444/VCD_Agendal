@@ -22,6 +22,14 @@ const userSchema = new Schema(
       accentColour: { type: String, enum: ['blue', 'purple', 'green', 'orange', 'graphite'], default: 'blue' },
       weekStartsOn: { type: Number, enum: [0, 1], default: 1 }, // 0 = Sunday, 1 = Monday
     },
+    // Where reminders go (Settings → Notifications) and the counters that keep email from turning into spam.
+    notifications: {
+      push: { type: Boolean, default: true },
+      email: { type: Boolean, default: true },
+      lastEmailAt: Date,
+      emailDay: String, // YYYY-MM-DD in the user's time zone that emailsToday counts
+      emailsToday: { type: Number, default: 0 },
+    },
     googleId: { type: String, unique: true, sparse: true },
     sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window

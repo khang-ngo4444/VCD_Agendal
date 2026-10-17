@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const settings = require('../controllers/settingsController');
+const notifications = require('../controllers/notificationsController');
 
 const router = Router();
 
@@ -9,6 +10,8 @@ router.post('/settings/profile', settings.updateProfile);
 router.post('/settings/avatar', settings.updateAvatar); // body parsed by avatarUpload in app.js
 router.get('/settings/appearance', settings.showAppearance);
 router.post('/settings/appearance', settings.updateAppearance);
+router.get('/settings/notifications', notifications.showSettings);
+router.post('/settings/notifications', notifications.updateSettings);
 router.get('/settings/account', settings.showAccount);
 router.post('/settings/password', settings.changePassword);
 

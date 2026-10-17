@@ -16,6 +16,7 @@ const settingsRoutes = require('./routes/settings');
 const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
 const welcome = require('./controllers/welcomeController');
+const notifications = require('./controllers/notificationsController');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -55,6 +56,8 @@ app.use(
   })
 );
 app.post('/settings/avatar', avatarUpload); // multipart body must be parsed before the CSRF check
+// Before the CSRF check: mail clients send this one-click POST without a form token; the signed link is the proof.
+app.post('/notifications/unsubscribe/:token', notifications.unsubscribe);
 app.use(csrf);
 app.use(showFlash);
 app.use(passport.initialize());
@@ -69,6 +72,7 @@ app.get('/', (req, res) =>
     canonicalPath: '/',
   })
 );
+app.get('/notifications/unsubscribe/:token', notifications.showUnsubscribe);
 app.use(authRoutes);
 app.use(oauthRoutes);
 
@@ -92,6 +96,8 @@ if (require.main === module) {
     .then(() => {
       console.log('MongoDB connected');
       app.listen(port, () => console.log(`Agendal running at http://localhost:${port}`));
+      // Reminders and other background jobs. Set JOBS_ENABLED=false when another process runs them.
+      if (process.env.JOBS_ENABLED !== 'false') require('./jobs/scheduler').startJobs();
     })
     .catch((err) => {
       console.error('MongoDB connection failed:', err.message);

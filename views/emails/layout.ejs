@@ -22,6 +22,11 @@
           <% if (locals.footnote) { %>
             <p style="margin:24px 0 0;font-size:13px;line-height:18px;color:#6e6e73;"><%= footnote %></p>
           <% } %>
+          <% if (locals.footerLinks && footerLinks.length) { %>
+            <p style="margin:8px 0 0;font-size:13px;line-height:18px;">
+              <% footerLinks.forEach((link, i) => { %><% if (i) { %> &middot; <% } %><a href="<%= link.url %>" style="color:#0071e3;"><%= link.label %></a><% }) %>
+            </p>
+          <% } %>
         </td></tr>
       </table>
     </td></tr>
