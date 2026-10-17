@@ -38,6 +38,12 @@
   --color-warning-content: #1d1d1f;
   --radius-field: 0.625rem;
   --radius-box: 1rem;
+  --radius-selector: 0.375rem;
+  --size-field: 0.25rem;
+  --size-selector: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
 @plugin "daisyui/theme" {
@@ -62,4 +68,10 @@
   --color-warning-content: #1d1d1f;
   --radius-field: 0.625rem;
   --radius-box: 1rem;
+  --radius-selector: 0.375rem;
+  --size-field: 0.25rem;
+  --size-selector: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
