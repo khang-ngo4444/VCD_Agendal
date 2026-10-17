@@ -21,10 +21,13 @@
         <%- include('../partials/field', {
           name: 'password', label: 'Password', type: 'password', icon: 'lock', autocomplete: 'current-password',
         }) %>
-        <label class="mb-4 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted">
-          <input type="checkbox" name="remember" class="checkbox checkbox-primary checkbox-sm" <%= values.remember ? 'checked' : '' %>>
-          Remember me for 30 days
-        </label>
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <label class="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted">
+            <input type="checkbox" name="remember" class="checkbox checkbox-primary checkbox-sm" <%= values.remember ? 'checked' : '' %>>
+            Remember me for 30 days
+          </label>
+          <a href="/forgot-password" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Forgot password?</a>
+        </div>
         <button type="submit" class="btn btn-primary h-11 w-full rounded-full">Log in</button>
       </form>
 

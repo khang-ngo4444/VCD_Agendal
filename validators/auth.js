@@ -9,4 +9,4 @@ function validateRegistration({ email, password }) {
   return errors;
 }
 
-module.exports = { MIN_PASSWORD_LENGTH, validateRegistration };
+module.exports = { EMAIL_PATTERN, MIN_PASSWORD_LENGTH, validateRegistration };
