@@ -1,6 +1,7 @@
 const path = require('node:path');
 const express = require('express');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const { SESSION_COOKIE, requireLogin } = require('./middleware/auth');
@@ -13,6 +14,15 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Helmet's default CSP already allows https: styles and fonts (Google Fonts) and blocks inline scripts.
+// Over plain http on localhost, upgrade-insecure-requests would break every asset, so it is production-only.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: { upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null },
+    },
+  })
+);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 app.use(
