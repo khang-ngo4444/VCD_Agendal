@@ -32,3 +32,12 @@ exports.create = async (req, res) => {
   flash(req, 'success', `Added “${title}” to ${project ? project.name : 'the Inbox'}.`);
   res.redirect(returnTo);
 };
+
+exports.setComplete = async (req, res) => {
+  const task = await findOwned(Task, req.params.id, req.user._id, { deletedAt: null });
+  const done = req.body?.done === '1';
+  task.completedAt = done ? new Date() : null;
+  await task.save();
+  flash(req, 'success', done ? `Done: “${task.title}”.` : `Reopened “${task.title}”.`);
+  res.redirect(safeReturnTo(req.body?.returnTo));
+};
