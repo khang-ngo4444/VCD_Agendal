@@ -72,3 +72,10 @@ function toast(message, { type = 'success', actionLabel, onAction } = {}) {
 document.querySelectorAll('#toast-region [data-toast]').forEach(dismissLater); // flash messages from the server
 
 window.agendal = { toast };
+
+// Modals (views/partials/modal.ejs)
+document.addEventListener('click', (event) => {
+  const opener = event.target.closest('[data-open-modal]');
+  if (opener) document.getElementById(opener.dataset.openModal)?.showModal();
+});
+

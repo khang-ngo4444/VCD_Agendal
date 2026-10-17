@@ -1,0 +1,17 @@
+<%#
+  Modal on the native <dialog> (Figma DS 11): focus stays inside, Esc and the backdrop close it,
+  and focus returns to the button that opened it. Open it with any element that has data-open-modal="<id>".
+  Locals: id, heading, body (trusted HTML, usually another include()).
+%>
+<dialog id="<%= id %>" class="modal modal-bottom sm:modal-middle" aria-labelledby="<%= id %>-heading">
+  <div class="modal-box">
+    <div class="flex items-center justify-between gap-4">
+      <h2 id="<%= id %>-heading" class="text-lg font-semibold"><%= heading %></h2>
+      <form method="dialog">
+        <button class="btn btn-circle btn-ghost btn-sm" aria-label="Close"><%- include('icon', { icon: 'x', cls: 'size-4' }) %></button>
+      </form>
+    </div>
+    <div class="mt-4"><%- body %></div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button tabindex="-1">Close</button></form>
+</dialog>
