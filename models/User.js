@@ -22,6 +22,7 @@ const userSchema = new Schema(
     sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window
     lockedUntil: Date,
+    onboardedAt: { type: Date, default: null }, // set when the Welcome screen is finished or skipped
   },
   { timestamps: true }
 );

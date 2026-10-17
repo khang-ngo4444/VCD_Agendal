@@ -76,7 +76,7 @@ async function seed() {
     await old.deleteOne();
   }
 
-  const user = new User({ email: DEMO_EMAIL, name: 'Demo User' });
+  const user = new User({ email: DEMO_EMAIL, name: 'Demo User', onboardedAt: new Date() });
   await user.setPassword(DEMO_PASSWORD);
   await user.save();
   const projects = await Project.insertMany(PROJECTS.map(([name, colour]) => ({ owner: user._id, name, colour })));
