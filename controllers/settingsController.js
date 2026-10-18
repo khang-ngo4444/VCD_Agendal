@@ -4,6 +4,7 @@ const sharp = require('sharp');
 const { flash } = require('../middleware/flash');
 const { isValidTimeZone, timeZoneOptions } = require('../config/timeZones');
 const { MAX_NAME_LENGTH, PASSWORD_HINT, validatePassword } = require('../validators/auth');
+const accountDeletion = require('../services/accountDeletion');
 
 const User = require('../models/User');
 
@@ -118,4 +119,27 @@ exports.changePassword = async (req, res) => {
 
   flash(req, 'success', 'Password updated. Other devices have been signed out.');
   res.redirect('/settings/account');
+};
+
+// Delete account (W32). The dialog on the Account page posts here; this page is its no-JS version and shows errors.
+function renderDeleteAccount(req, res, errors = {}) {
+  res.status(Object.keys(errors).length ? 422 : 200).render('settings/delete-account', {
+    title: 'Delete account · Settings · Agendal',
+    currentPath: '/settings/account', // keeps "Account" highlighted in the settings menu
+    errors,
+    hasPassword: Boolean(req.user.passwordHash),
+  });
+}
+
+exports.showDeleteAccount = (req, res) => renderDeleteAccount(req, res);
+
+exports.deleteAccount = async (req, res) => {
+  const errors = await accountDeletion.checkConfirmation(req.user, req.body);
+  if (Object.keys(errors).length) return renderDeleteAccount(req, res, errors);
+
+  await accountDeletion.deleteAccount(req, req.user);
+  // A fresh, empty session for the goodbye message; the old one is gone with the account.
+  await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
+  flash(req, 'success', 'Your account and all its data have been deleted.');
+  res.redirect('/');
 };

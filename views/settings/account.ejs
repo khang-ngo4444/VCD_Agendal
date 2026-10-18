@@ -1,5 +1,5 @@
 <%- include('../partials/shell-top') %>
-<%# Account & security (Figma W32). Change password works. "This device", "Signed-in devices" and "Delete account"
+<%# Account & security (Figma W32). Change password and Delete account work. "This device" and "Signed-in devices"
     are layout only: the controls are disabled until their backend lands (marked TODO-backend). %>
 <h1 class="text-3xl font-bold tracking-tight">Settings</h1>
 <div class="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
@@ -55,14 +55,20 @@
     </ul>
     <p class="mt-2 text-xs text-muted">Other devices will be listed here, each with a Log out button.</p>
 
-    <%# TODO-backend: delete the account and all its data (needs a confirm step and password check) %>
+    <%# The button opens the dialog below; without JS it is a link to the same form on its own page. %>
     <div class="mt-10 flex flex-col gap-4 rounded-box bg-error/[0.08] p-5 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h3 class="font-semibold text-error">Delete account</h3>
-        <p class="mt-1 max-w-md text-sm text-muted">Permanently removes all tasks, events, projects and assistant conversations. This cannot be undone.</p>
+        <p class="mt-1 max-w-md text-sm text-muted">Permanently removes your projects, tasks, reminders, habits and check-ins. This cannot be undone.</p>
       </div>
-      <button type="button" disabled class="btn h-11 shrink-0 rounded-full border-0 bg-error/15 px-5 text-error" title="Coming soon">Delete account</button>
+      <a href="/settings/account/delete" data-open-modal="delete-account-dialog"
+        class="btn h-11 shrink-0 rounded-full border-0 bg-error/15 px-5 text-error hover:bg-error/25">Delete account</a>
     </div>
+    <%- include('../partials/modal', {
+      id: 'delete-account-dialog',
+      heading: 'Delete your account?',
+      body: include('_delete-account-form', { hasPassword, errors: {}, inDialog: true }),
+    }) %>
   </section>
 </div>
 <%- include('../partials/shell-bottom') %>
