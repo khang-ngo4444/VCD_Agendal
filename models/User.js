@@ -7,6 +7,10 @@ const MAX_FAILED_LOGINS = 10;
 const FAILED_LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOCKOUT_MS = 15 * 60 * 1000;
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+const RESET_COOLDOWN_MS = 60 * 1000; // one reset email per account per minute
+const MAX_CHECKED_PASSWORD_LENGTH = 1000; // far above any real password; stops huge inputs from burning CPU in bcrypt
+// A real bcrypt hash of a random string, compared against when the email is unknown so both cases take equally long.
+const DUMMY_HASH = '$2b$12$/vYlgYtCDkPziiQgDQ/1c.RDxbrzoNeOABwHqZZfCHIubmQHx5dIi';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -27,7 +31,7 @@ const userSchema = new Schema(
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window
     lockedUntil: Date,
     onboardedAt: { type: Date, default: null }, // set when the Welcome screen is finished or skipped
-    passwordReset: { tokenHash: String, expiresAt: Date }, // only the hash is stored, see createPasswordResetToken
+    passwordReset: { tokenHash: String, expiresAt: Date, requestedAt: Date }, // only the hash is stored, see createPasswordResetToken
   },
   { timestamps: true }
 );
@@ -43,9 +47,12 @@ userSchema.methods.setPassword = async function (password) {
 };
 
 userSchema.methods.checkPassword = function (password) {
-  if (!this.passwordHash) return Promise.resolve(false); // Google-only account
+  if (!this.passwordHash || password.length > MAX_CHECKED_PASSWORD_LENGTH) return Promise.resolve(false); // Google-only account
   return bcrypt.compare(password, this.passwordHash);
 };
+
+// Spends the same time as a real check, for logins with an unknown email (otherwise response time reveals who has an account).
+userSchema.statics.fakePasswordCheck = (password) => bcrypt.compare(password.slice(0, MAX_CHECKED_PASSWORD_LENGTH), DUMMY_HASH);
 
 // Minutes left on a login lockout, or 0 when the account may log in.
 userSchema.methods.lockMinutesLeft = function (now = new Date()) {
@@ -75,8 +82,14 @@ userSchema.methods.clearFailedLogins = async function () {
 // Returns the token for the reset link. Only its hash is saved, so a leaked database can't be used to reset passwords.
 userSchema.methods.createPasswordResetToken = function (now = new Date()) {
   const token = crypto.randomBytes(32).toString('hex');
-  this.passwordReset = { tokenHash: sha256(token), expiresAt: new Date(now.getTime() + RESET_TOKEN_TTL_MS) };
+  this.passwordReset = { tokenHash: sha256(token), expiresAt: new Date(now.getTime() + RESET_TOKEN_TTL_MS), requestedAt: now };
   return token;
+};
+
+// False right after a reset email was sent, so the form can't be used to flood someone's inbox.
+userSchema.methods.canRequestPasswordReset = function (now = new Date()) {
+  const last = this.passwordReset?.requestedAt;
+  return !last || now - last >= RESET_COOLDOWN_MS;
 };
 
 // The user a reset link belongs to, or null when the token is unknown, used or expired.

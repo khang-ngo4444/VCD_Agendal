@@ -61,7 +61,9 @@ exports.login = async (req, res) => {
     return renderLogin(res, { values, status: 429, error: `Too many failed attempts. Try again in ${wait}.` });
   }
 
-  if (!user || !(await user.checkPassword(text(body.password)))) {
+  const password = text(body.password);
+  if (!user) await User.fakePasswordCheck(password);
+  if (!user || !(await user.checkPassword(password))) {
     if (user) await user.recordFailedLogin();
     return renderLogin(res, { values, error: LOGIN_FAILED });
   }
