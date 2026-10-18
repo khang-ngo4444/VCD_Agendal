@@ -18,6 +18,8 @@ async function requireLogin(req, res, next) {
   const user = userId && (await User.findById(userId));
 
   if (user && user.sessionVersion === sessionVersion) {
+    // Private pages must not be cached: after logging out on a shared device, Back must not show someone's tasks.
+    res.set('Cache-Control', 'no-store');
     req.user = user;
     res.locals.currentUser = user;
     return next();
