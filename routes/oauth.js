@@ -20,6 +20,9 @@ router.get('/auth/:provider/callback', (req, res, next) =>
         return res.redirect('/login');
       }
       await startSession(req, user);
+      if (user.$locals?.passwordRemoved) {
+        flash(req, 'info', 'Google is now linked to your account. For safety we removed the old password; set a new one in Settings.');
+      }
       res.redirect(user.onboardedAt ? HOME_PATH : WELCOME_PATH);
     } catch (error) {
       next(error);
