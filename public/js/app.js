@@ -110,3 +110,45 @@ const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 if (timeZoneSelect && [...timeZoneSelect.options].some((option) => option.value === browserTimeZone)) {
   timeZoneSelect.value = browserTimeZone;
 }
+
+// "Go back" on error pages (a javascript: link would be blocked by the CSP).
+document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-go-back]')) history.back();
+});
+
+// Show / hide password. The buttons are `hidden` in the HTML so they only appear when this script can make them work.
+document.querySelectorAll('[data-toggle-password]').forEach((button) => (button.hidden = false));
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-toggle-password]');
+  if (!button) return;
+  const input = document.getElementById(button.getAttribute('aria-controls'));
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  button.setAttribute('aria-pressed', String(show));
+  button.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  button.querySelector('[data-eye]').hidden = show;
+  button.querySelector('[data-eye-off]').hidden = !show;
+  input.focus();
+});
+
+// While a form is being sent its submit button is disabled and says so, so a double click can't send it twice.
+// Registered after the confirm-dialog handler, and skipped when that handler already stopped the submit.
+document.addEventListener('submit', (event) => {
+  const form = event.target;
+  if (event.defaultPrevented || form.hasAttribute('data-no-pending') || form.method !== 'post') return;
+  // Next tick: the browser reads the clicked button's name/value before this runs, and a disabled button would be left out.
+  setTimeout(() => {
+    form.querySelectorAll('button[type=submit]:not([form])').forEach((button) => {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    });
+  }, 0);
+});
+// Coming back with the Back button restores the page from cache: make the buttons usable again.
+window.addEventListener('pageshow', (event) => {
+  if (!event.persisted) return;
+  document.querySelectorAll('button[aria-busy=true]').forEach((button) => {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+  });
+});

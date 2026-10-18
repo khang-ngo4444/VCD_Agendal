@@ -1,19 +1,31 @@
 <%#
   Labelled input with a leading icon and its error or hint underneath.
-  Locals: name, label, type, icon, autocomplete, value?, error?, errorLink? { href, text }, hint?
+  Locals: name, label, type, icon, autocomplete, value?, error?, errorLink? { href, text }, hint?, autofocus?, maxlength?
+  Password fields get a show/hide button (public/js/app.js reveals it; without JS the field simply stays hidden-text).
 %>
 <%
   const messageId = `${name}-message`;
   const hasMessage = locals.error || locals.hint;
+  const isEmail = type === 'email';
 %>
 <div class="mb-4">
   <label for="<%= name %>" class="mb-1.5 block text-xs font-semibold"><%= label %></label>
-  <div class="input h-11 w-full bg-fill <%= locals.error ? 'input-error' : 'border-transparent' %>">
+  <div class="input h-11 w-full bg-fill <%= locals.error ? 'input-error' : '' %>">
     <%- include('icon', { icon, cls: 'size-4 shrink-0 text-muted' }) %>
     <input id="<%= name %>" name="<%= name %>" type="<%= type %>" value="<%= locals.value || '' %>"
       autocomplete="<%= autocomplete %>" class="grow"
+      <% if (locals.maxlength) { %>maxlength="<%= maxlength %>"<% } %>
+      <% if (locals.autofocus) { %>autofocus<% } %>
+      <% if (isEmail) { %>autocapitalize="none" spellcheck="false"<% } %>
       <% if (hasMessage) { %>aria-describedby="<%= messageId %>"<% } %>
       <% if (locals.error) { %>aria-invalid="true"<% } %>>
+    <% if (type === 'password') { %>
+      <button type="button" hidden data-toggle-password aria-controls="<%= name %>" aria-pressed="false" aria-label="Show password"
+        class="-mr-2 grid size-11 shrink-0 place-items-center rounded-field text-muted hover:text-base-content">
+        <span data-eye><%- include('icon', { icon: 'eye', cls: 'size-4' }) %></span>
+        <span data-eye-off hidden><%- include('icon', { icon: 'eye-off', cls: 'size-4' }) %></span>
+      </button>
+    <% } %>
   </div>
   <% if (locals.error) { %>
     <p id="<%= messageId %>" class="mt-1.5 flex items-center gap-1.5 text-sm text-error">
