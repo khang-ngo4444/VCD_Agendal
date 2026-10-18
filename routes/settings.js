@@ -11,5 +11,7 @@ router.get('/settings/appearance', settings.showAppearance);
 router.post('/settings/appearance', settings.updateAppearance);
 router.get('/settings/account', settings.showAccount);
 router.post('/settings/password', settings.changePassword);
+router.get('/settings/account/delete', settings.showDeleteAccount);
+router.post('/settings/account/delete', settings.deleteAccount);
 
 module.exports = router;

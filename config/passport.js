@@ -28,7 +28,9 @@ async function findOrCreateGoogleUser(profile) {
     }
     return existing.save();
   }
-  return User.create({ email, name: profile.displayName, googleId: profile.id });
+  const created = await User.create({ email, name: profile.displayName, googleId: profile.id });
+  created.$locals.signedUp = true; // the callback logs a sign-up instead of a login
+  return created;
 }
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {

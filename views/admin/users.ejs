@@ -1,0 +1,166 @@
+<%- include('_top') %>
+<%
+  // Links keep the other filters: a chip keeps the search, paging keeps both.
+  const link = (params) => {
+    const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value && value !== 1));
+    return `/admin/users${query.size ? `?${query}` : ''}`;
+  };
+  const chipClass = (active) =>
+    `btn btn-sm h-8 rounded-full px-3.5 font-medium ${active ? 'btn-primary' : 'border-base-300 bg-base-100 font-normal'}`;
+  const count = (key) => chips.find((item) => item.key === key).count.toLocaleString('en-US');
+  const plural = (n, word) => `${n.toLocaleString('en-US')} ${word}${n === 1 ? '' : 's'}`;
+
+  // "12 Oct 2026", or "Today" / "Yesterday"
+  const signedUp = (date) => {
+    const day = dates.formatDay(date, timeZone, now);
+    return ['Today', 'Yesterday'].includes(day)
+      ? day
+      : new Intl.DateTimeFormat('en-GB', { timeZone, day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+  };
+  // "Today, 15:31", "15 Oct, 21:40"
+  const lastLogin = (date) => {
+    if (!date) return 'Never';
+    const day = dates.formatDay(date, timeZone, now);
+    const label = ['Today', 'Yesterday'].includes(day)
+      ? day
+      : new Intl.DateTimeFormat('en-GB', { timeZone, day: 'numeric', month: 'short' }).format(date);
+    return `${label}, ${dates.formatTime(date, timeZone)}`;
+  };
+%>
+<div class="flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">Users</h1>
+    <p class="mt-1 text-sm text-muted">
+      <%= plural(chips[0].count, 'account') %> · <%= count('locked') %> locked · <%= plural(chips.find((item) => item.key === 'admins').count, 'administrator') %>
+    </p>
+  </div>
+  <%# data-live-search: public/js/admin.js reloads the chips and results below as you type (Enter still works without JS) %>
+  <form method="get" action="/admin/users" role="search" class="w-full sm:w-80" data-live-search>
+    <% if (chip) { %><input type="hidden" name="status" value="<%= chip %>"><% } %>
+    <label class="input h-10 w-full rounded-field border-0 bg-fill">
+      <%- include('../partials/icon', { icon: 'search', cls: 'size-4 text-muted' }) %>
+      <span class="sr-only">Search by email or name</span>
+      <input type="search" name="q" value="<%= search %>" placeholder="Search by email or name" maxlength="100" data-search>
+      <kbd class="kbd kbd-sm kbd-hint" title="Press / to search">/</kbd>
+    </label>
+  </form>
+</div>
+
+<nav aria-label="Filter users" class="mt-5 flex flex-wrap gap-2" data-live="chips">
+  <% chips.forEach((item) => { %>
+    <a href="<%= link({ status: item.key, q: search }) %>" class="<%= chipClass(chip === item.key) %>"
+      <% if (chip === item.key) { %>aria-current="page"<% } %>><%= item.label %> · <%= item.count.toLocaleString('en-US') %></a>
+  <% }) %>
+</nav>
+
+<p class="sr-only" aria-live="polite" data-live-status></p>
+<section class="mt-5 overflow-hidden rounded-box bg-base-100" aria-label="Accounts" data-live="results">
+  <% if (!users.length) { %>
+    <%- include('../partials/empty-state', {
+      icon: 'user',
+      heading: 'No matching accounts',
+      text: search ? `Nobody’s email or name contains “${search}”.` : 'No accounts match this filter.',
+    }) %>
+  <% } else { %>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[860px] text-sm">
+        <thead class="bg-base-200/60 text-left text-xs font-semibold tracking-wide text-muted uppercase">
+          <tr>
+            <th scope="col" class="px-4 py-3">User</th>
+            <th scope="col" class="px-4 py-3">Signed up</th>
+            <th scope="col" class="px-4 py-3">Last login</th>
+            <th scope="col" class="px-4 py-3 text-right">Tasks</th>
+            <th scope="col" class="px-4 py-3 text-right">Habits</th>
+            <th scope="col" class="px-4 py-3">Status</th>
+            <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach((user) => { %>
+            <tr id="user-<%= user._id %>" class="border-t border-base-300 hover:bg-fill">
+              <td class="px-4 py-2.5">
+                <span class="flex items-center gap-3">
+                  <%- include('../partials/avatar', { user, cls: 'size-9 text-sm' }) %>
+                  <span class="min-w-0">
+                    <span class="block truncate font-semibold"><%= user.name || user.email %></span>
+                    <span class="block truncate text-xs text-muted"><%= user.email %></span>
+                  </span>
+                </span>
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap"><%= signedUp(user.createdAt) %></td>
+              <td class="px-4 py-2.5 whitespace-nowrap <%= user.lastLoginAt && dates.formatDay(user.lastLoginAt, timeZone, now) === 'Today' ? '' : 'text-muted' %>"><%= lastLogin(user.lastLoginAt) %></td>
+              <td class="px-4 py-2.5 text-right tabular-nums"><%= user.tasks.toLocaleString('en-US') %></td>
+              <td class="px-4 py-2.5 text-right tabular-nums"><%= user.habits.toLocaleString('en-US') %></td>
+              <td class="px-4 py-2.5 whitespace-nowrap">
+                <span class="inline-flex items-center gap-2 text-muted"><span class="size-2 rounded-full <%= user.status.tone %>" aria-hidden="true"></span><%= user.status.label %></span>
+              </td>
+              <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                <% if (String(user._id) === String(currentUser._id)) { %>
+                  <span class="mr-2 text-xs text-muted">This is you</span>
+                <% } else if (user.status.locked) { %>
+                  <form method="post" action="/admin/users/<%= user._id %>/unlock" class="inline">
+                    <%- include('../partials/csrf') %>
+                    <input type="hidden" name="back" value="<%= currentUrl %>">
+                    <button class="btn btn-primary btn-sm h-8 rounded-full px-4" aria-label="Unlock <%= user.email %>">Unlock</button>
+                  </form>
+                <% } else { %>
+                  <%# admin.js opens the AD-W03 dialog first; without JS the form locks straight away, with no reason %>
+                  <form method="post" action="/admin/users/<%= user._id %>/lock" class="inline"
+                    data-lock="<%= user.name || user.email %>" data-lock-email="<%= user.email %>">
+                    <%- include('../partials/csrf') %>
+                    <input type="hidden" name="back" value="<%= currentUrl %>">
+                    <input type="hidden" name="reason" value="">
+                    <button class="btn btn-sm h-8 rounded-full border-0 bg-fill px-4 text-primary" aria-label="Lock <%= user.email %>">Lock</button>
+                  </form>
+                <% } %>
+                <a href="/admin/activity?q=<%= encodeURIComponent(user.email) %>" class="btn btn-ghost btn-sm btn-square rounded-full text-primary"
+                  aria-label="Activity of <%= user.email %>" title="View activity">
+                  <%- include('../partials/icon', { icon: 'clock', cls: 'size-4' }) %>
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-base-300 px-4 py-3 text-sm text-muted">
+      <span>Showing <%= from.toLocaleString('en-US') %>–<%= to.toLocaleString('en-US') %> of <%= total.toLocaleString('en-US') %></span>
+      <nav aria-label="Pages" class="flex items-center gap-2">
+        <% if (page > 1) { %>
+          <a href="<%= link({ status: chip, q: search, page: page - 1 }) %>" rel="prev" class="btn btn-sm h-8 rounded-full border-0 bg-fill px-4 text-primary">Previous</a>
+        <% } else { %>
+          <span class="btn btn-sm btn-disabled h-8 rounded-full border-0 px-4" aria-disabled="true">Previous</span>
+        <% } %>
+        <span>Page <%= page %> of <%= pages %></span>
+        <% if (page < pages) { %>
+          <a href="<%= link({ status: chip, q: search, page: page + 1 }) %>" rel="next" class="btn btn-sm h-8 rounded-full border-0 bg-fill px-4 text-primary">Next</a>
+        <% } else { %>
+          <span class="btn btn-sm btn-disabled h-8 rounded-full border-0 px-4" aria-disabled="true">Next</span>
+        <% } %>
+      </nav>
+    </div>
+  <% } %>
+</section>
+
+<%# Lock account (AD-W03). public/js/admin.js fills in the name and email and submits the row's form. %>
+<dialog id="lock-dialog" class="modal" aria-labelledby="lock-heading" aria-describedby="lock-detail">
+  <div class="modal-box max-w-md">
+    <span class="grid size-11 place-items-center rounded-full bg-error/10 text-error">
+      <%- include('../partials/icon', { icon: 'lock', cls: 'size-5' }) %>
+    </span>
+    <h2 id="lock-heading" class="mt-4 text-lg font-bold">Lock this account?</h2>
+    <p id="lock-detail" class="mt-2 text-sm text-muted">
+      <span data-lock-email></span> will be logged out on every device straight away and can’t log in until you unlock the account. Their tasks and habits are kept.
+    </p>
+    <label class="mt-4 block">
+      <span class="text-xs text-muted">Reason · optional, saved in the activity log</span>
+      <input type="text" class="input mt-1 h-11 w-full rounded-field" maxlength="<%= maxReasonLength %>" data-lock-reason autocomplete="off">
+    </label>
+    <form method="dialog" class="mt-6 flex justify-end gap-2">
+      <button value="cancel" class="btn h-10 rounded-full border-0 bg-fill px-5 text-primary" autofocus>Cancel</button>
+      <button value="confirm" class="btn h-10 rounded-full border-0 bg-error/15 px-5 text-error">Lock account</button>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button tabindex="-1">Close</button></form>
+</dialog>
+<%- include('_bottom') %>

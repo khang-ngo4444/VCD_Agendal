@@ -1,0 +1,131 @@
+<%- include('_top') %>
+<%
+  const n = (value) => value.toLocaleString('en-US');
+  // Colours live here, not in services/adminStats.js: Tailwind only scans views/ for class names.
+  const contentTone = { tasks: 'bg-primary', reminders: 'bg-warning', habits: 'bg-success', projects: 'bg-[#8b5cf6]' }; // Purple accent swatch
+  const contentMax = Math.max(1, ...content.map((item) => item.count));
+  const updated = `${dates.formatTime(now, timeZone)}, ${new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'short', day: 'numeric', month: 'long' }).format(now)}`;
+  const shortDate = (date) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' }).format(new Date(`${date}T00:00:00Z`));
+%>
+<%# On large screens the overview fills the screen; .admin-fit (src/css/app.css) keeps the gap below equal to the gap beside it. %>
+<div class="admin-fit lg:flex lg:flex-col">
+<h1 class="text-3xl font-bold tracking-tight">Admin overview</h1>
+<p class="mt-1 text-sm text-muted">System statistics · updated <%= updated %></p>
+
+<%# Headline numbers (AD-W01). Users never include admin accounts. %>
+<ul class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+  <li class="rounded-box bg-base-100 p-5">
+    <p class="text-sm text-muted">Total users</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.total %>"><%= n(users.total) %></span></p>
+    <p class="mt-1 text-xs font-medium text-success"><%= n(users.newThisWeek) %> new this week</p>
+  </li>
+  <li class="rounded-box bg-base-100 p-5">
+    <p class="text-sm text-muted">New this week</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.newThisWeek %>"><%= n(users.newThisWeek) %></span> <span class="text-base font-normal text-muted">users</span></p>
+    <% if (users.newChange === null) { %>
+      <p class="mt-1 text-xs text-muted">No sign-ups the week before</p>
+    <% } else { %>
+      <p class="mt-1 text-xs font-medium <%= users.newChange >= 0 ? 'text-success' : 'text-error' %>">
+        <%= users.newChange >= 0 ? '▲' : '▼' %> <%= Math.abs(users.newChange) %>% vs last week
+      </p>
+    <% } %>
+  </li>
+  <li class="rounded-box bg-base-100 p-5">
+    <p class="text-sm text-muted">Active · last 7 days</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.active %>"><%= n(users.active) %></span> <span class="text-base font-normal text-muted">users</span></p>
+    <p class="mt-1 text-xs text-muted"><%= users.activeShare %>% of all users</p>
+  </li>
+  <li class="rounded-box bg-base-100 p-5">
+    <p class="text-sm text-muted">Locked accounts</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><span data-count-up="<%= users.locked %>"><%= n(users.locked) %></span></p>
+    <p class="mt-1 text-xs <%= users.lockedOut ? 'font-medium text-warning' : 'text-muted' %>"><%= n(users.lockedOut) %> locked out by failed logins</p>
+  </li>
+</ul>
+
+<div class="mt-5 grid gap-5 lg:flex-1 lg:grid-cols-[1fr_380px] lg:grid-rows-[1fr_auto]">
+  <%# Check-ins per day: plain CSS bars, with the numbers in a table for screen readers. %>
+  <section class="flex flex-col rounded-box bg-base-100 p-6" aria-labelledby="checkins-heading">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 id="checkins-heading" class="font-semibold">Habit check-ins per day</h2>
+      <p class="text-xs text-muted">Last <%= checkIns.length %> days · <%= n(checkInTotal) %> total</p>
+    </div>
+    <div class="mt-6 flex h-48 items-end gap-1 lg:h-auto lg:min-h-40 lg:flex-1" aria-hidden="true">
+      <% checkIns.forEach((day, i) => { const today = i === checkIns.length - 1; %>
+        <%# .bar / .bar-tip (src/css/app.css): the bar lights up and its number shows while the pointer is on it %>
+        <div class="bar group flex h-full flex-1 items-end">
+          <%# grow-up + --i: the bars rise one after another, left to right (src/css/app.css) %>
+          <div class="grow-up relative w-full rounded-t-sm <%= today ? 'bg-primary' : 'bg-primary/20 group-hover:bg-primary/60' %>"
+            style="--i: <%= i %>; height: <%= checkInMax ? Math.max(2, Math.round((day.count / checkInMax) * 100)) : 2 %>%">
+            <span class="bar-tip absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 rounded-field bg-neutral px-2 py-1 text-xs whitespace-nowrap text-neutral-content shadow">
+              <%= shortDate(day.date) %> · <%= n(day.count) %> check-ins
+            </span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+    <div class="mt-2 flex justify-between text-xs text-muted" aria-hidden="true">
+      <% [0, 9, 19].forEach((i) => { %><span><%= shortDate(checkIns[i].date) %></span><% }) %>
+      <span class="font-medium text-primary">Today</span>
+    </div>
+    <% if (!checkInTotal) { %><p class="mt-3 text-sm text-muted">No check-ins in the last <%= checkIns.length %> days yet.</p><% } %>
+    <%# Wrapped: a <table> ignores sr-only's 1px box and would still take up space (and add a scrollbar). %>
+    <div class="sr-only">
+      <table>
+        <caption>Habit check-ins per day</caption>
+        <thead><tr><th scope="col">Day</th><th scope="col">Check-ins</th></tr></thead>
+        <tbody><% checkIns.forEach((day) => { %><tr><td><%= shortDate(day.date) %></td><td><%= day.count %></td></tr><% }) %></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="content-heading">
+    <h2 id="content-heading" class="font-semibold">Content created · all time</h2>
+    <ul class="mt-4 space-y-4">
+      <% content.forEach((item, i) => { %>
+        <li>
+          <div class="flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2 font-medium"><span class="size-2.5 rounded-full <%= contentTone[item.key] %>" aria-hidden="true"></span><%= item.label %></span>
+            <span class="text-muted tabular-nums"><%= n(item.count) %></span>
+          </div>
+          <div class="mt-1.5 h-1.5 rounded-full bg-fill" aria-hidden="true">
+            <div class="grow-x h-full rounded-full <%= contentTone[item.key] %>" style="--i: <%= i %>; width: <%= Math.round((item.count / contentMax) * 100) %>%"></div>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+    <p class="mt-4 text-xs text-muted">Tasks don’t include deleted ones.</p>
+  </section>
+
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="recent-heading">
+    <div class="flex items-baseline justify-between gap-2">
+      <h2 id="recent-heading" class="font-semibold">Recent activity</h2>
+      <a href="/admin/activity" class="text-sm font-medium text-primary">View activity log</a>
+    </div>
+    <% if (!recent.length) { %>
+      <p class="mt-4 text-sm text-muted">Nothing recorded yet.</p>
+    <% } else { %>
+      <ul class="mt-3">
+        <% recent.forEach((entry) => { const action = actionLabels[entry.action] ?? { label: entry.action, tone: 'bg-muted' }; %>
+          <li class="grid grid-cols-[8rem_1fr_auto] items-center gap-3 py-3 text-sm">
+            <span class="flex items-center gap-2 text-muted"><span class="size-2 shrink-0 rounded-full <%= action.tone %>" aria-hidden="true"></span><%= action.label %></span>
+            <span class="min-w-0 truncate"><span class="font-semibold"><%= entry.email || '—' %></span> <span class="text-xs text-muted"><%= entry.details || '' %></span></span>
+            <time class="text-xs text-muted tabular-nums" datetime="<%= entry.createdAt.toISOString() %>"><%= dates.formatTime(entry.createdAt, timeZone) %></time>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+
+  <section class="flex flex-col rounded-box bg-base-100 p-6" aria-labelledby="attention-heading">
+    <h2 id="attention-heading" class="font-semibold">Needs attention</h2>
+    <ul class="mt-4 mb-5 space-y-4 text-sm">
+      <li class="flex items-center justify-between">Locked by an admin <span class="flex items-center gap-2 tabular-nums"><span class="size-2 rounded-full bg-error" aria-hidden="true"></span><%= n(users.lockedByAdmin) %></span></li>
+      <li class="flex items-center justify-between">Locked out · 10 failed logins <span class="flex items-center gap-2 tabular-nums"><span class="size-2 rounded-full bg-warning" aria-hidden="true"></span><%= n(users.lockedOut) %></span></li>
+      <li class="flex items-center justify-between">Inactive for <%= inactiveDays %>+ days <span class="flex items-center gap-2 tabular-nums"><span class="size-2 rounded-full bg-muted" aria-hidden="true"></span><%= n(users.inactive) %></span></li>
+    </ul>
+    <%# mt-auto: the button sits at the bottom when the card is stretched to the row height %>
+    <a href="/admin/users?status=locked" class="btn mt-auto h-10 w-full rounded-full border-0 bg-fill text-primary">Review users</a>
+  </section>
+</div>
+</div>
+<%- include('_bottom') %>
