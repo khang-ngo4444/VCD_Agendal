@@ -119,3 +119,16 @@ test('customDefaults: the current reminder, else 15 minutes before the start, el
   expect(taskReminders.customDefaults(scheduled('2026-10-18T08:00:00Z'), null, tz, now)).toEqual({ date: '2026-10-18', time: '14:45' });
   expect(taskReminders.customDefaults(unscheduled, null, tz, new Date('2026-10-18T06:20:00Z'))).toEqual({ date: '2026-10-18', time: '14:00' });
 });
+
+describe('remove', () => {
+  test('deletes the task’s unsent reminder, so the job never sends it', async () => {
+    jest.spyOn(Reminder, 'deleteMany').mockResolvedValue({ deletedCount: 1 });
+    expect(await taskReminders.remove(scheduled('2026-10-18T08:00:00Z'))).toBe(true);
+    expect(Reminder.deleteMany).toHaveBeenCalledWith({ task: '64b0000000000000000000aa', owner, sent: false });
+  });
+
+  test('says so when there was nothing to remove', async () => {
+    jest.spyOn(Reminder, 'deleteMany').mockResolvedValue({ deletedCount: 0 });
+    expect(await taskReminders.remove(unscheduled)).toBe(false);
+  });
+});

@@ -59,6 +59,13 @@ function customDefaults(task, reminder, timeZone, now = new Date()) {
   return { date: toDateInput(at, timeZone), time: toTimeInput(at, timeZone) };
 }
 
+// "Remove reminder": the task's reminder that hasn't gone out is deleted, so the job never sends it.
+// Returns true when there was one.
+async function remove(task) {
+  const { deletedCount } = await Reminder.deleteMany(scope(task));
+  return deletedCount > 0;
+}
+
 // After the task's schedule changes: a preset reminder follows the new start time. It is removed when the task has no
 // schedule any more ('removed') or when the new reminder time has already passed ('passed'). Chosen-time reminders stay put.
 // Returns 'none' | 'kept' | 'moved' | 'removed' | 'passed'.
@@ -89,4 +96,4 @@ function describe(reminder, timeZone, now = new Date()) {
   };
 }
 
-module.exports = { PRESETS, findPending, setPreset, setCustom, customDefaults, syncWithSchedule, describe };
+module.exports = { PRESETS, findPending, setPreset, setCustom, customDefaults, remove, syncWithSchedule, describe };

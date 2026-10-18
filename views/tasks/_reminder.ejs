@@ -40,6 +40,15 @@
         <span class="grow">Custom date &amp; time…</span>
         <% if (reminder && reminder.offsetMinutes == null) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %><% } %>
       </a>
+      <% if (reminder) { %>
+        <div class="my-1 border-t border-base-300"></div>
+        <form method="post" action="/tasks/<%= task._id %>/reminder/remove">
+          <%- include('../partials/csrf') %>
+          <button type="submit" class="flex min-h-11 w-full items-center gap-2 rounded-field px-3 text-left text-sm text-error hover:bg-error/10">
+            <%- include('../partials/icon', { icon: 'trash', cls: 'size-4 shrink-0' }) %> Remove reminder
+          </button>
+        </form>
+      <% } %>
     </div>
   </details>
   <%# Outside the menu: a closed <details> hides its content, dialog included. %>

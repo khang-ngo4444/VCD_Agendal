@@ -130,6 +130,13 @@ exports.setReminder = async (req, res) => {
   res.redirect(`/tasks/${task._id}`);
 };
 
+exports.removeReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const removed = await taskReminders.remove(task);
+  flash(req, 'success', removed ? 'Reminder removed. It won’t be sent.' : 'This task has no reminder.');
+  res.redirect(`/tasks/${task._id}`);
+};
+
 // The custom date-and-time form on its own page: the dialog's no-JS version.
 exports.showReminder = async (req, res) => {
   const task = await findOwnedTask(req);
