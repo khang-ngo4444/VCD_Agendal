@@ -25,7 +25,7 @@ exports.sendResetLink = async (req, res) => {
   }
 
   const user = await User.findOne({ email });
-  if (user) {
+  if (user && user.canRequestPasswordReset()) {
     const token = user.createPasswordResetToken();
     await user.save();
     // Not awaited, so the response takes as long for an unknown email as for a real one.
