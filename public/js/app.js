@@ -110,12 +110,6 @@ const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 if (timeZoneSelect && [...timeZoneSelect.options].some((option) => option.value === browserTimeZone)) {
   timeZoneSelect.value = browserTimeZone;
 }
-
-// "Go back" on error pages (a javascript: link would be blocked by the CSP).
-document.addEventListener('click', (event) => {
-  if (event.target.closest('[data-go-back]')) history.back();
-});
-
 // Show / hide password. The buttons are `hidden` in the HTML so they only appear when this script can make them work.
 document.querySelectorAll('[data-toggle-password]').forEach((button) => (button.hidden = false));
 document.addEventListener('click', (event) => {
