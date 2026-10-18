@@ -62,6 +62,7 @@ erDiagram
         ObjectId task FK
         ObjectId owner FK
         Date remindAt
+        Number offsetMinutes "preset: minutes before the start; null = chosen time"
         String type "push | email (legacy, not used for routing)"
         Boolean sent "every channel done"
         Date sentAt

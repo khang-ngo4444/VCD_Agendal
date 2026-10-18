@@ -5,6 +5,7 @@ const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
 const { isOverdue, toDateInput, toTimeInput } = require('../services/dates');
 const { PRIORITIES, parseTaskForm } = require('../validators/task');
+const taskReminders = require('../services/taskReminders');
 
 const MAX_TITLE_LENGTH = 200;
 
@@ -63,9 +64,12 @@ function formValues(task, timeZone) {
 
 async function renderTask(req, res, task, { values, errors = {} } = {}) {
   const project = task.project && (await Project.findOne({ _id: task.project, owner: req.user._id }).lean());
+  const reminder = taskReminders.describe(await taskReminders.findPending(task), req.user.timeZone);
   res.status(Object.keys(errors).length ? 422 : 200).render('tasks/show', {
     title: `${task.title} · Agendal`,
     task,
+    reminder,
+    reminderPresets: taskReminders.PRESETS,
     values: values ?? formValues(task, req.user.timeZone),
     errors,
     priorities: PRIORITIES,
@@ -92,7 +96,30 @@ exports.update = async (req, res) => {
   task.set({ ...fields, project: project?._id ?? null });
   task.set('schedule', schedule ?? undefined);
   await task.save();
-  flash(req, 'success', 'Task saved.');
+  const reminder = await taskReminders.syncWithSchedule(task);
+  flash(req, 'success', REMINDER_AFTER_SAVE[reminder] ?? 'Task saved.');
+  res.redirect(`/tasks/${task._id}`);
+};
+
+// What the toast says when saving the task also moved or removed its preset reminder.
+const REMINDER_AFTER_SAVE = {
+  moved: 'Task saved. Its reminder moved with the new time.',
+  removed: 'Task saved. Its reminder was removed: the task has no start time it can count back from.',
+  passed: 'Task saved. Its reminder was removed: that time before the new start has already passed.',
+};
+
+const REMINDER_ERRORS = {
+  unknown_preset: 'Pick one of the reminder times in the list.',
+  not_scheduled: 'Schedule the task first: presets count back from its start time.',
+  past: 'That time has already passed. Pick a later reminder.',
+};
+
+// Reminder picker (W30): a preset counted back from the scheduled start.
+exports.setReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const { reminder, error } = await taskReminders.setPreset(task, req.body?.preset);
+  if (error) flash(req, 'error', REMINDER_ERRORS[error]);
+  else flash(req, 'success', `Reminder set: ${taskReminders.describe(reminder, req.user.timeZone).label}.`);
   res.redirect(`/tasks/${task._id}`);
 };
 
@@ -101,7 +128,8 @@ exports.unschedule = async (req, res) => {
   const task = await findOwnedTask(req);
   task.set('schedule', undefined);
   await task.save();
-  flash(req, 'success', 'Schedule removed. The task is unscheduled again.');
+  const reminder = await taskReminders.syncWithSchedule(task);
+  flash(req, 'success', reminder === 'removed' ? 'Schedule removed, and its reminder with it.' : 'Schedule removed. The task is unscheduled again.');
   res.redirect(`/tasks/${task._id}`);
 };
 
