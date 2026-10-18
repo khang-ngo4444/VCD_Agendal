@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession } = require('../middleware/auth');
-const { MIN_PASSWORD_LENGTH, validateRegistration } = require('../validators/auth');
+const { PASSWORD_HINT, validateRegistration } = require('../validators/auth');
 
 const DUPLICATE_KEY_ERROR = 11000;
 
@@ -15,7 +15,7 @@ function renderRegister(res, { values = {}, errors = {} } = {}) {
     title: 'Create your account · Agendal',
     values,
     errors,
-    minPasswordLength: MIN_PASSWORD_LENGTH,
+    passwordHint: PASSWORD_HINT,
   });
 }
 
@@ -61,7 +61,9 @@ exports.login = async (req, res) => {
     return renderLogin(res, { values, status: 429, error: `Too many failed attempts. Try again in ${wait}.` });
   }
 
-  if (!user || !(await user.checkPassword(text(body.password)))) {
+  const password = text(body.password);
+  if (!user) await User.fakePasswordCheck(password);
+  if (!user || !(await user.checkPassword(password))) {
     if (user) await user.recordFailedLogin();
     return renderLogin(res, { values, error: LOGIN_FAILED });
   }

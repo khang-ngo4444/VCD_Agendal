@@ -69,6 +69,20 @@ app.get('/', (req, res) =>
     canonicalPath: '/',
   })
 );
+app.get('/privacy', (req, res) =>
+  res.render('legal/privacy', {
+    title: 'Privacy · Agendal',
+    description: 'What Agendal stores about you, why, and the choices you have.',
+    canonicalPath: '/privacy',
+  })
+);
+app.get('/terms', (req, res) =>
+  res.render('legal/terms', {
+    title: 'Terms of use · Agendal',
+    description: 'The simple rules for using Agendal, a student project.',
+    canonicalPath: '/terms',
+  })
+);
 app.use(authRoutes);
 app.use(oauthRoutes);
 

@@ -11,8 +11,8 @@
     if (!meta.length) meta.push('No date');
   }
 %>
-<li class="flex items-start gap-3 px-4 py-3">
-  <form method="post" action="/tasks/<%= task._id %>/complete" class="-my-2.5 -ml-3 shrink-0">
+<li class="relative flex items-start gap-3 px-4 py-3 hover:bg-base-200/60">
+  <form method="post" action="/tasks/<%= task._id %>/complete" class="relative z-10 -my-2.5 -ml-3 shrink-0">
     <%- include('../partials/csrf') %>
     <input type="hidden" name="done" value="<%= task.completedAt ? '0' : '1' %>">
     <input type="hidden" name="returnTo" value="<%= currentPath %>">
@@ -24,7 +24,7 @@
     </button>
   </form>
   <div class="min-w-0 grow">
-    <a href="/tasks/<%= task._id %>" class="block truncate font-medium hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></a>
+    <a href="/tasks/<%= task._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></a>
     <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
       <% if (dates.isOverdue(task)) { %>
         <%# Text and icon, not colour alone %>

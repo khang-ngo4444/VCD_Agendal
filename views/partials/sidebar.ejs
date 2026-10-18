@@ -10,7 +10,7 @@
     { href: '/insights', label: 'Insights', icon: 'chart' },
   ];
   const displayName = currentUser.name || currentUser.email;
-  const itemClass = (href) => (currentPath === href ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-base-200');
+  const itemClass = (href) => (currentPath === href ? 'bg-primary/[0.07] font-semibold text-primary' : 'hover:bg-base-200');
 %>
 <nav aria-label="Main" class="flex min-h-full w-[260px] flex-col border-r border-base-300 bg-base-100 p-4">
   <a href="/today" class="mb-5 flex items-center gap-2.5 px-1 text-lg font-bold">
@@ -23,7 +23,7 @@
   <ul class="space-y-0.5">
     <% navItems.forEach((item) => { %>
       <li>
-        <a href="<%= item.href %>" class="flex h-9 items-center gap-3 rounded-field px-2.5 text-sm <%= itemClass(item.href) %>"
+        <a href="<%= item.href %>" class="flex h-9 pointer-coarse:h-11 items-center gap-3 rounded-field px-2.5 text-sm <%= itemClass(item.href) %>"
           <% if (currentPath === item.href) { %>aria-current="page"<% } %>>
           <%- include('icon', { icon: item.icon, cls: 'size-4 shrink-0' }) %>
           <%= item.label %>
@@ -36,7 +36,7 @@
   <ul class="space-y-0.5">
     <% sidebarProjects.forEach((project) => { %>
       <li>
-        <a href="<%= project.href %>" class="flex h-9 items-center gap-3 rounded-field px-2.5 text-sm <%= itemClass(project.href) %>"
+        <a href="<%= project.href %>" class="flex h-9 pointer-coarse:h-11 items-center gap-3 rounded-field px-2.5 text-sm <%= itemClass(project.href) %>"
           <% if (currentPath === project.href) { %>aria-current="page"<% } %>>
           <span class="size-2.5 shrink-0 rounded-full <%= project.colour ? '' : 'bg-base-300' %>"
             <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span>
@@ -48,7 +48,7 @@
       </li>
     <% }) %>
     <li>
-      <a href="/projects" class="flex h-9 items-center gap-3 rounded-field px-2.5 text-sm text-primary hover:bg-base-200">
+      <a href="/projects" class="flex h-9 pointer-coarse:h-11 items-center gap-3 rounded-field px-2.5 text-sm text-primary hover:bg-base-200">
         <%- include('icon', { icon: 'plus', cls: 'size-4 shrink-0' }) %>
         New project
       </a>

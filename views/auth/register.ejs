@@ -8,21 +8,27 @@
 
       <%- include('_oauth-buttons') %>
 
+      <%# Cursor goes to the first field with an error, or to the name on a fresh form %>
+      <% const focusField = ['name', 'email', 'password'].find((field) => errors[field]) || 'name'; %>
       <form method="post" action="/register" class="mt-6" novalidate>
         <%- include('../partials/csrf') %>
         <%- include('../partials/field', {
           name: 'name', label: 'Full name', type: 'text', icon: 'user', autocomplete: 'name',
+          autofocus: focusField === 'name', maxlength: 80,
           value: values.name, error: errors.name,
         }) %>
         <%- include('../partials/field', {
           name: 'email', label: 'Email', type: 'email', icon: 'mail', autocomplete: 'email',
+          autofocus: focusField === 'email', maxlength: 254,
           value: values.email, error: errors.email,
           errorLink: errors.emailTaken ? { href: '/login', text: 'Log in instead?' } : null,
         }) %>
         <%- include('../partials/field', {
           name: 'password', label: 'Password', type: 'password', icon: 'lock', autocomplete: 'new-password',
-          error: errors.password, hint: `At least ${minPasswordLength} characters.`,
+          autofocus: focusField === 'password', maxlength: 72,
+          error: errors.password, hint: passwordHint,
         }) %>
+        <p class="mb-3 text-sm text-muted">By creating an account you agree to the <a href="/terms" class="font-semibold text-primary hover:underline">Terms</a> and <a href="/privacy" class="font-semibold text-primary hover:underline">Privacy policy</a>.</p>
         <button type="submit" class="btn btn-primary mt-2 h-11 w-full rounded-full">Create account</button>
       </form>
 

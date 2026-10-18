@@ -2,7 +2,7 @@ const User = require('../models/User');
 const { HOME_PATH, startSession } = require('../middleware/auth');
 const { flash } = require('../middleware/flash');
 const { sendMail } = require('../services/mailer');
-const { EMAIL_PATTERN, MIN_PASSWORD_LENGTH } = require('../validators/auth');
+const { EMAIL_PATTERN, MAX_EMAIL_LENGTH, PASSWORD_HINT, validatePassword } = require('../validators/auth');
 
 const text = (value) => (typeof value === 'string' ? value : '');
 
@@ -20,12 +20,12 @@ exports.showForgot = (req, res) => renderForgot(res);
 // Always answers "check your inbox", so the form can't be used to find out who has an account.
 exports.sendResetLink = async (req, res) => {
   const email = text(req.body?.email).trim().toLowerCase();
-  if (!EMAIL_PATTERN.test(email)) {
+  if (!EMAIL_PATTERN.test(email) || email.length > MAX_EMAIL_LENGTH) {
     return renderForgot(res, { values: { email }, errors: { email: 'Enter an email address like name@example.com.' } });
   }
 
   const user = await User.findOne({ email });
-  if (user) {
+  if (user && user.canRequestPasswordReset()) {
     const token = user.createPasswordResetToken();
     await user.save();
     // Not awaited, so the response takes as long for an unknown email as for a real one.
@@ -51,7 +51,7 @@ function renderReset(res, { tokenValid, errors = {} }) {
     title: 'Choose a new password · Agendal',
     tokenValid,
     errors,
-    minPasswordLength: MIN_PASSWORD_LENGTH,
+    passwordHint: PASSWORD_HINT,
   });
 }
 
@@ -66,7 +66,8 @@ exports.resetPassword = async (req, res) => {
   const newPassword = text(req.body?.newPassword);
   const confirmPassword = text(req.body?.confirmPassword);
   const errors = {};
-  if (newPassword.length < MIN_PASSWORD_LENGTH) errors.newPassword = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+  const passwordError = validatePassword(newPassword, { email: user.email, name: user.name });
+  if (passwordError) errors.newPassword = passwordError;
   else if (confirmPassword !== newPassword) errors.confirmPassword = 'The two passwords don’t match.';
   if (Object.keys(errors).length) return renderReset(res, { tokenValid: true, errors });
 

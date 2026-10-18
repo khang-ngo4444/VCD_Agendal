@@ -16,16 +16,16 @@
     <% const taskCount = openTasks.length + doneTasks.length; %>
     <div class="mt-4 flex flex-wrap items-start gap-2">
       <details class="dropdown" data-dismissable>
-        <summary class="btn btn-sm h-9 list-none rounded-full border-0 bg-fill px-4 text-primary">Rename</summary>
+        <summary class="btn h-11 list-none rounded-full border border-base-300 bg-base-100 px-4 text-primary">Rename</summary>
         <form method="post" action="/projects/<%= project._id %>/rename" class="dropdown-content z-30 mt-2 flex w-72 gap-2 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
           <%- include('../partials/csrf') %>
           <label for="rename-project" class="sr-only">Project name</label>
-          <input id="rename-project" name="name" type="text" maxlength="60" value="<%= project.name %>" class="input input-sm h-9 grow" required>
-          <button type="submit" class="btn btn-primary btn-sm h-9 rounded-full">Save</button>
+          <input id="rename-project" name="name" type="text" maxlength="60" value="<%= project.name %>" class="input h-11 grow" required>
+          <button type="submit" class="btn btn-primary h-11 rounded-full">Save</button>
         </form>
       </details>
 
-      <form method="post" action="/projects/<%= project._id %>/colour" class="flex items-center gap-1.5 rounded-full bg-fill px-3 py-1.5">
+      <form method="post" action="/projects/<%= project._id %>/colour" class="flex items-center gap-1.5 rounded-full border border-base-300 bg-base-100 px-3 py-1.5">
         <%- include('../partials/csrf') %>
         <span class="mr-1 text-sm text-muted">Colour</span>
         <% projectColours.forEach((colour) => { %>
@@ -44,7 +44,7 @@
         data-confirm-detail="<%= taskCount ? `Its ${taskCount} task${taskCount === 1 ? '' : 's'} will move to the Inbox.` : 'It has no tasks.' %>"
         data-confirm-button="Delete project">
         <%- include('../partials/csrf') %>
-        <button type="submit" class="btn btn-ghost btn-sm h-9 rounded-full text-error">
+        <button type="submit" class="btn btn-ghost h-11 rounded-full text-error">
           <%- include('../partials/icon', { icon: 'trash', cls: 'size-4' }) %> Delete project
         </button>
       </form>
@@ -78,7 +78,7 @@
 
 <% if (doneTasks.length) { %>
   <details class="mt-6">
-    <summary class="mb-2 cursor-pointer font-semibold text-muted">Done · <%= doneTasks.length %></summary>
+    <summary class="mb-2 flex min-h-11 cursor-pointer items-center font-semibold text-muted">Done · <%= doneTasks.length %></summary>
     <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
       <% doneTasks.forEach((task) => { %><%- include('../tasks/_row', { task, timeZone: currentUser.timeZone }) %><% }) %>
     </ul>

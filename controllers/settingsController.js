@@ -3,11 +3,10 @@ const path = require('node:path');
 const sharp = require('sharp');
 const { flash } = require('../middleware/flash');
 const { isValidTimeZone, timeZoneOptions } = require('../config/timeZones');
-const { MIN_PASSWORD_LENGTH } = require('../validators/auth');
+const { MAX_NAME_LENGTH, PASSWORD_HINT, validatePassword } = require('../validators/auth');
 
 const User = require('../models/User');
 
-const MAX_NAME_LENGTH = 80;
 const THEMES = User.schema.path('preferences.theme').enumValues;
 const ACCENTS = User.schema.path('preferences.accentColour').enumValues;
 const CALENDAR_LAYOUTS = User.schema.path('preferences.calendarLayout').enumValues;
@@ -94,7 +93,7 @@ function renderAccount(req, res, errors = {}) {
     title: 'Account · Settings · Agendal',
     errors,
     hasPassword: Boolean(req.user.passwordHash), // Google-only accounts set a first password instead
-    minPasswordLength: MIN_PASSWORD_LENGTH,
+    passwordHint: PASSWORD_HINT,
   });
 }
 
@@ -108,7 +107,8 @@ exports.changePassword = async (req, res) => {
   if (req.user.passwordHash && !(await req.user.checkPassword(currentPassword))) {
     errors.currentPassword = 'That isn’t your current password.';
   }
-  if (newPassword.length < MIN_PASSWORD_LENGTH) errors.newPassword = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+  const passwordError = validatePassword(newPassword, { email: req.user.email, name: req.user.name });
+  if (passwordError) errors.newPassword = passwordError;
   else if (confirmPassword !== newPassword) errors.confirmPassword = 'The two new passwords don’t match.';
   if (Object.keys(errors).length) return renderAccount(req, res, errors);
 
