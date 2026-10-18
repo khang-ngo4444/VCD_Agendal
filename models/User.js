@@ -21,6 +21,7 @@ const userSchema = new Schema(
       theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
       accentColour: { type: String, enum: ['blue', 'purple', 'green', 'orange', 'graphite'], default: 'blue' },
       weekStartsOn: { type: Number, enum: [0, 1], default: 1 }, // 0 = Sunday, 1 = Monday
+      calendarLayout: { type: String, enum: ['day', 'week', 'month'], default: 'day' }, // which layout the Calendar opens on
     },
     googleId: { type: String, unique: true, sparse: true },
     sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)

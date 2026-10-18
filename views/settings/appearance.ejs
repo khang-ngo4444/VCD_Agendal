@@ -57,16 +57,27 @@
         <p class="mt-2 text-sm text-muted">Used only for things you can click: buttons, links and selections.</p>
       </fieldset>
 
+      <div class="flex flex-wrap gap-x-10 gap-y-8">
       <fieldset>
         <legend class="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">First day of the week</legend>
         <div class="join">
-          <input type="radio" name="weekStartsOn" value="1" class="join-item btn h-10 w-28" aria-label="Monday" <%= values.weekStartsOn === 1 ? 'checked' : '' %>>
-          <input type="radio" name="weekStartsOn" value="0" class="join-item btn h-10 w-28" aria-label="Sunday" <%= values.weekStartsOn === 0 ? 'checked' : '' %>>
+          <input type="radio" name="weekStartsOn" value="1" class="join-item btn h-11 w-28" aria-label="Monday" <%= values.weekStartsOn === 1 ? 'checked' : '' %>>
+          <input type="radio" name="weekStartsOn" value="0" class="join-item btn h-11 w-28" aria-label="Sunday" <%= values.weekStartsOn === 0 ? 'checked' : '' %>>
         </div>
       </fieldset>
+      <fieldset>
+        <legend class="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Default calendar layout</legend>
+        <div class="join">
+          <% [['day', 'Day'], ['week', 'Week'], ['month', 'Month']].forEach(([value, label]) => { %>
+            <input type="radio" name="calendarLayout" value="<%= value %>" class="join-item btn h-11 w-24" aria-label="<%= label %>" <%= values.calendarLayout === value ? 'checked' : '' %>>
+          <% }) %>
+        </div>
+      </fieldset>
+      </div>
 
-      <div class="flex justify-end">
-        <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Save changes</button>
+      <div class="flex justify-end gap-2">
+        <a href="/settings/appearance" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
+        <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
       </div>
     </form>
   </section>

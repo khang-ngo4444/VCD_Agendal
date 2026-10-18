@@ -10,6 +10,7 @@ const User = require('../models/User');
 const MAX_NAME_LENGTH = 80;
 const THEMES = User.schema.path('preferences.theme').enumValues;
 const ACCENTS = User.schema.path('preferences.accentColour').enumValues;
+const CALENDAR_LAYOUTS = User.schema.path('preferences.calendarLayout').enumValues;
 const AVATAR_SIZE_PX = 256;
 const AVATAR_DIR = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
 
@@ -80,6 +81,7 @@ exports.updateAppearance = async (req, res) => {
   const { preferences } = req.user;
   if (THEMES.includes(body.theme)) preferences.theme = body.theme;
   if (ACCENTS.includes(body.accentColour)) preferences.accentColour = body.accentColour;
+  if (CALENDAR_LAYOUTS.includes(body.calendarLayout)) preferences.calendarLayout = body.calendarLayout;
   if (body.weekStartsOn === '0' || body.weekStartsOn === '1') preferences.weekStartsOn = Number(body.weekStartsOn);
 
   await req.user.save();
