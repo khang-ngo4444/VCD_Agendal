@@ -28,11 +28,12 @@
   --muted: #6e6e73;
   --fill: #7878801f;
   --inverse-primary: #2997ff;
-  --color-primary: var(--accent, #0071e3); /* Primary/Accent, or the user's accent colour */
+  --control-border: #86868b; /* Neutral/Text Tertiary: 3.6:1 on white, so input boundaries pass WCAG 1.4.11 */
+  --color-primary: var(--accent, #0066cc); /* Primary/Accent (Apple link blue: Figma's #0071e3 is 4.3:1 on the grey canvas), or the user's accent colour */
   --color-primary-content: var(--accent-content, #ffffff);
   --color-neutral: #1d1d1f;
   --color-neutral-content: #ffffff;
-  --color-error: #ff3b30;
+  --color-error: #d70015; /* Figma's #ff3b30 is only 3.5:1 on white; this is 5.4:1 and passes AA for small text */
   --color-error-content: #ffffff;
   --color-success: #34c759;
   --color-success-content: #ffffff;
@@ -59,8 +60,9 @@
   --muted: #a1a1a6;
   --fill: #7878803d;
   --inverse-primary: #0071e3;
+  --control-border: #8e8e93;
   --color-primary: var(--accent-dark, #2997ff);
-  --color-primary-content: var(--accent-dark-content, #ffffff);
+  --color-primary-content: var(--accent-dark-content, #1d1d1f); /* dark text: white on the light dark-mode blue is only 3.0:1 */
   --color-neutral: #f5f5f7;
   --color-neutral-content: #1d1d1f;
   --color-error: #ff453a;
@@ -79,20 +81,20 @@
   --noise: 0;
 }
 
-/* Accent colours from Figma W31 (Settings → Appearance), picked with <html data-accent="…">.
-   Each has a light-theme and a dark-theme value; blue is the theme default above. */
+/* Accent colours (Figma W31 hues, darkened where needed): the accent is used for button backgrounds AND link text,
+   so each light value must reach 4.5:1 against white. Picked with <html data-accent="…">; blue is the theme default. */
 [data-accent="purple"] {
-  --accent: #8b5cf6;
+  --accent: #7c3aed;
   --accent-dark: #a78bfa;
   --accent-dark-content: #1d1d1f;
 }
 [data-accent="green"] {
-  --accent: #2e9e6a;
+  --accent: #1f7a4f;
   --accent-dark: #30d158;
   --accent-dark-content: #1d1d1f;
 }
 [data-accent="orange"] {
-  --accent: #e8730c;
+  --accent: #c2410c;
   --accent-dark: #ff9f0a;
   --accent-dark-content: #1d1d1f;
 }
@@ -100,4 +102,19 @@
   --accent: #1d1d1f;
   --accent-dark: #f5f5f7;
   --accent-dark-content: #1d1d1f;
+}
+
+/* Visible boundaries for form controls (WCAG 1.4.11 needs 3:1; the soft fill alone is 1.1:1).
+   Unlayered, so it wins over DaisyUI's own border colour; errors and focus keep their colours. */
+.input:not(.input-error),
+.select:not(.select-error),
+.textarea:not(.textarea-error),
+.checkbox,
+.toggle {
+  --input-color: var(--control-border);
+}
+.input:not(.input-error):focus-within,
+.select:not(.select-error):focus,
+.textarea:not(.textarea-error):focus {
+  --input-color: var(--color-base-content);
 }
