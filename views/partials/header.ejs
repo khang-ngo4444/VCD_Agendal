@@ -10,6 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %></title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <% if (!locals.description) { %><meta name="robots" content="noindex"><% } %>
   <% if (locals.description) { %>
     <%# Search and social sharing tags, only on public pages that pass a description %>
     <meta name="description" content="<%= description %>">
