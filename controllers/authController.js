@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession } = require('../middleware/auth');
-const { MIN_PASSWORD_LENGTH, validateRegistration } = require('../validators/auth');
+const { PASSWORD_HINT, validateRegistration } = require('../validators/auth');
 
 const DUPLICATE_KEY_ERROR = 11000;
 
@@ -15,7 +15,7 @@ function renderRegister(res, { values = {}, errors = {} } = {}) {
     title: 'Create your account · Agendal',
     values,
     errors,
-    minPasswordLength: MIN_PASSWORD_LENGTH,
+    passwordHint: PASSWORD_HINT,
   });
 }
 

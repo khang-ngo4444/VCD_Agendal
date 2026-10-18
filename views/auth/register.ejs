@@ -21,7 +21,7 @@
         }) %>
         <%- include('../partials/field', {
           name: 'password', label: 'Password', type: 'password', icon: 'lock', autocomplete: 'new-password',
-          error: errors.password, hint: `At least ${minPasswordLength} characters.`,
+          error: errors.password, hint: passwordHint,
         }) %>
         <button type="submit" class="btn btn-primary mt-2 h-11 w-full rounded-full">Create account</button>
       </form>
