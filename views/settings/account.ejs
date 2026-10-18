@@ -1,33 +1,68 @@
 <%- include('../partials/shell-top') %>
+<%# Account & security (Figma W32). Change password works. "This device", "Signed-in devices" and "Delete account"
+    are layout only: the controls are disabled until their backend lands (marked TODO-backend). %>
 <h1 class="text-3xl font-bold tracking-tight">Settings</h1>
 <div class="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
   <%- include('_nav') %>
-  <section aria-labelledby="account-heading">
+  <section aria-labelledby="account-heading" class="max-w-3xl">
     <h2 id="account-heading" class="text-xl font-bold">Account &amp; security</h2>
     <p class="mt-1 text-sm text-muted">Signed in as <%= currentUser.email %></p>
 
-    <form method="post" action="/settings/password" class="mt-6 max-w-xl rounded-box bg-base-100 p-5" novalidate>
+    <h3 class="mt-8 mb-3 text-xs font-semibold tracking-wide text-muted uppercase"><%= hasPassword ? 'Change password' : 'Set a password' %></h3>
+    <form method="post" action="/settings/password" novalidate>
       <%- include('../partials/csrf') %>
-      <h3 class="mb-4 text-xs font-semibold tracking-wide text-muted uppercase"><%= hasPassword ? 'Change password' : 'Set a password' %></h3>
-      <% if (hasPassword) { %>
+      <div class="grid gap-x-4 sm:grid-cols-2">
+        <% if (hasPassword) { %>
+          <%- include('../partials/field', {
+            name: 'currentPassword', label: 'Current password', type: 'password', icon: 'lock',
+            autocomplete: 'current-password', error: errors.currentPassword,
+          }) %>
+        <% } %>
         <%- include('../partials/field', {
-          name: 'currentPassword', label: 'Current password', type: 'password', icon: 'lock',
-          autocomplete: 'current-password', error: errors.currentPassword,
+          name: 'newPassword', label: 'New password', type: 'password', icon: 'lock', autocomplete: 'new-password',
+          error: errors.newPassword, hint: `At least ${minPasswordLength} characters.`,
         }) %>
-      <% } %>
-      <%- include('../partials/field', {
-        name: 'newPassword', label: 'New password', type: 'password', icon: 'lock', autocomplete: 'new-password',
-        error: errors.newPassword, hint: `At least ${minPasswordLength} characters.`,
-      }) %>
-      <%- include('../partials/field', {
-        name: 'confirmPassword', label: 'Confirm new password', type: 'password', icon: 'lock',
-        autocomplete: 'new-password', error: errors.confirmPassword,
-      }) %>
-      <p class="mb-4 text-sm text-muted">You’ll stay signed in here. Other devices will be signed out.</p>
-      <div class="flex justify-end">
-        <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Update password</button>
+        <%- include('../partials/field', {
+          name: 'confirmPassword', label: 'Confirm new password', type: 'password', icon: 'lock',
+          autocomplete: 'new-password', error: errors.confirmPassword,
+        }) %>
       </div>
+      <p class="mb-3 text-sm text-muted">You’ll stay signed in here. Other devices will be signed out.</p>
+      <button type="submit" class="btn h-11 rounded-full border-0 bg-fill px-5 text-primary">Update password</button>
     </form>
+
+    <%# TODO-backend: remember-me per device %>
+    <h3 class="mt-10 mb-3 text-xs font-semibold tracking-wide text-muted uppercase">This device</h3>
+    <div class="flex min-h-14 items-center justify-between gap-4 rounded-box bg-base-100 px-5 py-3">
+      <label for="remember-device" class="text-sm font-medium">Remember me on this device</label>
+      <input id="remember-device" type="checkbox" class="toggle toggle-success" checked disabled aria-describedby="remember-hint">
+    </div>
+    <p id="remember-hint" class="mt-2 text-xs text-muted">Without it you are logged out when you close the browser. This switch will work soon.</p>
+
+    <%# TODO-backend: list real sessions and let the user log one out %>
+    <h3 class="mt-10 mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Signed-in devices</h3>
+    <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+      <li class="flex items-center justify-between gap-4 px-5 py-3">
+        <div class="min-w-0">
+          <p class="truncate text-sm font-semibold">This device</p>
+          <p class="text-xs text-muted">Signed in now</p>
+        </div>
+        <span class="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold">
+          <span class="text-success"><%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %></span>
+          Current
+        </span>
+      </li>
+    </ul>
+    <p class="mt-2 text-xs text-muted">Other devices will be listed here, each with a Log out button.</p>
+
+    <%# TODO-backend: delete the account and all its data (needs a confirm step and password check) %>
+    <div class="mt-10 flex flex-col gap-4 rounded-box bg-error/[0.08] p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="font-semibold text-error">Delete account</h3>
+        <p class="mt-1 max-w-md text-sm text-muted">Permanently removes all tasks, events, projects and assistant conversations. This cannot be undone.</p>
+      </div>
+      <button type="button" disabled class="btn h-11 shrink-0 rounded-full border-0 bg-error/15 px-5 text-error" title="Coming soon">Delete account</button>
+    </div>
   </section>
 </div>
 <%- include('../partials/shell-bottom') %>
