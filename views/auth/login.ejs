@@ -19,9 +19,11 @@
         <%- include('../partials/csrf') %>
         <%- include('../partials/field', {
           name: 'email', label: 'Email', type: 'email', icon: 'mail', autocomplete: 'email', value: values.email,
+          autofocus: !values.email, maxlength: 254,
         }) %>
         <%- include('../partials/field', {
           name: 'password', label: 'Password', type: 'password', icon: 'lock', autocomplete: 'current-password',
+          autofocus: Boolean(values.email), // after a failed attempt the email is kept, so the cursor goes to the password
         }) %>
         <div class="mb-4 flex items-center justify-between gap-4">
           <label class="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted">

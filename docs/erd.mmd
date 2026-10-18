@@ -8,6 +8,7 @@ erDiagram
     TASK ||--o{ REMINDER : has
     USER ||--o{ HABIT : owns
     HABIT ||--o{ HABIT_CHECK_IN : "has (one per day)"
+    USER |o--o{ ACTIVITY_LOG : "account (null = unknown email)"
 
     USER {
         ObjectId _id PK
@@ -16,12 +17,16 @@ erDiagram
         String name
         String avatar
         String timeZone
-        Object preferences "theme, accentColour, weekStartsOn"
+        String role "user | admin (admins only use /admin)"
+        Object preferences "theme, accentColour, weekStartsOn, calendarLayout"
         Object notifications "push, email (on by default), lastEmailAt, emailDay, emailsToday"
         String googleId UK
         Number sessionVersion "bumped to end all sessions"
         Object loginFailures "count, since"
         Date lockedUntil
+        Date lastLoginAt "shown in the admin user list"
+        Date lastSeenAt "last request, hourly; active users"
+        Object adminLock "at, by, reason (set = locked by an admin)"
         Date onboardedAt "null = show Welcome screen"
         Object passwordReset "tokenHash, expiresAt"
         Date createdAt
@@ -85,4 +90,14 @@ erDiagram
         String date "YYYY-MM-DD local, unique with habit"
         Date createdAt
         Date updatedAt
+    }
+    ACTIVITY_LOG {
+        ObjectId _id PK
+        String action "signup | login | login_failed | lockout | password_reset | account_deleted | admin_lock | admin_unlock"
+        ObjectId account FK "null for unknown emails"
+        String email "copied, survives account deletion"
+        ObjectId actor FK "the admin, for lock / unlock"
+        String details
+        String ip
+        Date createdAt "TTL: removed after 90 days"
     }

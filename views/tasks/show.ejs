@@ -29,7 +29,7 @@
     <div class="mt-5 grid gap-5 sm:grid-cols-3">
       <div>
         <label for="priority" class="mb-1.5 block text-xs font-semibold">Priority</label>
-        <select id="priority" name="priority" class="select h-10 w-full">
+        <select id="priority" name="priority" class="select h-11 w-full">
           <% priorities.forEach((priority) => { %>
             <option value="<%= priority %>" <%= values.priority === priority ? 'selected' : '' %>><%= priority[0].toUpperCase() + priority.slice(1) %></option>
           <% }) %>
@@ -37,13 +37,13 @@
       </div>
       <div>
         <label for="dueDate" class="mb-1.5 block text-xs font-semibold">Due date</label>
-        <input id="dueDate" name="dueDate" type="date" value="<%= values.dueDate %>" class="input h-10 w-full <%= errors.dueDate ? 'input-error' : '' %>"
+        <input id="dueDate" name="dueDate" type="date" value="<%= values.dueDate %>" class="input h-11 w-full <%= errors.dueDate ? 'input-error' : '' %>"
           <% if (errors.dueDate) { %>aria-invalid="true" aria-describedby="dueDate-error"<% } %>>
         <% if (errors.dueDate) { %><p id="dueDate-error" class="mt-1.5 text-sm text-error"><%= errors.dueDate %></p><% } %>
       </div>
       <div>
         <label for="project" class="mb-1.5 block text-xs font-semibold">Project</label>
-        <select id="project" name="project" class="select h-10 w-full <%= errors.project ? 'select-error' : '' %>"
+        <select id="project" name="project" class="select h-11 w-full <%= errors.project ? 'select-error' : '' %>"
           <% if (errors.project) { %>aria-invalid="true" aria-describedby="project-error"<% } %>>
           <% sidebarProjects.forEach((project) => { %>
             <option value="<%= project.id || '' %>" <%= values.project === (project.id || '') ? 'selected' : '' %>><%= project.name %></option>
@@ -57,11 +57,11 @@
       <legend class="mb-1.5 text-xs font-semibold">Scheduled time <span class="font-normal text-muted">(when you’ll work on it)</span></legend>
       <div class="grid grid-cols-2 items-center gap-2 sm:grid-cols-[1fr_auto_auto]">
         <label for="scheduleDate" class="sr-only">Date</label>
-        <input id="scheduleDate" name="scheduleDate" type="date" value="<%= values.scheduleDate %>" class="input col-span-2 h-10 w-full sm:col-span-1 <%= errors.schedule ? 'input-error' : '' %>">
+        <input id="scheduleDate" name="scheduleDate" type="date" value="<%= values.scheduleDate %>" class="input col-span-2 h-11 w-full sm:col-span-1 <%= errors.schedule ? 'input-error' : '' %>">
         <label for="scheduleStart" class="sr-only">Start time</label>
-        <input id="scheduleStart" name="scheduleStart" type="time" value="<%= values.scheduleStart %>" class="input h-10 w-full sm:w-28 <%= errors.schedule ? 'input-error' : '' %>">
+        <input id="scheduleStart" name="scheduleStart" type="time" value="<%= values.scheduleStart %>" class="input h-11 w-full sm:w-28 <%= errors.schedule ? 'input-error' : '' %>">
         <label for="scheduleEnd" class="sr-only">End time</label>
-        <input id="scheduleEnd" name="scheduleEnd" type="time" value="<%= values.scheduleEnd %>" class="input h-10 w-full sm:w-28 <%= errors.schedule ? 'input-error' : '' %>">
+        <input id="scheduleEnd" name="scheduleEnd" type="time" value="<%= values.scheduleEnd %>" class="input h-11 w-full sm:w-28 <%= errors.schedule ? 'input-error' : '' %>">
       </div>
       <p id="schedule-error" class="mt-1.5 text-sm <%= errors.schedule ? 'text-error' : 'text-muted' %>">
         <%= errors.schedule || 'Date, start and end, or leave all three empty.' %>
@@ -72,7 +72,7 @@
     </fieldset>
 
     <div class="mt-6 flex justify-end">
-      <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Save changes</button>
+      <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
     </div>
   </form>
 

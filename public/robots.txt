@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /today
+Disallow: /projects
+Disallow: /inbox
+Disallow: /tasks
+Disallow: /settings
+Disallow: /welcome
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /components

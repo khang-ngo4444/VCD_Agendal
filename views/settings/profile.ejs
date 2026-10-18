@@ -10,7 +10,7 @@
       <%- include('../partials/avatar', { user: currentUser, cls: 'size-20 text-2xl' }) %>
       <form method="post" action="/settings/avatar" enctype="multipart/form-data">
         <%- include('../partials/csrf') %>
-        <label class="btn h-9 rounded-full border-0 bg-fill px-4 text-primary focus-within:outline-2 focus-within:outline-primary">
+        <label class="btn h-11 rounded-full border border-base-300 bg-base-100 px-4 text-primary focus-within:outline-2 focus-within:outline-primary">
           Change photo
           <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" data-autosubmit>
         </label>
@@ -43,7 +43,7 @@
         </div>
       </div>
       <div class="mt-6 flex justify-end">
-        <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Save changes</button>
+        <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
       </div>
     </form>
   </section>

@@ -1,0 +1,14 @@
+<%- include('../partials/shell-top') %>
+<%# Delete account without JavaScript, and where the dialog's errors are shown (W32). %>
+<h1 class="text-3xl font-bold tracking-tight">Settings</h1>
+<div class="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
+  <%- include('_nav') %>
+  <section aria-labelledby="delete-heading" class="max-w-xl">
+    <h2 id="delete-heading" class="text-xl font-bold text-error">Delete account</h2>
+    <p class="mt-1 mb-6 text-sm text-muted">Signed in as <%= currentUser.email %></p>
+    <div class="rounded-box bg-base-100 p-5">
+      <%- include('_delete-account-form', { hasPassword, errors }) %>
+    </div>
+  </section>
+</div>
+<%- include('../partials/shell-bottom') %>

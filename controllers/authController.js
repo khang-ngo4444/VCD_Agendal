@@ -1,6 +1,7 @@
 const User = require('../models/User');
-const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, startSession } = require('../middleware/auth');
-const { MIN_PASSWORD_LENGTH, validateRegistration } = require('../validators/auth');
+const { HOME_PATH, WELCOME_PATH, SESSION_COOKIE, ADMIN_LOCKED_MESSAGE, startSession } = require('../middleware/auth');
+const { PASSWORD_HINT, validateRegistration } = require('../validators/auth');
+const activity = require('../services/activity');
 
 const DUPLICATE_KEY_ERROR = 11000;
 
@@ -15,7 +16,7 @@ function renderRegister(res, { values = {}, errors = {} } = {}) {
     title: 'Create your account · Agendal',
     values,
     errors,
-    minPasswordLength: MIN_PASSWORD_LENGTH,
+    passwordHint: PASSWORD_HINT,
   });
 }
 
@@ -39,6 +40,7 @@ exports.register = async (req, res) => {
   }
 
   await startSession(req, user);
+  await activity.record(req, { action: 'signup', user, details: 'Email and password' });
   res.redirect(WELCOME_PATH);
 };
 
@@ -61,15 +63,44 @@ exports.login = async (req, res) => {
     return renderLogin(res, { values, status: 429, error: `Too many failed attempts. Try again in ${wait}.` });
   }
 
-  if (!user || !(await user.checkPassword(text(body.password)))) {
-    if (user) await user.recordFailedLogin();
+  const password = text(body.password);
+  if (!user) await User.fakePasswordCheck(password);
+  if (!user || !(await user.checkPassword(password))) {
+    await recordFailedLogin(req, user, values.email);
     return renderLogin(res, { values, error: LOGIN_FAILED });
+  }
+
+  // Only after the right password, so the form can't be used to find out which accounts are locked.
+  if (user.isLockedByAdmin()) {
+    await activity.record(req, { action: 'login_failed', user, details: 'Account locked by an admin' });
+    return renderLogin(res, { values, status: 403, error: ADMIN_LOCKED_MESSAGE });
   }
 
   await user.clearFailedLogins();
   await startSession(req, user, { remember: values.remember });
+  await activity.record(req, { action: 'login', user, details: loginDetails(req, user) });
   res.redirect(HOME_PATH);
 };
+
+// "Chrome on Windows", plus where an admin signed in to.
+const loginDetails = (req, user, method) =>
+  [method, activity.describeDevice(req.get('user-agent')), user.role === 'admin' && 'admin console'].filter(Boolean).join(' · ');
+exports.loginDetails = loginDetails;
+
+// Counts the failure on the account (10 in 15 minutes locks it) and logs it, or the lockout it caused.
+async function recordFailedLogin(req, user, email) {
+  if (!user) {
+    if (email) await activity.record(req, { action: 'login_failed', email, details: 'No account with this email' });
+    return;
+  }
+  await user.recordFailedLogin();
+  if (user.lockMinutesLeft()) {
+    await activity.record(req, { action: 'lockout', user, details: `${User.MAX_FAILED_LOGINS} failed logins · locked for ${user.lockMinutesLeft()} minutes` });
+  } else {
+    const attempt = user.loginFailures.count;
+    await activity.record(req, { action: 'login_failed', user, details: `Wrong password · attempt ${attempt} of ${User.MAX_FAILED_LOGINS}` });
+  }
+}
 
 // Logging out ends the user's sessions on every device, not just this one.
 exports.logout = async (req, res) => {

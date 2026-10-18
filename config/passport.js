@@ -18,9 +18,19 @@ async function findOrCreateGoogleUser(profile) {
   const existing = await User.findOne({ email });
   if (existing) {
     existing.googleId = profile.id;
+    // Local accounts are not email-verified, so someone could have registered this address with a password they know.
+    // Linking Google must not hand the account to them: drop the password and end every session. Google now owns it.
+    if (existing.passwordHash) {
+      existing.passwordHash = undefined;
+      existing.sessionVersion += 1;
+      existing.passwordReset = undefined;
+      existing.$locals.passwordRemoved = true; // lets the route tell the user
+    }
     return existing.save();
   }
-  return User.create({ email, name: profile.displayName, googleId: profile.id });
+  const created = await User.create({ email, name: profile.displayName, googleId: profile.id });
+  created.$locals.signedUp = true; // the callback logs a sign-up instead of a login
+  return created;
 }
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {

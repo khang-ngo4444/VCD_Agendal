@@ -3,13 +3,14 @@ const path = require('node:path');
 const sharp = require('sharp');
 const { flash } = require('../middleware/flash');
 const { isValidTimeZone, timeZoneOptions } = require('../config/timeZones');
-const { MIN_PASSWORD_LENGTH } = require('../validators/auth');
+const { MAX_NAME_LENGTH, PASSWORD_HINT, validatePassword } = require('../validators/auth');
+const accountDeletion = require('../services/accountDeletion');
 
 const User = require('../models/User');
 
-const MAX_NAME_LENGTH = 80;
 const THEMES = User.schema.path('preferences.theme').enumValues;
 const ACCENTS = User.schema.path('preferences.accentColour').enumValues;
+const CALENDAR_LAYOUTS = User.schema.path('preferences.calendarLayout').enumValues;
 const AVATAR_SIZE_PX = 256;
 const AVATAR_DIR = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
 
@@ -80,6 +81,7 @@ exports.updateAppearance = async (req, res) => {
   const { preferences } = req.user;
   if (THEMES.includes(body.theme)) preferences.theme = body.theme;
   if (ACCENTS.includes(body.accentColour)) preferences.accentColour = body.accentColour;
+  if (CALENDAR_LAYOUTS.includes(body.calendarLayout)) preferences.calendarLayout = body.calendarLayout;
   if (body.weekStartsOn === '0' || body.weekStartsOn === '1') preferences.weekStartsOn = Number(body.weekStartsOn);
 
   await req.user.save();
@@ -92,7 +94,7 @@ function renderAccount(req, res, errors = {}) {
     title: 'Account · Settings · Agendal',
     errors,
     hasPassword: Boolean(req.user.passwordHash), // Google-only accounts set a first password instead
-    minPasswordLength: MIN_PASSWORD_LENGTH,
+    passwordHint: PASSWORD_HINT,
   });
 }
 
@@ -106,7 +108,8 @@ exports.changePassword = async (req, res) => {
   if (req.user.passwordHash && !(await req.user.checkPassword(currentPassword))) {
     errors.currentPassword = 'That isn’t your current password.';
   }
-  if (newPassword.length < MIN_PASSWORD_LENGTH) errors.newPassword = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+  const passwordError = validatePassword(newPassword, { email: req.user.email, name: req.user.name });
+  if (passwordError) errors.newPassword = passwordError;
   else if (confirmPassword !== newPassword) errors.confirmPassword = 'The two new passwords don’t match.';
   if (Object.keys(errors).length) return renderAccount(req, res, errors);
 
@@ -116,4 +119,27 @@ exports.changePassword = async (req, res) => {
 
   flash(req, 'success', 'Password updated. Other devices have been signed out.');
   res.redirect('/settings/account');
+};
+
+// Delete account (W32). The dialog on the Account page posts here; this page is its no-JS version and shows errors.
+function renderDeleteAccount(req, res, errors = {}) {
+  res.status(Object.keys(errors).length ? 422 : 200).render('settings/delete-account', {
+    title: 'Delete account · Settings · Agendal',
+    currentPath: '/settings/account', // keeps "Account" highlighted in the settings menu
+    errors,
+    hasPassword: Boolean(req.user.passwordHash),
+  });
+}
+
+exports.showDeleteAccount = (req, res) => renderDeleteAccount(req, res);
+
+exports.deleteAccount = async (req, res) => {
+  const errors = await accountDeletion.checkConfirmation(req.user, req.body);
+  if (Object.keys(errors).length) return renderDeleteAccount(req, res, errors);
+
+  await accountDeletion.deleteAccount(req, req.user);
+  // A fresh, empty session for the goodbye message; the old one is gone with the account.
+  await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
+  flash(req, 'success', 'Your account and all its data have been deleted.');
+  res.redirect('/');
 };

@@ -14,5 +14,7 @@ router.get('/settings/notifications', notifications.showSettings);
 router.post('/settings/notifications', notifications.updateSettings);
 router.get('/settings/account', settings.showAccount);
 router.post('/settings/password', settings.changePassword);
+router.get('/settings/account/delete', settings.showDeleteAccount);
+router.post('/settings/account/delete', settings.deleteAccount);
 
 module.exports = router;
