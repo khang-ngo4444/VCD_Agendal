@@ -7,7 +7,7 @@ function run(user, session = { userId: 'u1', sessionVersion: 2 }) {
   jest.spyOn(User, 'updateOne').mockResolvedValue({}); // the hourly lastSeenAt write
   session.destroy = jest.fn((done) => done());
   const req = { session };
-  const res = { locals: {}, redirect: jest.fn() };
+  const res = { locals: {}, redirect: jest.fn(), set: jest.fn() }; // set: the no-store Cache-Control header
   const next = jest.fn();
   return requireLogin(req, res, next).then(() => ({ req, res, next, session }));
 }
