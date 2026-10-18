@@ -13,7 +13,7 @@
   <div class="input h-11 w-full bg-fill <%= locals.error ? 'input-error' : '' %>">
     <%- include('icon', { icon, cls: 'size-4 shrink-0 text-muted' }) %>
     <input id="<%= name %>" name="<%= name %>" type="<%= type %>" value="<%= locals.value || '' %>"
-      autocomplete="<%= autocomplete %>" class="grow"
+      autocomplete="<%= autocomplete %>" class="h-full grow"
       <% if (locals.maxlength) { %>maxlength="<%= maxlength %>"<% } %>
       <% if (locals.autofocus) { %>autofocus<% } %>
       <% if (isEmail) { %>autocapitalize="none" spellcheck="false"<% } %>

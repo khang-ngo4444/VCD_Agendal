@@ -9,14 +9,14 @@
   <input id="<%= idPrefix %>-title" name="title" type="text" maxlength="200" placeholder="What needs doing?"
     class="input h-12 w-full text-base" required <%= locals.autofocus ? 'autofocus' : '' %>>
   <label for="<%= idPrefix %>-project" class="mt-4 mb-1.5 block text-xs font-semibold">Project</label>
-  <select id="<%= idPrefix %>-project" name="project" class="select h-10 w-full">
+  <select id="<%= idPrefix %>-project" name="project" class="select h-11 w-full">
     <% projects.forEach((project) => { %>
       <option value="<%= project.id || '' %>"><%= project.name %></option>
     <% }) %>
   </select>
   <p class="mt-3 text-xs text-muted">Only the title is required · Enter to save · Esc to close</p>
   <div class="mt-4 flex justify-end">
-    <button type="submit" class="btn btn-primary h-10 rounded-full px-5">
+    <button type="submit" class="btn btn-primary h-11 rounded-full px-5">
       <%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %> Add task
     </button>
   </div>
