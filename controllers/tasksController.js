@@ -64,12 +64,14 @@ function formValues(task, timeZone) {
 
 async function renderTask(req, res, task, { values, errors = {} } = {}) {
   const project = task.project && (await Project.findOne({ _id: task.project, owner: req.user._id }).lean());
-  const reminder = taskReminders.describe(await taskReminders.findPending(task), req.user.timeZone);
+  const pending = await taskReminders.findPending(task);
+  const reminder = taskReminders.describe(pending, req.user.timeZone);
   res.status(Object.keys(errors).length ? 422 : 200).render('tasks/show', {
     title: `${task.title} · Agendal`,
     task,
     reminder,
     reminderPresets: taskReminders.PRESETS,
+    reminderDefaults: taskReminders.customDefaults(task, pending, req.user.timeZone),
     values: values ?? formValues(task, req.user.timeZone),
     errors,
     priorities: PRIORITIES,
@@ -112,15 +114,32 @@ const REMINDER_ERRORS = {
   unknown_preset: 'Pick one of the reminder times in the list.',
   not_scheduled: 'Schedule the task first: presets count back from its start time.',
   past: 'That time has already passed. Pick a later reminder.',
+  invalid_time: 'Pick a date and a time for the reminder.',
 };
 
-// Reminder picker (W30): a preset counted back from the scheduled start.
+// Reminder picker (W30): a preset counted back from the scheduled start, or (custom=1) a date and time the user picks.
 exports.setReminder = async (req, res) => {
   const task = await findOwnedTask(req);
-  const { reminder, error } = await taskReminders.setPreset(task, req.body?.preset);
+  const body = req.body ?? {};
+  const { reminder, error } =
+    body.custom === '1'
+      ? await taskReminders.setCustom(task, body.reminderDate, body.reminderTime, req.user.timeZone)
+      : await taskReminders.setPreset(task, body.preset);
   if (error) flash(req, 'error', REMINDER_ERRORS[error]);
   else flash(req, 'success', `Reminder set: ${taskReminders.describe(reminder, req.user.timeZone).label}.`);
   res.redirect(`/tasks/${task._id}`);
+};
+
+// The custom date-and-time form on its own page: the dialog's no-JS version.
+exports.showReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const pending = await taskReminders.findPending(task);
+  res.render('tasks/reminder', {
+    title: `Reminder · ${task.title} · Agendal`,
+    task,
+    reminder: taskReminders.describe(pending, req.user.timeZone),
+    defaults: taskReminders.customDefaults(task, pending, req.user.timeZone),
+  });
 };
 
 // "Remove schedule": the task keeps its project and due date and simply becomes unscheduled again.

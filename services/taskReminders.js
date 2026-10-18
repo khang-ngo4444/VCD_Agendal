@@ -1,7 +1,7 @@
 // The reminder on a task (W30 · Reminder picker). One reminder still to come per task; the reminder job
 // (services/reminders.js) sends it. A preset is stored as minutes before the scheduled start, so it moves with the task.
 const Reminder = require('../models/Reminder');
-const { formatDay, formatTime } = require('./dates');
+const { formatDay, formatTime, parseDateInput, parseTimeInput, zonedTime, toDateInput, toTimeInput } = require('./dates');
 
 const MINUTE_MS = 60 * 1000;
 const PRESETS = [
@@ -39,6 +39,26 @@ async function setPreset(task, minutes, now = new Date()) {
   return { reminder: await replace(task, remindAt, preset.minutes) };
 }
 
+// A date and time the user picks, in their time zone; works for unscheduled tasks too and never moves with the task.
+// Returns { reminder } or { error: 'invalid_time' | 'past' }.
+async function setCustom(task, dateInput, timeInput, timeZone, now = new Date()) {
+  const day = parseDateInput(typeof dateInput === 'string' ? dateInput : '');
+  const time = parseTimeInput(typeof timeInput === 'string' ? timeInput : '');
+  if (!day || !time) return { error: 'invalid_time' };
+  const remindAt = zonedTime({ ...day, ...time }, timeZone);
+  if (remindAt <= now) return { error: 'past' };
+  return { reminder: await replace(task, remindAt, null) };
+}
+
+// What the custom form starts with: the current reminder, else 15 minutes before the start, else the next full hour.
+function customDefaults(task, reminder, timeZone, now = new Date()) {
+  const at =
+    reminder?.remindAt ??
+    (task.schedule?.start > now ? new Date(Math.max(task.schedule.start - 15 * MINUTE_MS, now.getTime())) : null) ??
+    new Date(Math.ceil((now.getTime() + MINUTE_MS) / (60 * MINUTE_MS)) * 60 * MINUTE_MS);
+  return { date: toDateInput(at, timeZone), time: toTimeInput(at, timeZone) };
+}
+
 // After the task's schedule changes: a preset reminder follows the new start time. It is removed when the task has no
 // schedule any more ('removed') or when the new reminder time has already passed ('passed'). Chosen-time reminders stay put.
 // Returns 'none' | 'kept' | 'moved' | 'removed' | 'passed'.
@@ -69,4 +89,4 @@ function describe(reminder, timeZone, now = new Date()) {
   };
 }
 
-module.exports = { PRESETS, findPending, setPreset, syncWithSchedule, describe };
+module.exports = { PRESETS, findPending, setPreset, setCustom, customDefaults, syncWithSchedule, describe };

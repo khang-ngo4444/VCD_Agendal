@@ -1,5 +1,6 @@
 <%#
-  Reminder picker (Figma W30) on the task page. Locals: task, reminder ({ label, offsetMinutes } or null), reminderPresets.
+  Reminder picker (Figma W30) on the task page. Locals: task, reminder ({ label, offsetMinutes } or null), reminderPresets,
+  reminderDefaults (the custom form's starting date and time).
   A <details> menu of small forms, so it works without JavaScript. Sits beside the task form, never inside it.
 %>
 <% const scheduled = Boolean(task.schedule?.start); %>
@@ -31,6 +32,20 @@
           </li>
         <% }) %>
       </ul>
+      <div class="my-1 border-t border-base-300"></div>
+      <%# Opens the dialog below; without JS it is a link to the same form on its own page. %>
+      <a href="/tasks/<%= task._id %>/reminder" data-open-modal="custom-reminder-dialog"
+        class="flex min-h-11 items-center gap-2 rounded-field px-3 text-sm hover:bg-base-200 <%= reminder && reminder.offsetMinutes == null ? 'bg-primary/10 font-semibold text-primary' : '' %>">
+        <%- include('../partials/icon', { icon: 'calendar', cls: 'size-4 shrink-0' }) %>
+        <span class="grow">Custom date &amp; time…</span>
+        <% if (reminder && reminder.offsetMinutes == null) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %><% } %>
+      </a>
     </div>
   </details>
+  <%# Outside the menu: a closed <details> hides its content, dialog included. %>
+  <%- include('../partials/modal', {
+    id: 'custom-reminder-dialog',
+    heading: 'Remind me at',
+    body: include('_custom-reminder-form', { task, defaults: reminderDefaults, idPrefix: 'dialog-reminder' }),
+  }) %>
 </section>

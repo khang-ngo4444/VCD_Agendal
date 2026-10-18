@@ -86,3 +86,36 @@ test('describe: the preset name with its time, in the user’s time zone', () =>
   expect(label({ offsetMinutes: 15, remindAt: new Date('2026-10-18T07:45:00Z') })).toBe('15 minutes before · 14:45');
   expect(taskReminders.describe(null, 'UTC')).toBeNull();
 });
+
+describe('setCustom (reminder at a chosen date and time)', () => {
+  beforeEach(() => {
+    jest.spyOn(Reminder, 'deleteMany').mockResolvedValue({ deletedCount: 0 });
+    jest.spyOn(Reminder, 'create').mockImplementation(async (doc) => doc);
+  });
+
+  test('the wall-clock time is read in the user’s time zone, and works for unscheduled tasks', async () => {
+    const { reminder } = await taskReminders.setCustom(unscheduled, '2026-10-20', '09:00', 'Asia/Ho_Chi_Minh', now);
+    expect(reminder.remindAt.toISOString()).toBe('2026-10-20T02:00:00.000Z');
+    expect(reminder.offsetMinutes).toBeNull(); // stays put when the task is rescheduled
+  });
+
+  test('a time already passed, a malformed date or time, or crafted arrays are refused', async () => {
+    expect(await taskReminders.setCustom(unscheduled, '2026-10-18', '12:59', 'Asia/Ho_Chi_Minh', now)).toEqual({ error: 'past' });
+    expect(await taskReminders.setCustom(unscheduled, '2026-02-30', '09:00', 'UTC', now)).toEqual({ error: 'invalid_time' });
+    expect(await taskReminders.setCustom(unscheduled, '2026-10-20', '25:00', 'UTC', now)).toEqual({ error: 'invalid_time' });
+    expect(await taskReminders.setCustom(unscheduled, ['2026-10-20'], ['09:00'], 'UTC', now)).toEqual({ error: 'invalid_time' });
+    expect(Reminder.create).not.toHaveBeenCalled();
+  });
+
+  test('describe shows the day and time of a chosen time', () => {
+    const r = { offsetMinutes: null, remindAt: new Date('2026-10-19T02:00:00Z') };
+    expect(taskReminders.describe(r, 'Asia/Ho_Chi_Minh', now).label).toBe('Tomorrow · 09:00');
+  });
+});
+
+test('customDefaults: the current reminder, else 15 minutes before the start, else the next full hour', () => {
+  const tz = 'Asia/Ho_Chi_Minh';
+  expect(taskReminders.customDefaults(unscheduled, { remindAt: new Date('2026-10-19T02:00:00Z') }, tz, now)).toEqual({ date: '2026-10-19', time: '09:00' });
+  expect(taskReminders.customDefaults(scheduled('2026-10-18T08:00:00Z'), null, tz, now)).toEqual({ date: '2026-10-18', time: '14:45' });
+  expect(taskReminders.customDefaults(unscheduled, null, tz, new Date('2026-10-18T06:20:00Z'))).toEqual({ date: '2026-10-18', time: '14:00' });
+});

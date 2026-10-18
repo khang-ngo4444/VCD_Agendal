@@ -1,6 +1,6 @@
 <%- include('../partials/shell-top') %>
 <%# Task detail (Figma W10, as a page). Locals: task, values (form strings), errors, priorities, backHref, backLabel, overdue,
-    reminder, reminderPresets (the Reminder picker, W30, in the side column). %>
+    reminder, reminderPresets, reminderDefaults (the Reminder picker, W30, in the side column). %>
 <a href="<%= backHref %>" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ <%= backLabel %></a>
 
 <div class="mt-2 flex flex-wrap items-center gap-3">
@@ -78,7 +78,7 @@
   </form>
 
   <aside class="space-y-3">
-    <%- include('_reminder', { task, reminder, reminderPresets }) %>
+    <%- include('_reminder', { task, reminder, reminderPresets, reminderDefaults }) %>
     <form method="post" action="/tasks/<%= task._id %>/complete">
       <%- include('../partials/csrf') %>
       <input type="hidden" name="done" value="<%= task.completedAt ? '0' : '1' %>">
