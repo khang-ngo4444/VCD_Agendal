@@ -5,8 +5,8 @@ const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
 const { safeReturnTo } = require('../services/returnTo');
 const { columnLabel, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
-const { isOverdue, toDateInput, toTimeInput } = require('../services/dates');
-const { PRIORITIES, parseTaskForm } = require('../validators/task');
+const { formatDay, formatTime, isOverdue, toDateInput, toTimeInput } = require('../services/dates');
+const { PRIORITIES, parseSchedule, parseTaskForm } = require('../validators/task');
 
 const MAX_TITLE_LENGTH = 200;
 
@@ -17,18 +17,21 @@ const findOwnedTask = (req) => findOwned(Task, req.params.id, req.user._id, { de
 exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal' });
 
 // Quick-add: a title is enough. The task starts in Backlog, in the Inbox unless a project was picked.
+// The Calendar's slot form also sends scheduleDate, scheduleStart and scheduleEnd.
 exports.create = async (req, res) => {
   const body = req.body ?? {};
   const returnTo = safeReturnTo(body.returnTo);
   const title = text(body.title).trim();
-  if (!title || title.length > MAX_TITLE_LENGTH) {
-    flash(req, 'error', title ? `Keep the title under ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.');
+  const { error, schedule } = parseSchedule({ scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) }, req.user.timeZone);
+  if (!title || title.length > MAX_TITLE_LENGTH || error) {
+    flash(req, 'error', error ?? (title ? `Keep the title under ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.'));
     return res.redirect(returnTo);
   }
 
   const project = body.project ? await findOwned(Project, body.project, req.user._id) : null;
-  await Task.create({ owner: req.user._id, project: project?._id ?? null, title });
-  flash(req, 'success', `Added “${title}” to ${project ? project.name : 'the Inbox'}.`);
+  await Task.create({ owner: req.user._id, project: project?._id ?? null, title, schedule: schedule ?? undefined });
+  const when = schedule ? ` for ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}` : '';
+  flash(req, 'success', `Added “${title}” to ${project ? project.name : 'the Inbox'}${when}.`);
   res.redirect(returnTo);
 };
 

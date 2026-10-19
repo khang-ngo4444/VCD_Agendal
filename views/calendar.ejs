@@ -29,5 +29,6 @@
     <%- include('calendar/_time-grid') %>
   <% } %>
 </div>
+<%- include('partials/modal', { id: 'slot-dialog', heading: 'New task', body: include('calendar/_slot-form', { returnTo: currentUrl }) }) %>
 <script src="/js/calendar.js" defer></script>
 <%- include('partials/shell-bottom') %>

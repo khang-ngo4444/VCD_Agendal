@@ -15,7 +15,7 @@
         aria-label="<%= day.name %>"><%= day.weekday %> <%= day.number %></a>
     <% }) %>
   </div>
-  <div class="relative h-[min(640px,70vh)] overflow-y-auto" data-calendar-scroll="<%= 7 * HOUR - 12 %>">
+  <div class="relative h-[min(640px,70vh)] overflow-y-auto" data-calendar-scroll="<%= 7 * HOUR - 12 %>" data-hour="<%= HOUR %>">
     <div class="grid" style="grid-template-columns: <%= columns %>; height: <%= 24 * HOUR %>px">
       <div class="relative" aria-hidden="true">
         <% for (let hour = 1; hour < 24; hour++) { %>
