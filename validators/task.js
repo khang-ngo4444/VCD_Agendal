@@ -1,3 +1,4 @@
+const { FREQUENCIES } = require('../models/Event'); // tasks repeat on the same steps as events
 const { parseDateInput, parseTimeInput, zonedTime, endOfLocalDay } = require('../services/dates');
 
 const MAX_TITLE_LENGTH = 200;
@@ -31,6 +32,7 @@ function parseTaskForm(body = {}, timeZone) {
     scheduleDate: text(body.scheduleDate),
     scheduleStart: text(body.scheduleStart),
     scheduleEnd: text(body.scheduleEnd),
+    repeat: text(body.repeat),
   };
   const errors = {};
   const changes = { title: values.title, description: values.description, priority: values.priority };
@@ -50,6 +52,11 @@ function parseTaskForm(body = {}, timeZone) {
   const { error, schedule } = parseSchedule(values, timeZone);
   if (error) errors.schedule = error;
   else changes.schedule = schedule;
+
+  // The next occurrence is dated from this one, so a repeating task needs a date to start from.
+  if (values.repeat && !FREQUENCIES.includes(values.repeat)) errors.repeat = 'Pick how often it repeats.';
+  else if (values.repeat && !values.dueDate && !values.scheduleDate) errors.repeat = 'Give the task a due date or a scheduled time to repeat from.';
+  changes.repeat = values.repeat ? { frequency: values.repeat } : null;
 
   return { values, errors, changes };
 }

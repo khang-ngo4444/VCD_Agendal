@@ -63,6 +63,7 @@ function formValues(task, timeZone) {
     scheduleDate: task.schedule?.start ? toDateInput(task.schedule.start, timeZone) : '',
     scheduleStart: task.schedule?.start ? toTimeInput(task.schedule.start, timeZone) : '',
     scheduleEnd: task.schedule?.end ? toTimeInput(task.schedule.end, timeZone) : '',
+    repeat: task.repeat?.frequency ?? '',
   };
 }
 
@@ -93,9 +94,10 @@ exports.update = async (req, res) => {
   if (values.project && !project) errors.project = 'Pick a project from the list.';
   if (Object.keys(errors).length) return renderTask(req, res, task, { values, errors });
 
-  const { schedule, ...fields } = changes;
+  const { schedule, repeat, ...fields } = changes;
   task.set({ ...fields, project: project?._id ?? null });
   task.set('schedule', schedule ?? undefined);
+  task.set('repeat', repeat ?? undefined);
   await task.save();
   flash(req, 'success', 'Task saved.');
   res.redirect(`/tasks/${task._id}`);

@@ -71,6 +71,19 @@
       <% } %>
     </fieldset>
 
+    <div class="mt-5 grid gap-5 sm:grid-cols-3">
+      <div>
+        <label for="repeat" class="mb-1.5 block text-xs font-semibold">Repeat</label>
+        <select id="repeat" name="repeat" class="select h-11 w-full <%= errors.repeat ? 'select-error' : '' %>"
+          <% if (errors.repeat) { %>aria-invalid="true" aria-describedby="repeat-error"<% } %>>
+          <% [['', 'Does not repeat'], ['daily', 'Every day'], ['weekly', 'Every week'], ['monthly', 'Every month'], ['yearly', 'Every year']].forEach(([value, label]) => { %>
+            <option value="<%= value %>" <%= value ? '' : 'data-no-repeat' %> <%= values.repeat === value ? 'selected' : '' %>><%= label %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <%- include('../partials/field-error', { id: 'repeat-error', message: errors.repeat }) %>
+
     <div class="mt-6 flex justify-end">
       <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
     </div>
