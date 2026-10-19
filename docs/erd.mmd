@@ -11,6 +11,7 @@ erDiagram
     USER |o--o{ ACTIVITY_LOG : "account (null = unknown email)"
     USER ||--o{ EVENT : owns
     PROJECT |o--o{ EVENT : "colours (optional)"
+    USER ||--o{ PUSH_SUBSCRIPTION : "browsers with push on"
 
     USER {
         ObjectId _id PK
@@ -73,6 +74,15 @@ erDiagram
         Date emailedAt "email channel claimed / done"
         Number attempts "failed sends, max 3"
         String lastError
+        Date createdAt
+        Date updatedAt
+    }
+    PUSH_SUBSCRIPTION {
+        ObjectId _id PK
+        ObjectId owner FK
+        String endpoint UK "push service URL, one per browser"
+        Object keys "p256dh, auth"
+        String userAgent
         Date createdAt
         Date updatedAt
     }

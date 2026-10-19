@@ -3,6 +3,7 @@ const { sendMail } = require('./mailer');
 const { formatDay, formatTime } = require('./dates');
 const { unsubscribeToken } = require('./unsubscribe');
 const { EMAIL_GAP_MS, EMAILS_PER_DAY } = require('./emailLimits');
+const webPush = require('./webPush');
 
 const appUrl = () => (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
 
@@ -48,9 +49,27 @@ async function email(user, items, now) {
   await sendMail(buildReminderEmail(user, items, now));
 }
 
-// Web Push arrives with the "Send web push notifications" card; until then push reminders are only logged.
-async function push(user, items) {
-  for (const { task } of items) console.log(`[push] to ${user.email}: ${task.title}`);
+// One notification per task, to every browser the user turned notifications on in (public/sw.js shows it, and a
+// click opens the task). The tag means a second reminder for the same task replaces the first instead of stacking.
+function buildReminderPush(user, { task, reminder }, now = new Date()) {
+  const project = task.project?.name ? ` · ${task.project.name}` : '';
+  return {
+    title: task.title,
+    body: `${whenText(task, reminder, user.timeZone || 'UTC', now)}${project}`,
+    url: `/tasks/${task._id}`,
+    tag: `task-${task._id}`,
+  };
 }
 
-module.exports = { email, push, buildReminderEmail };
+// Without VAPID keys (services/webPush.js) push reminders are only logged.
+async function push(user, items, now) {
+  for (const item of items) {
+    if (!webPush.isConfigured()) {
+      console.log(`[push] to ${user.email}: ${item.task.title}`);
+      continue;
+    }
+    await webPush.sendToUser(user._id, buildReminderPush(user, item, now));
+  }
+}
+
+module.exports = { email, push, buildReminderEmail, buildReminderPush };

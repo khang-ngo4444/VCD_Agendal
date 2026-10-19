@@ -2,6 +2,7 @@ const User = require('../models/User');
 const { flash } = require('../middleware/flash');
 const { readUnsubscribeToken } = require('../services/unsubscribe');
 const { EMAIL_GAP_MS, EMAILS_PER_DAY } = require('../services/emailLimits');
+const webPush = require('../services/webPush');
 
 const limits = { emailGapMinutes: EMAIL_GAP_MS / 60_000, emailsPerDay: EMAILS_PER_DAY };
 
@@ -21,6 +22,19 @@ exports.updateSettings = async (req, res) => {
   await req.user.save();
   flash(req, 'success', 'Notification settings saved.');
   res.redirect('/settings/notifications');
+};
+
+// Web Push (public/js/push.js): this browser's subscription, posted with fetch. 204 on success.
+exports.subscribePush = async (req, res) => {
+  const subscription = webPush.parseSubscription(req.body);
+  if (!subscription) return res.status(400).json({ error: 'Not a valid push subscription.' });
+  await webPush.subscribe(req.user._id, subscription, req.get('User-Agent'));
+  res.status(204).end();
+};
+
+exports.unsubscribePush = async (req, res) => {
+  if (typeof req.body?.endpoint === 'string') await webPush.unsubscribe(req.user._id, req.body.endpoint);
+  res.status(204).end();
 };
 
 // The "Turn off email reminders" link in every reminder email. No login needed: the signed token is the proof.

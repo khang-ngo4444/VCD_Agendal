@@ -32,6 +32,7 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.locals.dates = require('./services/dates'); // views format dates in the user's time zone
+app.locals.vapidPublicKey = require('./services/webPush').publicKey(); // empty: no Web Push, push.js isn't loaded
 // Absolute base URL for canonical links and social preview images.
 app.locals.appUrl = (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
 

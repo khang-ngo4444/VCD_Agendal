@@ -12,6 +12,8 @@ router.get('/settings/appearance', settings.showAppearance);
 router.post('/settings/appearance', settings.updateAppearance);
 router.get('/settings/notifications', notifications.showSettings);
 router.post('/settings/notifications', notifications.updateSettings);
+router.post('/notifications/push/subscribe', notifications.subscribePush);
+router.post('/notifications/push/unsubscribe', notifications.unsubscribePush);
 router.get('/settings/account', settings.showAccount);
 router.post('/settings/password', settings.changePassword);
 router.get('/settings/account/delete', settings.showDeleteAccount);
