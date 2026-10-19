@@ -3,6 +3,7 @@ const HabitCheckIn = require('../models/HabitCheckIn');
 const Task = require('../models/Task');
 const User = require('../models/User');
 const { assignLanes } = require('../services/calendar');
+const { eventsBetween } = require('../services/events');
 const { addDays, dayRange, formatTime, parseDateInput, startOfWeek, toDateInput, toTimeInput, zonedTime } = require('../services/dates');
 
 const VIEWS = User.schema.path('preferences.calendarLayout').enumValues; // day, week, month
@@ -25,13 +26,18 @@ function daysFor(view, date, weekStartsOn) {
 
 const dayStart = (date, timeZone) => dayRange(zonedTime({ ...parseDateInput(date), hour: 12 }, timeZone), timeZone).start;
 
-// Scheduled tasks for each shown day, placed by minute of the local day (cut off at midnight) with overlap lanes.
-async function scheduledByDay(owner, days, timeZone, projects) {
+// Scheduled tasks and timed events for each shown day, placed by minute of the local day (cut off at midnight) with
+// overlap lanes, plus each day's all-day events.
+async function itemsByDay(owner, days, timeZone, projects) {
   const from = dayStart(days[0], timeZone);
   const to = dayStart(addDays(days.at(-1), 1), timeZone);
-  const tasks = await Task.find({ owner, deletedAt: null, 'schedule.start': { $gte: from, $lt: to } }).lean();
+  const [tasks, events] = await Promise.all([
+    Task.find({ owner, deletedAt: null, 'schedule.start': { $gte: from, $lt: to } }).lean(),
+    eventsBetween(owner, from, to, timeZone, projects),
+  ]);
   const project = (task) => projects.find((item) => item.id === (task.project ? String(task.project) : null));
   const byDay = new Map(days.map((day) => [day, []]));
+  const allDay = new Map(days.map((day) => [day, events.filter((event) => event.allDay && event.start <= dayStart(day, timeZone) && event.end > dayStart(day, timeZone))]));
   for (const task of tasks) {
     const day = toDateInput(task.schedule.start, timeZone);
     const midnight = dayStart(day, timeZone);
@@ -48,8 +54,22 @@ async function scheduledByDay(owner, days, timeZone, projects) {
       time: `${formatTime(task.schedule.start, timeZone)}–${formatTime(task.schedule.end, timeZone)}`,
     });
   }
+  for (const event of events.filter((item) => !item.allDay)) {
+    const day = toDateInput(event.start, timeZone);
+    const midnight = dayStart(day, timeZone);
+    byDay.get(day)?.push({
+      kind: 'event',
+      title: event.title,
+      href: event.href,
+      colour: event.colour,
+      location: event.event.location,
+      startMinute: (event.start - midnight) / 60000,
+      endMinute: Math.min(24 * 60, (event.end - midnight) / 60000),
+      time: event.time,
+    });
+  }
   for (const [day, items] of byDay) byDay.set(day, assignLanes(items));
-  return byDay;
+  return { byDay, allDay };
 }
 
 // Open tasks without a time, for the side panel: one group per project in sidebar order (Inbox first).
@@ -85,7 +105,7 @@ exports.show = async (req, res) => {
   const [hour, minute] = toTimeInput(new Date(), timeZone).split(':').map(Number);
   const days = daysFor(view, date, preferences.weekStartsOn);
   const [items, unscheduled, habits] = await Promise.all([
-    scheduledByDay(req.user._id, days, timeZone, res.locals.sidebarProjects),
+    itemsByDay(req.user._id, days, timeZone, res.locals.sidebarProjects),
     view === 'month' ? [] : unscheduledByProject(req.user._id, res.locals.sidebarProjects),
     checkInsByDay(req.user._id, days),
   ]);
@@ -108,7 +128,8 @@ exports.show = async (req, res) => {
       name: label(day, { weekday: 'long', day: 'numeric', month: 'long' }),
       inMonth: day.slice(0, 7) === date.slice(0, 7),
       isToday: day === today,
-      items: items.get(day),
+      items: items.byDay.get(day),
+      allDay: items.allDay.get(day),
       habits: habits.get(day),
     })),
   });

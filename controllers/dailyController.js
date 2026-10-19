@@ -1,5 +1,6 @@
 const Task = require('../models/Task');
 const { loadSummaries } = require('../services/habits');
+const { eventsBetween } = require('../services/events');
 const { addDays, dayRange, formatDay, parseDateInput, startOfWeek, toDateInput, zonedTime } = require('../services/dates');
 
 // The instants a local day ("YYYY-MM-DD") starts and ends at in `timeZone`.
@@ -40,13 +41,14 @@ exports.today = async (req, res) => {
   const { start, end } = localDayRange(date, timeZone);
   const mine = { owner: req.user._id, deletedAt: null };
 
-  const [scheduled, due, overdue, week, habits] = await Promise.all([
+  const [scheduled, due, overdue, week, habits, events] = await Promise.all([
     Task.find({ ...mine, 'schedule.start': { $gte: start, $lt: end } }).sort({ 'schedule.start': 1 }).lean(),
     Task.find({ ...mine, 'schedule.start': null, dueDate: { $gte: start, $lt: end } }).lean(),
     // Overdue only makes sense looking at today: a due date is the end of its day, so before today's start = late.
     date === today ? Task.find({ ...mine, completedAt: null, dueDate: { $lt: start } }).sort({ dueDate: 1 }).lean() : [],
     weekStrip(mine, date, today, req.user),
     loadSummaries(req.user, date, { archivedAt: null }),
+    eventsBetween(req.user._id, start, end, timeZone, res.locals.sidebarProjects),
   ]);
   const dayTasks = [...scheduled, ...due];
   const firstName = (req.user.name || '').split(' ')[0];
@@ -59,7 +61,11 @@ exports.today = async (req, res) => {
     heading: date === today ? 'Today' : formatDay(start, timeZone),
     eyebrow: new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(start),
     progress: { done: dayTasks.filter((task) => task.completedAt).length, total: dayTasks.length, firstName },
-    counts: { scheduled: scheduled.length, due: due.length, overdue: overdue.length },
+    counts: { scheduled: scheduled.length, due: due.length, overdue: overdue.length, events: events.length },
+    // The day's timeline: all-day events, then events and scheduled tasks by start time.
+    schedule: [...events.map((event) => ({ event })), ...scheduled.map((task) => ({ task }))].sort(
+      (a, b) => Boolean(b.event?.allDay) - Boolean(a.event?.allDay) || (a.event?.start ?? a.task.schedule.start) - (b.event?.start ?? b.task.schedule.start)
+    ),
     overdue,
     habits: habits.filter((summary) => summary.due),
     habitsEditable: date <= today && date > addDays(today, -7), // the check-in window (controllers/habitsController.js)
@@ -77,12 +83,16 @@ exports.upcoming = async (req, res) => {
   const { timeZone } = req.user;
   const today = toDateInput(new Date(), timeZone);
   const from = localDayRange(addDays(today, 1), timeZone).start;
-  const tasks = await Task.find({
-    owner: req.user._id,
-    deletedAt: null,
-    completedAt: null,
-    $or: [{ 'schedule.start': { $gte: from } }, { 'schedule.start': null, dueDate: { $gte: from } }],
-  }).lean();
+  const [tasks, events] = await Promise.all([
+    Task.find({
+      owner: req.user._id,
+      deletedAt: null,
+      completedAt: null,
+      $or: [{ 'schedule.start': { $gte: from } }, { 'schedule.start': null, dueDate: { $gte: from } }],
+    }).lean(),
+    // Events only for the 7 days: repeating ones would fill "Later" forever.
+    eventsBetween(req.user._id, from, localDayRange(addDays(today, UPCOMING_DAYS), timeZone).end, timeZone, res.locals.sidebarProjects),
+  ]);
 
   const when = (task) => task.schedule?.start ?? task.dueDate;
   const lastDay = addDays(today, UPCOMING_DAYS);
@@ -97,14 +107,23 @@ exports.upcoming = async (req, res) => {
   groups.delete('later');
   const dayLabel = (day) => new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
 
-  const days = [...groups].map(([day, dayTasks]) => ({ day, label: dayLabel(day), tomorrow: day === addDays(today, 1), tasks: dayTasks }));
-  const shown = [...days.flatMap((group) => group.tasks), ...later];
+  for (const event of events) {
+    const day = toDateInput(event.start, timeZone);
+    if (!groups.has(day)) groups.set(day, []);
+    groups.get(day).push({ event });
+  }
+  const startOf = (item) => (item.event ? item.event.start : when(item));
+  const days = [...groups]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, items]) => ({ day, label: dayLabel(day), tomorrow: day === addDays(today, 1), items: items.sort((a, b) => startOf(a) - startOf(b)) }));
+  const shown = [...days.flatMap((group) => group.items.filter((item) => !item.event)), ...later];
 
   res.render('upcoming', {
     title: 'Upcoming · Agendal',
     days,
     later,
     count: shown.length,
+    eventCount: events.length,
     highCount: shown.filter((task) => task.priority === 'high').length,
   });
 };

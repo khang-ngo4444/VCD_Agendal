@@ -18,6 +18,16 @@
       </div>
     <% }) %>
   </div>
+  <% if (days.some((day) => day.allDay.length)) { %>
+    <div class="grid border-b border-base-300" style="grid-template-columns: <%= columns %>">
+      <span class="self-center pr-2 text-right text-xs text-muted">All day</span>
+      <% days.forEach((day) => { %>
+        <div class="min-w-0 space-y-1 border-l border-base-300 p-1">
+          <% day.allDay.forEach((event) => { %><%- include('_event-chip', { event }) %><% }) %>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
   <div class="relative h-[min(640px,70vh)] overflow-y-auto" data-calendar-scroll="<%= 7 * HOUR - 12 %>" data-hour="<%= HOUR %>">
     <div class="grid" style="grid-template-columns: <%= columns %>; height: <%= 24 * HOUR %>px">
       <div class="relative" aria-hidden="true">
@@ -28,15 +38,23 @@
       <% days.forEach((day) => { %>
         <div class="relative border-l border-base-300" style="background-image: <%= hourLines %>" data-day="<%= day.date %>">
           <% day.items.forEach((item) => { %>
-            <%# Tasks are outlined with a check circle in their project colour (Figma DS 13) %>
-            <a href="<%= item.href %>" draggable="false" class="absolute cursor-grab touch-none overflow-hidden rounded-field border-2 bg-base-100 px-1.5 py-1 text-xs leading-tight select-none hover:z-10 hover:shadow-md <%= item.done ? 'opacity-60' : '' %>"
-              style="top: <%= (item.startMinute / 60) * HOUR %>px; height: <%= Math.max(20, ((item.endMinute - item.startMinute) / 60) * HOUR) %>px; left: calc(<%= item.lane %> * 100% / <%= item.lanes %> + 2px); width: calc(100% / <%= item.lanes %> - 4px); border-color: <%= item.colour %>"
-              data-task-id="<%= item.id %>" data-minutes="<%= item.endMinute - item.startMinute %>">
-              <span class="flex items-center gap-1 font-semibold <%= item.done ? 'line-through' : '' %>">
-                <span class="size-2.5 shrink-0 rounded-full border-[1.5px] border-current" aria-hidden="true"></span><span class="truncate"><%= item.title %></span>
-              </span>
-              <span class="block truncate text-muted"><span data-time><%= item.time %></span><%= item.projectName ? ` · ${item.projectName}` : '' %></span>
-            </a>
+            <% const place = `top: ${(item.startMinute / 60) * HOUR}px; height: ${Math.max(20, ((item.endMinute - item.startMinute) / 60) * HOUR)}px; left: calc(${item.lane} * 100% / ${item.lanes} + 2px); width: calc(100% / ${item.lanes} - 4px)`; %>
+            <%# Events are filled blocks with a bar in their colour; tasks are outlined with a check circle (Figma DS 13) %>
+            <% if (item.kind === 'event') { %>
+              <a href="<%= item.href %>" class="absolute overflow-hidden rounded-field border-l-4 px-1.5 py-1 text-xs leading-tight hover:z-10 hover:shadow-md"
+                style="<%= place %>; border-color: <%= item.colour %>; background-color: color-mix(in srgb, <%= item.colour %> 16%, var(--color-base-100))">
+                <span class="block truncate font-semibold"><%= item.title %></span>
+                <span class="block truncate text-muted"><%= item.time %><%= item.location ? ` · ${item.location}` : '' %></span>
+              </a>
+            <% } else { %>
+              <a href="<%= item.href %>" draggable="false" class="absolute cursor-grab touch-none overflow-hidden rounded-field border-2 bg-base-100 px-1.5 py-1 text-xs leading-tight select-none hover:z-10 hover:shadow-md <%= item.done ? 'opacity-60' : '' %>"
+                style="<%= place %>; border-color: <%= item.colour %>" data-task-id="<%= item.id %>" data-minutes="<%= item.endMinute - item.startMinute %>">
+                <span class="flex items-center gap-1 font-semibold <%= item.done ? 'line-through' : '' %>">
+                  <span class="size-2.5 shrink-0 rounded-full border-[1.5px] border-current" aria-hidden="true"></span><span class="truncate"><%= item.title %></span>
+                </span>
+                <span class="block truncate text-muted"><span data-time><%= item.time %></span><%= item.projectName ? ` · ${item.projectName}` : '' %></span>
+              </a>
+            <% } %>
           <% }) %>
           <% if (day.isToday) { %>
             <span class="pointer-events-none absolute inset-x-0 z-20 h-0.5 bg-error" style="top: <%= (nowMinutes / 60) * HOUR %>px" aria-hidden="true"></span>

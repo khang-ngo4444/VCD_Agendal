@@ -1,7 +1,7 @@
 <%- include('partials/shell-top') %>
 <%#
   The Daily List (Figma W01 "Today"). Locals: date, today, week (the strip), heading, eyebrow, progress { done, total, firstName },
-  counts, overdue, scheduled, due, habits (summaries due on the day), habitsEditable.
+  counts, overdue, schedule (events and scheduled tasks), due, habits (summaries due on the day), habitsEditable.
 %>
 <%
   const { done, total, firstName } = progress;
@@ -11,6 +11,7 @@
     ...(counts.overdue ? [`${counts.overdue} overdue`] : []),
     `${counts.due} task${counts.due === 1 ? '' : 's'} due`,
     `${counts.scheduled} scheduled`,
+    ...(counts.events ? [`${counts.events} event${counts.events === 1 ? '' : 's'}`] : []),
   ];
 %>
 <header class="flex flex-wrap items-end justify-between gap-4">
@@ -92,10 +93,12 @@
   </div>
 
   <section aria-labelledby="schedule-heading">
-    <h2 id="schedule-heading" class="mb-2 font-semibold">Schedule <span class="text-muted"><%= scheduled.length %></span></h2>
-    <% if (scheduled.length) { %>
+    <h2 id="schedule-heading" class="mb-2 font-semibold">Schedule <span class="text-muted"><%= schedule.length %></span></h2>
+    <% if (schedule.length) { %>
       <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
-        <% scheduled.forEach((task) => { %><%- include('tasks/_row', { task, timeZone: currentUser.timeZone, showProject: true }) %><% }) %>
+        <% schedule.forEach(({ event, task }) => { %>
+          <% if (event) { %><%- include('events/_row', { event }) %><% } else { %><%- include('tasks/_row', { task, timeZone: currentUser.timeZone, showProject: true }) %><% } %>
+        <% }) %>
       </ul>
     <% } else { %>
       <p class="rounded-box bg-base-100 px-4 py-6 text-center text-sm text-muted">Nothing scheduled. Give a task a time to see it here.</p>

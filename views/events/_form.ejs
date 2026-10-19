@@ -1,0 +1,85 @@
+<%#
+  Event fields (Figma W24), shared by the event page and the Calendar's New event dialog.
+  Locals: values, errors, action, submitLabel, returnTo, idPrefix (keeps ids unique on the page).
+  The time fields hide for all-day events and the end date hides when nothing repeats: CSS :has, no script needed.
+%>
+<%
+  const id = (name) => `${idPrefix}-${name}`;
+  const describedBy = (field) => (errors[field] ? `aria-invalid="true" aria-describedby="${id(field)}-error"` : '');
+  const repeats = [['', 'Does not repeat'], ['daily', 'Every day'], ['weekly', 'Every week'], ['monthly', 'Every month'], ['yearly', 'Every year']];
+%>
+<form method="post" action="<%= action %>" class="group" novalidate>
+  <%- include('../partials/csrf') %>
+  <input type="hidden" name="returnTo" value="<%= returnTo %>">
+
+  <label for="<%= id('title') %>" class="mb-1.5 block text-xs font-semibold">Title</label>
+  <input id="<%= id('title') %>" name="title" type="text" maxlength="200" value="<%= values.title %>" placeholder="e.g. HCI group meeting"
+    class="input h-11 w-full text-base <%= errors.title ? 'input-error' : '' %>" <%- describedBy('title') %>>
+  <%- include('../partials/field-error', { id: id('title') + '-error', message: errors.title }) %>
+
+  <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <div class="col-span-2 sm:col-span-1">
+      <label for="<%= id('date') %>" class="mb-1.5 block text-xs font-semibold">Date</label>
+      <input id="<%= id('date') %>" name="date" type="date" value="<%= values.date %>" class="input h-11 w-full <%= errors.date ? 'input-error' : '' %>" <%- describedBy('date') %>>
+    </div>
+    <div class="group-has-[[name=allDay]:checked]:hidden">
+      <label for="<%= id('start') %>" class="mb-1.5 block text-xs font-semibold">Starts</label>
+      <input id="<%= id('start') %>" name="start" type="time" value="<%= values.start %>" class="input h-11 w-full" <%- describedBy('time') %>>
+    </div>
+    <div class="group-has-[[name=allDay]:checked]:hidden">
+      <label for="<%= id('end') %>" class="mb-1.5 block text-xs font-semibold">Ends</label>
+      <input id="<%= id('end') %>" name="end" type="time" value="<%= values.end %>" class="input h-11 w-full <%= errors.time ? 'input-error' : '' %>" <%- describedBy('time') %>>
+    </div>
+  </div>
+  <%- include('../partials/field-error', { id: id('date') + '-error', message: errors.date }) %><%- include('../partials/field-error', { id: id('time') + '-error', message: errors.time }) %>
+
+  <label class="mt-4 flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-field bg-fill px-3">
+    <span class="text-sm font-medium">All-day event</span>
+    <input type="checkbox" name="allDay" class="toggle toggle-primary" <%= values.allDay ? 'checked' : '' %>>
+  </label>
+
+  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+    <div>
+      <label for="<%= id('repeat') %>" class="mb-1.5 block text-xs font-semibold">Repeat</label>
+      <select id="<%= id('repeat') %>" name="repeat" class="select h-11 w-full <%= errors.repeat ? 'select-error' : '' %>" <%- describedBy('repeat') %>>
+        <% repeats.forEach(([value, label]) => { %>
+          <option value="<%= value %>" <%= value ? '' : 'data-no-repeat' %> <%= values.repeat === value ? 'selected' : '' %>><%= label %></option>
+        <% }) %>
+      </select>
+      <%- include('../partials/field-error', { id: id('repeat') + '-error', message: errors.repeat }) %>
+    </div>
+    <div class="group-has-[[data-no-repeat]:checked]:hidden">
+      <label for="<%= id('until') %>" class="mb-1.5 block text-xs font-semibold">Until <span class="font-normal text-muted">(optional)</span></label>
+      <input id="<%= id('until') %>" name="until" type="date" value="<%= values.until %>" class="input h-11 w-full <%= errors.until ? 'input-error' : '' %>" <%- describedBy('until') %>>
+      <%- include('../partials/field-error', { id: id('until') + '-error', message: errors.until }) %>
+    </div>
+  </div>
+
+  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+    <div>
+      <label for="<%= id('location') %>" class="mb-1.5 block text-xs font-semibold">Location <span class="font-normal text-muted">(optional)</span></label>
+      <input id="<%= id('location') %>" name="location" type="text" maxlength="200" value="<%= values.location %>" placeholder="e.g. Library · Room 2"
+        class="input h-11 w-full <%= errors.location ? 'input-error' : '' %>" <%- describedBy('location') %>>
+      <%- include('../partials/field-error', { id: id('location') + '-error', message: errors.location }) %>
+    </div>
+    <div>
+      <label for="<%= id('project') %>" class="mb-1.5 block text-xs font-semibold">Project</label>
+      <select id="<%= id('project') %>" name="project" class="select h-11 w-full <%= errors.project ? 'select-error' : '' %>" <%- describedBy('project') %>>
+        <option value="" <%= values.project ? '' : 'selected' %>>No project</option>
+        <% sidebarProjects.filter((project) => project.id).forEach((project) => { %>
+          <option value="<%= project.id %>" <%= values.project === project.id ? 'selected' : '' %>><%= project.name %></option>
+        <% }) %>
+      </select>
+      <%- include('../partials/field-error', { id: id('project') + '-error', message: errors.project }) %>
+    </div>
+  </div>
+
+  <label for="<%= id('notes') %>" class="mt-4 mb-1.5 block text-xs font-semibold">Notes <span class="font-normal text-muted">(optional)</span></label>
+  <textarea id="<%= id('notes') %>" name="notes" rows="2" maxlength="2000" placeholder="Agenda, links…" class="textarea w-full <%= errors.notes ? 'textarea-error' : '' %>" <%- describedBy('notes') %>><%= values.notes %></textarea>
+  <%- include('../partials/field-error', { id: id('notes') + '-error', message: errors.notes }) %>
+
+  <div class="mt-6 flex justify-end gap-2">
+    <a href="<%= returnTo %>" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
+    <button type="submit" class="btn btn-primary h-11 rounded-full px-5"><%= submitLabel %></button>
+  </div>
+</form>

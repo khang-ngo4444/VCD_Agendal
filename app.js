@@ -19,6 +19,7 @@ const habitRoutes = require('./routes/habits');
 const dailyRoutes = require('./routes/daily');
 const boardRoutes = require('./routes/board');
 const calendarRoutes = require('./routes/calendar');
+const eventRoutes = require('./routes/events');
 const adminRoutes = require('./routes/admin');
 const welcome = require('./controllers/welcomeController');
 
@@ -102,6 +103,7 @@ app.post(WELCOME_PATH, welcome.complete);
 app.use(dailyRoutes);
 app.use(boardRoutes);
 app.use(calendarRoutes);
+app.use(eventRoutes);
 app.use(settingsRoutes);
 app.use(projectRoutes);
 app.use(taskRoutes);
