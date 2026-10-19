@@ -3,22 +3,46 @@ const { flash } = require('../middleware/flash');
 const { readUnsubscribeToken } = require('../services/unsubscribe');
 const { EMAIL_GAP_MS, EMAILS_PER_DAY } = require('../services/emailLimits');
 const webPush = require('../services/webPush');
+const { parseTimeInput } = require('../services/dates');
 
 const limits = { emailGapMinutes: EMAIL_GAP_MS / 60_000, emailsPerDay: EMAILS_PER_DAY };
 
-// Settings → Notifications
-exports.showSettings = (req, res) =>
-  res.render('settings/notifications', {
+const DEFAULT_SUMMARY_TIME = '07:30';
+
+function renderSettings(req, res, { values, errors = {} } = {}) {
+  const settings = req.user.notifications ?? {};
+  res.status(Object.keys(errors).length ? 422 : 200).render('settings/notifications', {
     title: 'Notifications · Settings · Agendal',
-    values: { push: req.user.notifications?.push !== false, email: req.user.notifications?.email !== false },
+    values: values ?? {
+      push: settings.push !== false,
+      email: settings.email !== false,
+      dailySummary: Boolean(settings.dailySummary?.on),
+      dailySummaryTime: settings.dailySummary?.time ?? DEFAULT_SUMMARY_TIME,
+    },
+    errors,
     limits,
   });
+}
+
+// Settings → Notifications (Figma W12)
+exports.showSettings = (req, res) => renderSettings(req, res);
 
 exports.updateSettings = async (req, res) => {
   const body = req.body ?? {};
   // An unticked checkbox sends nothing, so a missing field means "off".
-  req.user.set('notifications.push', body.push === 'on');
-  req.user.set('notifications.email', body.email === 'on');
+  const values = {
+    push: body.push === 'on',
+    email: body.email === 'on',
+    dailySummary: body.dailySummary === 'on',
+    dailySummaryTime: typeof body.dailySummaryTime === 'string' ? body.dailySummaryTime : '',
+  };
+  if (!parseTimeInput(values.dailySummaryTime)) {
+    return renderSettings(req, res, { values, errors: { dailySummaryTime: 'Pick a time for the daily summary.' } });
+  }
+  req.user.set('notifications.push', values.push);
+  req.user.set('notifications.email', values.email);
+  req.user.set('notifications.dailySummary.on', values.dailySummary);
+  req.user.set('notifications.dailySummary.time', values.dailySummaryTime);
   await req.user.save();
   flash(req, 'success', 'Notification settings saved.');
   res.redirect('/settings/notifications');

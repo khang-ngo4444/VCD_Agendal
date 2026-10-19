@@ -22,7 +22,7 @@ erDiagram
         String timeZone
         String role "user | admin (admins only use /admin)"
         Object preferences "theme, accentColour, weekStartsOn, calendarLayout"
-        Object notifications "push, email (on by default), lastEmailAt, emailDay, emailsToday"
+        Object notifications "push, email (on by default), lastEmailAt, emailDay, emailsToday, dailySummary { on, time, lastSentOn }"
         String googleId UK
         Number sessionVersion "bumped to end all sessions"
         Object loginFailures "count, since"

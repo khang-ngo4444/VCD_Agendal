@@ -35,6 +35,12 @@ const userSchema = new Schema(
       lastEmailAt: Date,
       emailDay: String, // YYYY-MM-DD in the user's time zone that emailsToday counts
       emailsToday: { type: Number, default: 0 },
+      // One message a day listing the day's plan (services/dailySummary.js), off until the user turns it on.
+      dailySummary: {
+        on: { type: Boolean, default: false },
+        time: { type: String, default: '07:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ }, // "HH:mm" in the user's time zone
+        lastSentOn: String, // the local day it last went out, so it goes once a day
+      },
     },
     googleId: { type: String, unique: true, sparse: true },
     sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)

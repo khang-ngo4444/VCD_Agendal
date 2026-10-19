@@ -58,6 +58,28 @@
         </p>
       </fieldset>
 
+      <fieldset class="rounded-box bg-base-100 p-5">
+        <legend class="sr-only">Daily summary</legend>
+        <h3 class="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Daily summary</h3>
+        <label class="flex cursor-pointer items-center gap-4 py-3">
+          <%- include('../partials/icon', { icon: 'sun', cls: 'size-5 shrink-0 text-muted' }) %>
+          <span class="flex-1">
+            <span class="block font-medium">Send me my day</span>
+            <span class="block text-sm text-muted">Today’s tasks, overdue tasks, habits and events in one message: a notification if this account has one on, else an email.</span>
+          </span>
+          <input type="checkbox" name="dailySummary" class="toggle toggle-success" <%= values.dailySummary ? 'checked' : '' %>>
+        </label>
+        <div class="ml-9 flex flex-wrap items-center gap-3">
+          <label for="dailySummaryTime" class="text-sm font-medium">At</label>
+          <input id="dailySummaryTime" name="dailySummaryTime" type="time" value="<%= values.dailySummaryTime %>" required
+            class="input h-11 w-36 <%= errors.dailySummaryTime ? 'input-error' : '' %>"
+            aria-describedby="dailySummaryTime-hint" <% if (errors.dailySummaryTime) { %>aria-invalid="true"<% } %>>
+          <span id="dailySummaryTime-hint" class="text-sm <%= errors.dailySummaryTime ? 'text-error' : 'text-muted' %>">
+            <%= errors.dailySummaryTime || `In your time zone (${currentUser.timeZone}).` %>
+          </span>
+        </div>
+      </fieldset>
+
       <div class="flex justify-end">
         <button type="submit" class="btn btn-primary h-10 rounded-full px-5">Save changes</button>
       </div>
