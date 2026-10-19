@@ -11,9 +11,12 @@ function setUpBoard() {
       filter: 'details', // the menu button opens its menu instead of starting a drag
       preventOnFilter: false,
       ghostClass: 'opacity-40',
-      onEnd: ({ item, from, to }) => {
-        if (from === to) return;
-        window.agendal.post(`/tasks/${item.dataset.taskId}/move`, { status: to.dataset.column, returnTo: location.pathname + location.search });
+      // Saves the card's column and the new order of every card in it, top to bottom.
+      onEnd: ({ item, from, to, oldIndex, newIndex }) => {
+        if (from === to && oldIndex === newIndex) return;
+        const fields = new URLSearchParams({ status: to.dataset.column, returnTo: location.pathname + location.search });
+        to.querySelectorAll('[data-task-id]').forEach((card) => fields.append('ids', card.dataset.taskId));
+        window.agendal.post(`/tasks/${item.dataset.taskId}/move`, fields);
       },
     })
   );

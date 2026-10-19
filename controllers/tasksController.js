@@ -124,20 +124,27 @@ exports.restore = async (req, res) => {
   res.redirect(listPath(task));
 };
 
-// Board: drag a card to another column, or use its "Move to" menu. The card lands at the top of that column.
+// Board: a card dragged to a position, or moved with its "Move to" menu. A drop sends `ids`, the column's cards top
+// to bottom, and each one's position is saved; from the menu the card lands at the top of the column.
+// ponytail: with a project filter on, `ids` holds only the visible cards, so hidden ones keep their old positions.
 exports.move = async (req, res) => {
   const task = await findOwnedTask(req);
   const status = req.body?.status;
+  const ids = [req.body?.ids ?? []].flat().filter((id) => mongoose.isValidObjectId(id));
   const returnTo = safeReturnTo(req.body?.returnTo, '/board');
   if (!columnLabel(status)) {
     flash(req, 'error', 'Pick one of the board columns.');
     return res.redirect(returnTo);
   }
-  if (task.status !== status) {
-    task.order = await topOrder(req.user._id, status);
-    task.status = status;
-    await task.save();
-    flash(req, 'success', `Moved “${task.title}” to ${columnLabel(status)}.`);
+
+  const changesColumn = task.status !== status;
+  if (!ids.includes(task.id)) task.order = await topOrder(req.user._id, status);
+  task.status = status;
+  await task.save();
+  if (ids.includes(task.id)) {
+    // The owner in the filter means ids of other people's tasks change nothing.
+    await Task.bulkWrite(ids.map((id, order) => ({ updateOne: { filter: { _id: id, owner: req.user._id }, update: { $set: { order } } } })));
   }
+  if (changesColumn) flash(req, 'success', `Moved “${task.title}” to ${columnLabel(status)}.`);
   res.redirect(returnTo);
 };
