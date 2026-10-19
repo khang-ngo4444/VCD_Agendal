@@ -12,6 +12,11 @@
       <fieldset class="rounded-box bg-base-100 p-5">
         <legend class="sr-only">How reminders reach you</legend>
         <h3 class="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">How reminders reach you</h3>
+        <%# Figma W12 "last delivered": whether reminders actually reach this account (services/deliveries.js). %>
+        <p class="mb-1 flex items-start gap-2 text-sm text-muted">
+          <%- include('../partials/icon', { icon: 'clock', cls: 'mt-0.5 size-4 shrink-0' }) %>
+          <span><% if (lastSent) { %>Last sent: <%= lastSent %>.<% } else { %>Nothing sent yet. Set a reminder on a task to get your first one.<% } %></span>
+        </p>
 
         <div class="border-b border-base-300">
           <label class="flex cursor-pointer items-center gap-4 py-3">

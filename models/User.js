@@ -41,6 +41,8 @@ const userSchema = new Schema(
         time: { type: String, default: '07:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ }, // "HH:mm" in the user's time zone
         lastSentOn: String, // the local day it last went out, so it goes once a day
       },
+      // The last reminder or summary that went out, shown in Settings (services/deliveries.js).
+      lastDelivered: { at: Date, channels: { type: [String], default: undefined }, what: String },
     },
     googleId: { type: String, unique: true, sparse: true },
     sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)

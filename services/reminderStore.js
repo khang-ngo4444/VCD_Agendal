@@ -2,6 +2,7 @@
 const Reminder = require('../models/Reminder');
 const Task = require('../models/Task');
 const User = require('../models/User');
+const deliveries = require('./deliveries');
 
 const byId = (docs) => new Map(docs.map((doc) => [String(doc._id), doc]));
 
@@ -25,6 +26,8 @@ module.exports = {
       { _id: user._id },
       { $set: Object.fromEntries(Object.entries(counters).map(([key, value]) => [`notifications.${key}`, value])) }
     ),
+
+  recordDelivery: deliveries.record,
 
   loadTasks: async (ids) => byId(await Task.find({ _id: { $in: ids } }).populate('project', 'name').lean()),
 

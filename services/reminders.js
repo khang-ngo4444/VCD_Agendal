@@ -2,6 +2,7 @@
 const defaultStore = require('./reminderStore');
 const defaultNotifier = require('./notifier');
 const { emailDecision, countEmail, EMAIL_GAP_MS } = require('./emailLimits');
+const { emailChannel } = require('./deliveries');
 
 const MAX_ATTEMPTS = 3; // a reminder that fails this many times is given up on (its lastError says why)
 const BATCH_SIZE = 500; // per run; anything left over is picked up a minute later
@@ -64,6 +65,7 @@ async function processDueReminders({ now = new Date(), store = defaultStore, not
     if (!live.length) continue;
 
     const decision = decisions(user, now);
+    const delivered = []; // for "Last sent" in Settings (services/deliveries.js)
     for (const [channel, field] of Object.entries(CHANNEL_FIELDS)) {
       if (decision[channel] === 'wait') continue; // still pending; the next allowed email picks it up
       let claimed = await claimAll(store, live, field, now);
@@ -72,7 +74,9 @@ async function processDueReminders({ now = new Date(), store = defaultStore, not
       if (!claimed.length) continue;
 
       try {
-        await notifier[channel](user, claimed, now);
+        const browsers = await notifier[channel](user, claimed, now);
+        if (channel === 'email') delivered.push(emailChannel());
+        else if (browsers > 0) delivered.push('push');
       } catch (err) {
         for (const item of claimed) {
           await store.release(item.reminder._id, field); // the next run tries this channel again
@@ -84,6 +88,7 @@ async function processDueReminders({ now = new Date(), store = defaultStore, not
       if (channel === 'email') await store.recordEmail(user, countEmail(user, now)); // outside the try: a sent email is never re-sent
     }
 
+    if (delivered.length) await store.recordDelivery?.(user._id, { at: now, channels: delivered, what: live[0].task.title });
     result.sent += await store.finish(live.map((item) => item.reminder._id), now);
   }
   return result;

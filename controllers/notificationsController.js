@@ -3,6 +3,7 @@ const { flash } = require('../middleware/flash');
 const { readUnsubscribeToken } = require('../services/unsubscribe');
 const { EMAIL_GAP_MS, EMAILS_PER_DAY } = require('../services/emailLimits');
 const webPush = require('../services/webPush');
+const deliveries = require('../services/deliveries');
 const { parseTimeInput } = require('../services/dates');
 
 const limits = { emailGapMinutes: EMAIL_GAP_MS / 60_000, emailsPerDay: EMAILS_PER_DAY };
@@ -21,6 +22,7 @@ function renderSettings(req, res, { values, errors = {} } = {}) {
     },
     errors,
     limits,
+    lastSent: deliveries.describe(settings.lastDelivered, req.user.timeZone),
   });
 }
 
@@ -88,3 +90,4 @@ exports.unsubscribe = async (req, res) => {
   await User.updateOne({ _id: userId }, { $set: { 'notifications.email': false } });
   renderUnsubscribe(res, { token: req.params.token, valid: true, done: true });
 };
+

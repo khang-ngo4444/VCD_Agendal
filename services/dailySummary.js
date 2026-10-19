@@ -5,6 +5,7 @@ const User = require('../models/User');
 const defaultNotifier = require('./notifier');
 const webPush = require('./webPush');
 const { loadDay } = require('./daily');
+const deliveries = require('./deliveries');
 const { toDateInput, toTimeInput } = require('./dates');
 
 const CATCH_UP_MINUTES = 60; // as for habit reminders: a summary more than an hour late is skipped for the day
@@ -17,6 +18,7 @@ const defaultStore = {
     (await User.updateOne({ _id: id, 'notifications.dailySummary.lastSentOn': { $ne: day } }, { $set: { 'notifications.dailySummary.lastSentOn': day } }))
       .modifiedCount === 1,
   release: (id, previous) => User.updateOne({ _id: id }, { $set: { 'notifications.dailySummary.lastSentOn': previous ?? null } }),
+  recordDelivery: deliveries.record,
   loadDay: (user, date) => loadDay(user, date, { today: date }),
   browsers: (id) => (webPush.isConfigured() ? webPush.countFor(id) : 0),
 };
@@ -52,7 +54,13 @@ async function processDailySummaries({ now = new Date(), store = defaultStore, n
     if (!(await store.claim(user._id, today))) continue;
     try {
       const summary = digest(await store.loadDay(user, today));
-      await (channel === 'push' ? notifier.summaryPush(user, summary, now) : notifier.summaryEmail(user, summary, now));
+      if (channel === 'push') {
+        const browsers = await notifier.summaryPush(user, summary, now);
+        await store.recordDelivery?.(user._id, { at: now, channels: browsers > 0 ? ['push'] : [], what: 'Daily summary' });
+      } else {
+        await notifier.summaryEmail(user, summary, now);
+        await store.recordDelivery?.(user._id, { at: now, channels: [deliveries.emailChannel()], what: 'Daily summary' });
+      }
       result.sent += 1;
     } catch (err) {
       console.error('[daily summary] failed:', err.message);

@@ -7,6 +7,9 @@ const User = require('../models/User');
 const defaultNotifier = require('./notifier');
 const { isDue } = require('./habits');
 const { emailDecision, countEmail } = require('./emailLimits');
+const deliveries = require('./deliveries');
+
+const { emailChannel } = deliveries;
 const { addDays, startOfWeek, toDateInput, toTimeInput } = require('./dates');
 
 // If the server was down at the reminder time, it still goes out up to this late; after that the day is skipped.
@@ -22,6 +25,7 @@ const defaultStore = {
   // Atomic: only one job run can mark the habit reminded today, so only that run sends it.
   claim: async (id, day) => (await Habit.updateOne({ _id: id, lastRemindedOn: { $ne: day } }, { $set: { lastRemindedOn: day } })).modifiedCount === 1,
   release: (id, previous) => Habit.updateOne({ _id: id }, { $set: { lastRemindedOn: previous ?? null } }),
+  recordDelivery: deliveries.record,
   recordEmail: (user, counters) =>
     User.updateOne({ _id: user._id }, { $set: Object.fromEntries(Object.entries(counters).map(([key, value]) => [`notifications.${key}`, value])) }),
 };
@@ -63,9 +67,10 @@ async function processHabitReminders({ now = new Date(), store = defaultStore, n
     if (!claimed.length) continue;
 
     let delivered = false;
+    const channels = []; // for "Last sent" in Settings (services/deliveries.js)
     if (user.notifications?.push !== false) {
       try {
-        await notifier.habitPush(user, claimed);
+        if ((await notifier.habitPush(user, claimed)) > 0) channels.push('push');
         delivered = true;
       } catch (err) {
         console.error('[habit reminders] push failed:', err.message);
@@ -76,13 +81,16 @@ async function processHabitReminders({ now = new Date(), store = defaultStore, n
       try {
         await notifier.habitEmail(user, claimed, now);
         await store.recordEmail(user, countEmail(user, now));
+        channels.push(emailChannel());
         delivered = true;
       } catch (err) {
         console.error('[habit reminders] email failed:', err.message);
       }
     }
-    if (delivered) result.sent += claimed.length;
-    else {
+    if (delivered) {
+      result.sent += claimed.length;
+      await store.recordDelivery?.(user._id, { at: now, channels, what: claimed.map((habit) => habit.name).join(', ') });
+    } else {
       // Nothing went out: free the habits so the next run (still inside the catch-up window) tries again.
       for (const habit of claimed) await store.release(habit._id, habit.lastRemindedOn);
       result.failed += claimed.length;

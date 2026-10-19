@@ -61,15 +61,14 @@ function buildReminderPush(user, { task, reminder }, now = new Date()) {
   };
 }
 
-// Without VAPID keys (services/webPush.js) push reminders are only logged.
+// Without VAPID keys (services/webPush.js) push reminders are only logged. Returns how many browsers got them.
 async function push(user, items, now) {
+  let browsers = 0;
   for (const item of items) {
-    if (!webPush.isConfigured()) {
-      console.log(`[push] to ${user.email}: ${item.task.title}`);
-      continue;
-    }
-    await webPush.sendToUser(user._id, buildReminderPush(user, item, now));
+    if (!webPush.isConfigured()) console.log(`[push] to ${user.email}: ${item.task.title}`);
+    else browsers = Math.max(browsers, await webPush.sendToUser(user._id, buildReminderPush(user, item, now)));
   }
+  return browsers;
 }
 
 // Habit reminders (services/habitReminders.js): the habits whose reminder time has come and that aren't done today.
@@ -103,10 +102,12 @@ async function habitEmail(user, habits) {
 }
 
 async function habitPush(user, habits) {
+  let browsers = 0;
   for (const habit of habits) {
     if (!webPush.isConfigured()) console.log(`[push] to ${user.email}: habit ${habit.name}`);
-    else await webPush.sendToUser(user._id, buildHabitPush(habit));
+    else browsers = Math.max(browsers, await webPush.sendToUser(user._id, buildHabitPush(habit)));
   }
+  return browsers;
 }
 
 // Daily summary (services/dailySummary.js). One line per item, the same words the Daily List uses.
@@ -173,7 +174,7 @@ async function summaryEmail(user, summary, now) {
 }
 
 async function summaryPush(user, summary, now) {
-  await webPush.sendToUser(user._id, buildSummaryPush(user, summary, now));
+  return webPush.sendToUser(user._id, buildSummaryPush(user, summary, now));
 }
 
 module.exports = {
