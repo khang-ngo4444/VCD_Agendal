@@ -75,8 +75,8 @@ exports.testPush = async (req, res) => {
 };
 
 // The "Turn off email reminders" link in every reminder email. No login needed: the signed token is the proof.
-function renderUnsubscribe(res, { token, valid, done }) {
-  res.status(valid ? 200 : 404).render('notifications/unsubscribe', { title: 'Email reminders · Agendal', token, valid, done });
+function renderUnsubscribe(res, { token, valid, done, resubscribed = false }) {
+  res.status(valid ? 200 : 404).render('notifications/unsubscribe', { title: 'Email reminders · Agendal', token, valid, done, resubscribed });
 }
 
 // Opening the link only shows a button, so link scanners in mail clients can't switch anything off.
@@ -91,3 +91,11 @@ exports.unsubscribe = async (req, res) => {
   renderUnsubscribe(res, { token: req.params.token, valid: true, done: true });
 };
 
+// "Turn email reminders back on" on the page above, for a mistaken click. Same signed link, so no login and, like
+// unsubscribe, mounted before the CSRF check (the page it is on is rendered without a CSRF token).
+exports.resubscribe = async (req, res) => {
+  const userId = readUnsubscribeToken(req.params.token);
+  if (!userId) return renderUnsubscribe(res, { token: req.params.token, valid: false, done: false });
+  await User.updateOne({ _id: userId }, { $set: { 'notifications.email': true } });
+  renderUnsubscribe(res, { token: req.params.token, valid: true, done: false, resubscribed: true });
+};

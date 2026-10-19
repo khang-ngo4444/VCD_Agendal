@@ -67,6 +67,7 @@ app.use(
 app.post('/settings/avatar', avatarUpload); // multipart body must be parsed before the CSRF check
 // Before the CSRF check: mail clients send this one-click POST without a form token; the signed link is the proof.
 app.post('/notifications/unsubscribe/:token', notifications.unsubscribe);
+app.post('/notifications/resubscribe/:token', notifications.resubscribe); // its "Turn email reminders back on", same signed link
 app.use(csrf);
 app.use(showFlash);
 app.use(passport.initialize());
