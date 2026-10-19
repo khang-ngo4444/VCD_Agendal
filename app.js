@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
-const { SESSION_COOKIE, WELCOME_PATH, requireLogin, requireOnboarding, keepAdminsInConsole } = require('./middleware/auth');
+const { SESSION_COOKIE, WELCOME_PATH, requireLogin, requireOnboarding, keepAdminsInConsole, guestOnly } = require('./middleware/auth');
 const csrf = require('./middleware/csrf');
 const avatarUpload = require('./middleware/avatarUpload');
 const { showFlash } = require('./middleware/flash');
@@ -62,8 +62,8 @@ app.use(showFlash);
 app.use(passport.initialize());
 app.locals.oauthProviders = enabledProviders; // which sign-in buttons the auth pages show
 
-// Public routes
-app.get('/', (req, res) =>
+// Public routes. Logged-in visitors skip the landing page and go straight to their Daily List.
+app.get('/', guestOnly, (req, res) =>
   res.render('home', {
     title: 'Agendal: plan the week, live the day',
     description:
