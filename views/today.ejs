@@ -29,9 +29,10 @@
 
 <div class="mt-6 grid gap-4 md:grid-cols-[minmax(0,320px)_1fr]">
   <section class="flex items-center gap-4 rounded-box bg-base-100 p-5" aria-label="Progress">
-    <div class="radial-progress shrink-0 text-sm font-semibold tabular-nums text-success" style="--value: <%= percent %>; --size: 3.5rem; --thickness: 5px"
+    <%# A ring with a grey track (Figma W01), drawn with a conic gradient behind a smaller disc %>
+    <div class="grid size-14 shrink-0 place-items-center rounded-full" style="background: conic-gradient(var(--color-success) <%= percent %>%, var(--color-base-300) 0)"
       role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= done %> of <%= total %> done">
-      <span class="text-base-content"><%= done %>/<%= total %></span>
+      <span class="grid size-11 place-items-center rounded-full bg-base-100 text-sm font-semibold tabular-nums"><%= done %>/<%= total %></span>
     </div>
     <div class="min-w-0">
       <p class="font-semibold"><%= cheer %><%= firstName && total ? `, ${firstName}` : '' %>!</p>
