@@ -31,12 +31,18 @@ exports.create = async (req, res) => {
   res.redirect(returnTo);
 };
 
+const CHEERS = ['Nice!', 'Well done!', 'Great work!', 'One down!', 'Nailed it!'];
+
+// Done (done=1) or reopened. Finishing gets a little cheer and an Undo, which posts back here without done=1.
 exports.setComplete = async (req, res) => {
   const task = await findOwnedTask(req);
   const done = req.body?.done === '1';
   task.completedAt = done ? new Date() : null;
   await task.save();
-  flash(req, 'success', done ? `Done: “${task.title}”.` : `Reopened “${task.title}”.`);
+  if (done) {
+    const cheer = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+    flash(req, 'success', `${cheer} “${task.title}” is done.`, { undoUrl: `/tasks/${task._id}/complete` });
+  } else flash(req, 'success', `Reopened “${task.title}”.`);
   res.redirect(safeReturnTo(req.body?.returnTo));
 };
 

@@ -13,10 +13,10 @@
   }
 %>
 <li class="relative flex items-start gap-3 px-4 py-3 hover:bg-base-200/60">
-  <form method="post" action="/tasks/<%= task._id %>/complete" class="relative z-10 -my-2.5 -ml-3 shrink-0">
+  <form method="post" action="/tasks/<%= task._id %>/complete" class="relative z-10 -my-2.5 -ml-3 shrink-0" data-fetch>
     <%- include('../partials/csrf') %>
     <input type="hidden" name="done" value="<%= task.completedAt ? '0' : '1' %>">
-    <input type="hidden" name="returnTo" value="<%= currentPath %>">
+    <input type="hidden" name="returnTo" value="<%= currentUrl %>">
     <button type="submit" class="group grid size-11 place-items-center rounded-full"
       aria-label="<%= task.completedAt ? `Reopen “${task.title}”` : `Mark “${task.title}” as done` %>">
       <span class="grid size-5 place-items-center rounded-full border-2 <%= task.completedAt ? 'border-success bg-success text-success-content' : 'border-base-300 group-hover:border-primary' %>">

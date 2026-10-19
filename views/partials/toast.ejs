@@ -1,6 +1,6 @@
 <%#
   One toast on the inverse surface (Figma DS 10). Locals: type ('success' | 'info' | 'error'), message, actionLabel?,
-  undoUrl? (server-rendered Undo: a small form, so it works without JavaScript)
+  undoUrl? (server-rendered Undo: a small form, so it works without JavaScript; it returns to the current page)
   The server renders it for flash messages; public/js/app.js clones it from the templates in footer.ejs.
 %>
 <%
@@ -20,6 +20,7 @@
   <% if (locals.undoUrl) { %>
     <form method="post" action="<%= undoUrl %>">
       <%- include('csrf') %>
+      <% if (locals.currentUrl) { %><input type="hidden" name="returnTo" value="<%= currentUrl %>"><% } %>
       <button type="submit" class="min-h-8 font-semibold text-inverse-primary hover:underline">Undo</button>
     </form>
   <% } else { %>
