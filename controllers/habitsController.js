@@ -4,8 +4,8 @@ const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
 const { safeReturnTo } = require('../services/returnTo');
 const { PROJECT_COLOURS } = require('../services/projects');
-const { addDays, parseDateInput, toDateInput } = require('../services/dates');
-const { loadSummaries } = require('../services/habits');
+const { addDays, parseDateInput, startOfWeek, toDateInput } = require('../services/dates');
+const { DAY_NAMES, completion, isDue, loadSummaries } = require('../services/habits');
 const { MAX_NAME_LENGTH, parseHabitForm } = require('../validators/habit');
 
 const BACKFILL_DAYS = 7; // check-ins can be added or undone for today and the 6 days before
@@ -15,6 +15,12 @@ const NEW_HABIT = { name: '', colour: PROJECT_COLOURS[0].hex, frequencyType: 'da
 const findOwnedHabit = (req) => findOwned(Habit, req.params.id, req.user._id);
 
 const localToday = (user) => toDateInput(new Date(), user.timeZone);
+
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/; // ?month=2026-10
+const shiftMonth = (month, months) => {
+  const [year, number] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, number - 1 + months, 1)).toISOString().slice(0, 7);
+};
 
 // Today's habits: the ones due today first, then the rest greyed out; archived ones in a collapsed list.
 exports.index = async (req, res) => {
@@ -28,6 +34,37 @@ exports.index = async (req, res) => {
     archived: summaries.filter(({ habit }) => habit.archivedAt),
     doneCount: active.filter((summary) => summary.due && summary.doneOnDate).length,
     dueCount: active.filter((summary) => summary.due).length,
+  });
+};
+
+// Habit detail: streaks, completion rates and a month of check-ins (?month=YYYY-MM, default this month).
+exports.show = async (req, res) => {
+  const { _id } = await findOwnedHabit(req);
+  const today = localToday(req.user);
+  const weekStartsOn = req.user.preferences.weekStartsOn;
+  const [summary] = await loadSummaries(req.user, today, { _id });
+  const { habit, done, start } = summary;
+
+  const month = MONTH.test(req.query.month) ? req.query.month : today.slice(0, 7);
+  const lastOfMonth = addDays(`${shiftMonth(month, 1)}-01`, -1);
+  const format = (date, options) => new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+  const days = [];
+  // Whole weeks, from the week holding the 1st to the week holding the last day.
+  for (let date = startOfWeek(`${month}-01`, weekStartsOn); date <= lastOfMonth || days.length % 7; date = addDays(date, 1)) {
+    const state = done.has(date) ? 'done' : date > today || date < start || !isDue(habit, date) ? 'idle' : date === today ? 'open' : 'missed';
+    days.push({ date, number: Number(date.slice(8)), inMonth: date.startsWith(month), isToday: date === today, state, label: format(date, { day: 'numeric', month: 'long' }) });
+  }
+
+  res.render('habits/show', {
+    title: `${habit.name} · Agendal`,
+    summary,
+    days,
+    monthLabel: format(`${month}-01`, { month: 'long', year: 'numeric' }),
+    prevMonth: shiftMonth(month, -1),
+    nextMonth: month < today.slice(0, 7) ? shiftMonth(month, 1) : null,
+    weekdayNames: DAY_NAMES.map((_, i) => DAY_NAMES[(i + weekStartsOn) % 7]),
+    last30: completion(habit, done, { start: [start, addDays(today, -29)].sort()[1], today, weekStartsOn }),
+    allTime: completion(habit, done, { start, today, weekStartsOn }),
   });
 };
 
@@ -76,7 +113,7 @@ exports.update = async (req, res) => {
   habit.set(changes); // replaces the whole frequency, so days or timesPerWeek left from an old choice go too
   await habit.save();
   flash(req, 'success', 'Habit saved.');
-  res.redirect('/habits');
+  res.redirect(`/habits/${habit._id}`);
 };
 
 // Archive hides the habit from the lists but keeps every check-in; unarchive brings it back.
@@ -86,7 +123,7 @@ exports.setArchived = async (req, res) => {
   habit.archivedAt = archive ? new Date() : null;
   await habit.save();
   flash(req, 'success', archive ? `Archived “${habit.name}”. Its history is kept.` : `“${habit.name}” is back on your list.`);
-  res.redirect('/habits');
+  res.redirect(`/habits/${habit._id}`);
 };
 
 exports.remove = async (req, res) => {

@@ -17,7 +17,7 @@
     </button>
   </form>
   <div class="min-w-0 grow">
-    <a href="/habits/<%= habit._id %>/edit" class="block truncate font-medium after:absolute after:inset-0 hover:underline"><%= habit.name %></a>
+    <a href="/habits/<%= habit._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline"><%= habit.name %></a>
     <p class="mt-0.5 text-xs text-muted"><%= frequencyLabel %><%= due ? '' : ' · not due today' %></p>
   </div>
   <div class="shrink-0 text-right text-xs tabular-nums">

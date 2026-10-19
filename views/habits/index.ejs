@@ -25,7 +25,7 @@
       <% archived.forEach(({ habit, frequencyLabel }) => { %>
         <li class="relative flex items-center gap-3 px-4 py-3 text-muted hover:bg-base-200/60">
           <span class="size-3 shrink-0 rounded-full opacity-60" style="background-color: <%= habit.colour %>" aria-hidden="true"></span>
-          <a href="/habits/<%= habit._id %>/edit" class="grow truncate after:absolute after:inset-0 hover:underline"><%= habit.name %></a>
+          <a href="/habits/<%= habit._id %>" class="grow truncate after:absolute after:inset-0 hover:underline"><%= habit.name %></a>
           <span class="text-xs"><%= frequencyLabel %></span>
         </li>
       <% }) %>

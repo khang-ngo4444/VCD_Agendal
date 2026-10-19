@@ -15,7 +15,7 @@
   ];
   const describedBy = (field) => (errors[field] ? `aria-invalid="true" aria-describedby="${field}-error"` : '');
 %>
-<a href="/habits" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ Habits</a>
+<a href="<%= habit ? `/habits/${habit._id}` : '/habits' %>" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ <%= habit ? habit.name : 'Habits' %></a>
 <h1 class="mt-2 text-3xl font-bold tracking-tight"><%= habit ? 'Edit habit' : 'New habit' %></h1>
 
 <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_260px]">
@@ -79,7 +79,7 @@
     </p>
 
     <div class="mt-6 flex justify-end gap-2">
-      <a href="/habits" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
+      <a href="<%= habit ? `/habits/${habit._id}` : '/habits' %>" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
       <button type="submit" class="btn btn-primary h-11 rounded-full px-5"><%= habit ? 'Save changes' : 'Create habit' %></button>
     </div>
   </form>
