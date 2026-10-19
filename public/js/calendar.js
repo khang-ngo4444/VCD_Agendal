@@ -32,22 +32,46 @@ document.addEventListener('click', (event) => {
 });
 
 // Dragging a task: it follows the pointer in 15-minute steps, across days too, and keeps its length.
+// A task dragged in from the Unscheduled panel gets a placeholder block an hour long.
 const DRAG_MINUTES = 15;
+const NEW_TASK_MINUTES = 60;
 let drag = null;
 let justDragged = false;
 
 document.addEventListener('pointerdown', (event) => {
-  const block = event.target.closest('[data-task-id]');
-  const grid = block?.closest('[data-hour]');
-  if (!grid || event.button !== 0) return;
-  const grab = event.clientY - block.getBoundingClientRect().top;
-  drag = { block, grid, grab, minutes: Number(block.dataset.minutes), x: event.clientX, y: event.clientY, moved: false };
+  if (event.button !== 0) return;
+  const listed = event.target.closest('[data-unscheduled-id]');
+  const block = event.target.closest('[data-hour] [data-task-id]');
+  const grid = document.querySelector('[data-hour]');
+  if (listed && grid) {
+    drag = { listed, grid, taskId: listed.dataset.unscheduledId, grab: 0, minutes: NEW_TASK_MINUTES };
+  } else if (block) {
+    drag = { block, grid, taskId: block.dataset.taskId, grab: event.clientY - block.getBoundingClientRect().top, minutes: Number(block.dataset.minutes) };
+  } else return;
+  Object.assign(drag, { x: event.clientX, y: event.clientY, moved: false });
 });
+
+// The placeholder for a task coming from the Unscheduled panel, styled like the task blocks.
+function placeholderFor(listed) {
+  const block = document.createElement('div');
+  block.className = 'pointer-events-none absolute overflow-hidden rounded-field border-2 border-primary bg-base-100 px-1.5 py-1 text-xs leading-tight shadow-md';
+  block.style.height = `${(NEW_TASK_MINUTES / 60) * Number(drag.grid.dataset.hour)}px`;
+  const title = document.createElement('span');
+  title.className = 'block truncate font-semibold';
+  title.textContent = listed.querySelector('a').textContent;
+  const time = document.createElement('span');
+  time.className = 'block text-muted';
+  time.dataset.time = '';
+  block.append(title, time);
+  listed.classList.add('opacity-40');
+  return block;
+}
 
 document.addEventListener('pointermove', (event) => {
   if (!drag) return;
   if (!drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return; // a click, not a drag
   drag.moved = true;
+  drag.block ??= placeholderFor(drag.listed);
   const day = document.elementsFromPoint(event.clientX, event.clientY).find((element) => element.matches('[data-day]') && drag.grid.contains(element));
   if (!day) return;
   const hour = Number(drag.grid.dataset.hour);
@@ -62,11 +86,15 @@ document.addEventListener('pointermove', (event) => {
 
 document.addEventListener('pointerup', () => {
   if (!drag) return;
-  const { block, moved, target, minutes } = drag;
+  const { listed, block, moved, target, minutes, taskId } = drag;
   drag = null;
-  if (!moved || !target) return;
-  justDragged = true; // the click that follows the drop must not open the task
-  window.agendal.post(`/tasks/${block.dataset.taskId}/schedule`, {
+  if (moved) justDragged = true; // the click that follows the drop must not open the task
+  if (!target) {
+    if (listed) block?.remove(); // dropped outside the calendar: the task stays unscheduled
+    listed?.classList.remove('opacity-40');
+    return;
+  }
+  window.agendal.post(`/tasks/${taskId}/schedule`, {
     scheduleDate: target.date,
     scheduleStart: clock(target.start),
     scheduleEnd: clock(target.start + minutes),
@@ -84,3 +112,10 @@ document.addEventListener(
   },
   true
 );
+
+// A touch that turns into scrolling cancels the drag.
+document.addEventListener('pointercancel', () => {
+  if (drag?.listed) drag.block?.remove();
+  drag?.listed?.classList.remove('opacity-40');
+  drag = null;
+});

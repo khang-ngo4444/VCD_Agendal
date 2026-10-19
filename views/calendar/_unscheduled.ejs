@@ -12,8 +12,8 @@
           </h3>
           <ul class="space-y-1.5">
             <% group.tasks.forEach((task) => { %>
-              <li class="relative rounded-field bg-fill px-3 py-2 text-sm" data-unscheduled-id="<%= task._id %>">
-                <a href="/tasks/<%= task._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline"><%= task.title %></a>
+              <li class="relative cursor-grab rounded-field bg-fill px-3 py-2 text-sm select-none" data-unscheduled-id="<%= task._id %>">
+                <a href="/tasks/<%= task._id %>" draggable="false" class="block truncate font-medium after:absolute after:inset-0 hover:underline"><%= task.title %></a>
                 <span class="block text-xs <%= dates.isOverdue(task) ? 'font-semibold text-error' : 'text-muted' %>">
                   <%= task.dueDate ? `${dates.isOverdue(task) ? 'Overdue · ' : ''}Due ${dates.formatDay(task.dueDate, currentUser.timeZone)}` : 'No date' %>
                 </span>
