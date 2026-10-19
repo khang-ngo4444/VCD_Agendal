@@ -134,6 +134,53 @@ document.addEventListener('click', (event) => {
   input.focus();
 });
 
+// Forms marked data-fetch post in the background. The server still answers with its usual redirect, and the page it
+// redirects to replaces the main content, sidebar and toasts here: the list updates without a reload or a jump to the top.
+// Without JavaScript, or if the request fails, the form posts as normal.
+function swapPage(html) {
+  const page = new DOMParser().parseFromString(html, 'text/html');
+  ['#main', '.drawer-side nav'].forEach((selector) => {
+    const fresh = page.querySelector(selector);
+    if (fresh) document.querySelector(selector)?.replaceWith(fresh);
+  });
+  page.querySelectorAll('#toast-region [data-toast]').forEach((toastElement) => {
+    document.getElementById('toast-region').append(toastElement);
+    dismissLater(toastElement);
+  });
+  document.dispatchEvent(new Event('agendal:render')); // pages with their own scripts set up the new content
+}
+
+// POSTs `fields` the way a form would (adding the page's CSRF token) and swaps in the page the server redirects to.
+// Used by data-fetch forms and by scripts like the Board's drag and drop (window.agendal.post).
+async function postAndSwap(url, fields) {
+  const body = new URLSearchParams(fields);
+  if (!body.has('_csrf')) body.set('_csrf', document.querySelector('input[name=_csrf]')?.value ?? '');
+  const response = await fetch(url, { method: 'post', body });
+  // Sent somewhere else, e.g. to the login page because the session ended: go there for real.
+  if (!response.ok || new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
+  swapPage(await response.text());
+}
+window.agendal.post = postAndSwap;
+
+// Which form to give focus back to after the swap: data-fetch="<key>" when several forms share one action.
+const fetchKey = (form) => form.dataset.fetch || form.getAttribute('action');
+
+document.addEventListener('submit', async (event) => {
+  const form = event.target;
+  if (event.defaultPrevented || !form.matches('form[data-fetch]')) return;
+  event.preventDefault();
+  const buttons = [...form.querySelectorAll('button')];
+  if (buttons.some((button) => button.disabled)) return; // a double click: the first one is still on its way
+  const key = form.contains(document.activeElement) ? fetchKey(form) : null;
+  buttons.forEach((button) => (button.disabled = true));
+  try {
+    await postAndSwap(form.action, new FormData(form));
+    if (key) [...document.querySelectorAll('form[data-fetch]')].find((other) => fetchKey(other) === key)?.querySelector('button')?.focus();
+  } catch {
+    form.submit();
+  }
+});
+
 // While a form is being sent its submit button is disabled and says so, so a double click can't send it twice.
 // Registered after the confirm-dialog handler, and skipped when that handler already stopped the submit.
 document.addEventListener('submit', (event) => {

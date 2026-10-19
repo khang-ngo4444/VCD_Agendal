@@ -1,0 +1,41 @@
+<%- include('partials/shell-top') %>
+<%#
+  The Board (Figma W02). Locals: columns [{ status, label, dot, tasks }], filter (project id, 'inbox' or null).
+  Scrolls sideways on narrow screens; drag and drop in public/js/board.js.
+%>
+<%
+  const chips = [
+    { key: null, href: '/board', name: 'All projects', colour: null },
+    ...sidebarProjects.map((project) => ({ key: project.id ?? 'inbox', href: `/board?project=${project.id ?? 'inbox'}`, name: project.name, colour: project.colour ?? 'var(--color-base-300)' })),
+  ];
+%>
+<h1 class="text-3xl font-bold tracking-tight">Board</h1>
+
+<nav class="mt-4 flex flex-wrap gap-2" aria-label="Filter by project">
+  <% chips.forEach((chip) => { %>
+    <a href="<%= chip.href %>" class="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium <%= filter === chip.key ? 'bg-primary/10 text-primary' : 'bg-base-300/40 hover:bg-base-300/70' %>"
+      <% if (filter === chip.key) { %>aria-current="page"<% } %>>
+      <% if (chip.colour) { %><span class="size-2 rounded-full" style="background-color: <%= chip.colour %>" aria-hidden="true"></span><% } %>
+      <%= chip.name %>
+    </a>
+  <% }) %>
+</nav>
+
+<div class="-mx-4 mt-6 overflow-x-auto px-4 pb-4 lg:-mx-8 lg:px-8">
+  <div class="grid min-w-[880px] grid-cols-4 items-start gap-4">
+    <% columns.forEach((column) => { %>
+      <section class="rounded-box bg-base-300/40 p-2" aria-labelledby="column-<%= column.status %>">
+        <h2 id="column-<%= column.status %>" class="flex items-center gap-2 px-2 py-1.5 font-semibold">
+          <span class="size-2.5 rounded-full <%= column.dot %>" aria-hidden="true"></span>
+          <%= column.label %> <span class="font-normal text-muted"><%= column.tasks.length %></span>
+        </h2>
+        <ul class="mt-1 min-h-16 space-y-2" data-column="<%= column.status %>">
+          <% column.tasks.forEach((task) => { %><%- include('tasks/_card', { task, timeZone: currentUser.timeZone, columns }) %><% }) %>
+        </ul>
+      </section>
+    <% }) %>
+  </div>
+</div>
+<script src="/js/vendor/sortable.min.js" defer></script>
+<script src="/js/board.js" defer></script>
+<%- include('partials/shell-bottom') %>

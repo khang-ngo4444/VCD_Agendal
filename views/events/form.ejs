@@ -1,0 +1,31 @@
+<%- include('../partials/shell-top') %>
+<%#
+  New and edit event as a page (the Calendar also opens the new-event form in a dialog). Locals: event (null when new),
+  occurrence (the opened occurrence of a repeating event, or null), scope, values, errors, returnTo.
+%>
+<a href="<%= returnTo %>" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ Back</a>
+<h1 class="mt-2 text-3xl font-bold tracking-tight"><%= event ? 'Edit event' : 'New event' %></h1>
+<% if (occurrence) { %>
+  <p class="mt-1 inline-flex items-center gap-1.5 text-sm text-muted"><%- include('../partials/icon', { icon: 'repeat', cls: 'size-4' }) %>Repeating event · this one is on <%= new Intl.DateTimeFormat('en-GB', { timeZone: currentUser.timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(occurrence.start) %></p>
+<% } %>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-[1fr_260px]">
+  <div class="rounded-box bg-base-100 p-5">
+    <%- include('_form', { action: event ? `/events/${event._id}` : '/events', submitLabel: event ? 'Save changes' : 'Add event', idPrefix: 'event' }) %>
+  </div>
+  <% if (event) { %>
+    <aside>
+      <form method="post" action="/events/<%= event._id %>/delete" class="rounded-box bg-base-100 p-4" data-confirm="Delete “<%= event.title %>”?"
+        data-confirm-detail="<%= occurrence ? 'The occurrences you picked are removed.' : 'This can’t be undone.' %>" data-confirm-button="Delete">
+        <%- include('../partials/csrf') %>
+        <input type="hidden" name="returnTo" value="<%= returnTo %>">
+        <% if (occurrence) { %>
+          <input type="hidden" name="occurrence" value="<%= occurrence.original.toISOString() %>">
+          <div class="-mt-5"><%- include('_scope', { legend: 'Delete', scope: 'this', occurrence }) %></div>
+        <% } %>
+        <button type="submit" class="btn btn-ghost mt-3 h-11 w-full rounded-full text-error"><%- include('../partials/icon', { icon: 'trash', cls: 'size-4' }) %> Delete event</button>
+      </form>
+    </aside>
+  <% } %>
+</div>
+<%- include('../partials/shell-bottom') %>

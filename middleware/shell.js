@@ -7,6 +7,7 @@ async function loadShell(req, res, next) {
   const [projects, countsFor] = await Promise.all([Project.find({ owner }).sort({ createdAt: 1 }).lean(), taskCounts(owner)]);
 
   res.locals.currentPath = req.path;
+  res.locals.currentUrl = req.originalUrl; // path and query, for returnTo fields that must come back to the same view
   res.locals.sidebarProjects = [
     { id: null, href: '/inbox', name: 'Inbox', colour: null, ...countsFor('inbox') },
     ...projects.map((project) => ({

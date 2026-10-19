@@ -1,0 +1,50 @@
+<%- include('partials/shell-top') %>
+<%#
+  The Calendar (Figma W23 / W03 / W11). Locals: view, date, today, days [{ date, number, weekday, name, inMonth, isToday }],
+  previous, next (dates for the arrows), eyebrow, heading, nowMinutes, unscheduled (open tasks without a time, by project).
+%>
+<% const views = [['day', 'Day'], ['week', 'Week'], ['month', 'Month']]; %>
+<header class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <% if (eyebrow) { %><p class="text-xs font-semibold tracking-wide text-primary uppercase"><%= eyebrow %></p><% } %>
+    <h1 class="mt-1 text-3xl font-bold tracking-tight"><%= heading %></h1>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="?view=<%= view %>&date=<%= previous %>" class="btn btn-circle size-11 border-0 bg-fill" aria-label="Previous <%= view %>"><%- include('partials/icon', { icon: 'chevron-left', cls: 'size-4' }) %></a>
+    <a href="?view=<%= view %>" class="btn h-11 rounded-full border-0 bg-fill px-4 <%= days.some((day) => day.isToday) ? 'text-primary' : '' %>">Today</a>
+    <a href="?view=<%= view %>&date=<%= next %>" class="btn btn-circle size-11 border-0 bg-fill" aria-label="Next <%= view %>"><%- include('partials/icon', { icon: 'chevron-right', cls: 'size-4' }) %></a>
+    <nav class="join rounded-full bg-fill p-1" aria-label="Calendar layout">
+      <% views.forEach(([value, name]) => { %>
+        <a href="?view=<%= value %>&date=<%= date %>" class="join-item btn h-9 min-w-16 rounded-full border-0 <%= view === value ? 'bg-base-100 shadow-sm' : 'bg-transparent' %>"
+          <% if (view === value) { %>aria-current="page"<% } %>><%= name %></a>
+      <% }) %>
+    </nav>
+    <a href="/events/new?date=<%= date %>&returnTo=<%= encodeURIComponent(currentUrl) %>" class="btn btn-primary h-11 rounded-full px-4" data-open-modal="event-dialog">
+      <%- include('partials/icon', { icon: 'plus', cls: 'size-4' }) %> New event
+    </a>
+  </div>
+</header>
+
+<% if (view === 'month') { %>
+  <div class="mt-6"><%- include('calendar/_month') %></div>
+<% } else { %>
+  <div class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_280px]">
+    <div class="min-w-0"><%- include('calendar/_time-grid') %></div>
+    <%- include('calendar/_unscheduled') %>
+  </div>
+<% } %>
+<%- include('partials/modal', { id: 'slot-dialog', heading: 'New task', body: include('calendar/_slot-form', { returnTo: currentUrl }) }) %>
+<%- include('partials/modal', {
+  id: 'event-dialog',
+  heading: 'New event',
+  body: include('events/_form', {
+    action: '/events',
+    submitLabel: 'Add event',
+    idPrefix: 'dialog-event',
+    returnTo: currentUrl,
+    errors: {},
+    values: { title: '', date, start: '09:00', end: '10:00', allDay: false, repeat: '', until: '', location: '', notes: '', project: '' },
+  }),
+}) %>
+<script src="/js/calendar.js" defer></script>
+<%- include('partials/shell-bottom') %>

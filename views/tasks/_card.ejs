@@ -1,0 +1,43 @@
+<%#
+  One task as a Board card (Figma W02): project chip, title, date and priority. The whole card opens the task; its
+  "Move to" menu changes the column without dragging (keyboard, no JavaScript). Locals: task (lean), timeZone, columns.
+  The project comes from sidebarProjects, which every app page has.
+%>
+<%
+  const project = sidebarProjects.find((item) => item.id === (task.project ? String(task.project) : null));
+  const overdue = dates.isOverdue(task);
+  const when = task.schedule?.start
+    ? `${dates.formatDay(task.schedule.start, timeZone)}, ${dates.formatTime(task.schedule.start, timeZone)}`
+    : task.dueDate ? dates.formatDay(task.dueDate, timeZone) : 'No date';
+%>
+<li class="relative cursor-grab rounded-field bg-base-100 p-3 pr-10 shadow-sm active:cursor-grabbing <%= task.completedAt ? 'opacity-70' : '' %>" data-task-id="<%= task._id %>">
+  <details class="dropdown dropdown-end absolute top-0.5 right-0.5 z-10 open:z-30" data-dismissable>
+    <summary class="btn btn-ghost btn-circle size-11 list-none text-muted" aria-label="Move “<%= task.title %>”"><%- include('../partials/icon', { icon: 'more', cls: 'size-4' }) %></summary>
+    <ul class="menu dropdown-content z-20 w-48 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg">
+      <% columns.filter((column) => column.status !== task.status).forEach((column) => { %>
+        <li>
+          <form method="post" action="/tasks/<%= task._id %>/move" data-fetch="move-<%= task._id %>" class="p-0">
+            <%- include('../partials/csrf') %>
+            <input type="hidden" name="status" value="<%= column.status %>">
+            <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+            <button type="submit" class="w-full px-3 py-2 text-left">Move to <%= column.label %></button>
+          </form>
+        </li>
+      <% }) %>
+    </ul>
+  </details>
+  <% if (project) { %>
+    <span class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-fill px-2 py-0.5 text-xs text-muted">
+      <span class="size-1.5 shrink-0 rounded-full <%= project.colour ? '' : 'bg-base-300' %>" <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span>
+      <span class="truncate"><%= project.name %></span>
+    </span>
+  <% } %>
+  <a href="/tasks/<%= task._id %>" class="mt-1.5 block font-semibold after:absolute after:inset-0 hover:underline <%= task.completedAt ? 'text-muted' : '' %>"><%= task.title %></a>
+  <p class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs <%= overdue ? 'font-semibold text-error' : 'text-muted' %>">
+    <%- include('../partials/icon', { icon: overdue ? 'alert' : 'calendar', cls: 'size-3.5' }) %>
+    <% if (overdue) { %>Overdue ·<% } %> <%= when %>
+    <% if (task.priority === 'high' && !task.completedAt) { %>
+      <span class="text-warning" title="High priority"><%- include('../partials/icon', { icon: 'flag', cls: 'size-3.5' }) %><span class="sr-only">High priority</span></span>
+    <% } %>
+  </p>
+</li>

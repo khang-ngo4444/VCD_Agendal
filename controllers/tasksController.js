@@ -3,47 +3,52 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
-const { isOverdue, toDateInput, toTimeInput } = require('../services/dates');
-const { PRIORITIES, parseTaskForm } = require('../validators/task');
+const { safeReturnTo } = require('../services/returnTo');
+const { columnLabel, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
+const { formatDay, formatTime, isOverdue, toDateInput, toTimeInput } = require('../services/dates');
+const { PRIORITIES, parseSchedule, parseTaskForm } = require('../validators/task');
 
 const MAX_TITLE_LENGTH = 200;
 
 const text = (value) => (typeof value === 'string' ? value : '');
-
-// Only same-site paths, so a crafted returnTo can't bounce the user to another site. Parsed with URL, because
-// browsers read tricks like "/\evil.example" as "//evil.example".
-function safeReturnTo(path) {
-  if (typeof path !== 'string' || !path.startsWith('/')) return '/inbox';
-  const url = new URL(path, 'http://agendal.invalid');
-  return url.origin === 'http://agendal.invalid' ? url.pathname + url.search : '/inbox';
-}
 
 const findOwnedTask = (req) => findOwned(Task, req.params.id, req.user._id, { deletedAt: null });
 
 exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal' });
 
 // Quick-add: a title is enough. The task starts in Backlog, in the Inbox unless a project was picked.
+// The Calendar's slot form also sends scheduleDate, scheduleStart and scheduleEnd.
 exports.create = async (req, res) => {
   const body = req.body ?? {};
   const returnTo = safeReturnTo(body.returnTo);
   const title = text(body.title).trim();
-  if (!title || title.length > MAX_TITLE_LENGTH) {
-    flash(req, 'error', title ? `Keep the title under ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.');
+  const { error, schedule } = parseSchedule({ scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) }, req.user.timeZone);
+  if (!title || title.length > MAX_TITLE_LENGTH || error) {
+    flash(req, 'error', error ?? (title ? `Keep the title under ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.'));
     return res.redirect(returnTo);
   }
 
   const project = body.project ? await findOwned(Project, body.project, req.user._id) : null;
-  await Task.create({ owner: req.user._id, project: project?._id ?? null, title });
-  flash(req, 'success', `Added “${title}” to ${project ? project.name : 'the Inbox'}.`);
+  await Task.create({ owner: req.user._id, project: project?._id ?? null, title, schedule: schedule ?? undefined });
+  const when = schedule ? ` for ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}` : '';
+  flash(req, 'success', `Added “${title}” to ${project ? project.name : 'the Inbox'}${when}.`);
   res.redirect(returnTo);
 };
 
+const CHEERS = ['Nice!', 'Well done!', 'Great work!', 'One down!', 'Nailed it!'];
+
+// Done (done=1) or reopened. Finishing gets a little cheer and an Undo, which posts back here without done=1.
+// Either way the Board card follows: to the top of Done, or back to the column the task's date suggests.
 exports.setComplete = async (req, res) => {
   const task = await findOwnedTask(req);
   const done = req.body?.done === '1';
-  task.completedAt = done ? new Date() : null;
+  setColumn(task, done ? 'done' : reopenedStatus(task, req.user.timeZone));
+  task.order = await topOrder(req.user._id, task.status);
   await task.save();
-  flash(req, 'success', done ? `Done: “${task.title}”.` : `Reopened “${task.title}”.`);
+  if (done) {
+    const cheer = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+    flash(req, 'success', `${cheer} “${task.title}” is done.`, { undoUrl: `/tasks/${task._id}/complete` });
+  } else flash(req, 'success', `Reopened “${task.title}”.`);
   res.redirect(safeReturnTo(req.body?.returnTo));
 };
 
@@ -96,6 +101,22 @@ exports.update = async (req, res) => {
   res.redirect(`/tasks/${task._id}`);
 };
 
+// Calendar drag and drop: a new date, start and end (local times), keeping everything else about the task.
+exports.reschedule = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const body = req.body ?? {};
+  const returnTo = safeReturnTo(body.returnTo, '/calendar');
+  const { error, schedule } = parseSchedule({ scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) }, req.user.timeZone);
+  if (error || !schedule) {
+    flash(req, 'error', error ?? 'Pick a time to move the task to.');
+    return res.redirect(returnTo);
+  }
+  task.set('schedule', schedule);
+  await task.save();
+  flash(req, 'success', `Moved “${task.title}” to ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}.`);
+  res.redirect(returnTo);
+};
+
 // "Remove schedule": the task keeps its project and due date and simply becomes unscheduled again.
 exports.unschedule = async (req, res) => {
   const task = await findOwnedTask(req);
@@ -122,4 +143,29 @@ exports.restore = async (req, res) => {
   await task.save();
   flash(req, 'success', `Restored “${task.title}”.`);
   res.redirect(listPath(task));
+};
+
+// Board: a card dragged to a position, or moved with its "Move to" menu. A drop sends `ids`, the column's cards top
+// to bottom, and each one's position is saved; from the menu the card lands at the top of the column.
+// ponytail: with a project filter on, `ids` holds only the visible cards, so hidden ones keep their old positions.
+exports.move = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const status = req.body?.status;
+  const ids = [req.body?.ids ?? []].flat().filter((id) => mongoose.isValidObjectId(id));
+  const returnTo = safeReturnTo(req.body?.returnTo, '/board');
+  if (!columnLabel(status)) {
+    flash(req, 'error', 'Pick one of the board columns.');
+    return res.redirect(returnTo);
+  }
+
+  const changesColumn = task.status !== status;
+  if (!ids.includes(task.id)) task.order = await topOrder(req.user._id, status);
+  setColumn(task, status);
+  await task.save();
+  if (ids.includes(task.id)) {
+    // The owner in the filter means ids of other people's tasks change nothing.
+    await Task.bulkWrite(ids.map((id, order) => ({ updateOne: { filter: { _id: id, owner: req.user._id }, update: { $set: { order } } } })));
+  }
+  if (changesColumn) flash(req, 'success', `Moved “${task.title}” to ${columnLabel(status)}.`);
+  res.redirect(returnTo);
 };
