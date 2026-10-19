@@ -1,10 +1,11 @@
 <%- include('partials/shell-top') %>
-<%# The Daily List (Figma W01 "Today"). Locals: date, heading, eyebrow, progress { done, total, firstName }, counts, scheduled, due. %>
+<%# The Daily List (Figma W01 "Today"). Locals: date, heading, eyebrow, progress { done, total, firstName }, counts, overdue, scheduled, due. %>
 <%
   const { done, total, firstName } = progress;
   const percent = total ? Math.round((done / total) * 100) : 0;
   const cheer = !total ? 'A clear day' : done === total ? 'All done. Well played' : done ? 'Nice pace' : 'Let’s get going';
   const summary = [
+    ...(counts.overdue ? [`${counts.overdue} overdue`] : []),
     `${counts.due} task${counts.due === 1 ? '' : 's'} due`,
     `${counts.scheduled} scheduled`,
   ];
@@ -30,6 +31,14 @@
 
 <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
   <div class="min-w-0 space-y-6">
+    <% if (overdue.length) { %>
+      <section aria-labelledby="overdue-heading">
+        <h2 id="overdue-heading" class="mb-2 font-semibold text-error">Overdue <span><%= overdue.length %></span></h2>
+        <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+          <% overdue.forEach((task) => { %><%- include('tasks/_row', { task, timeZone: currentUser.timeZone, showProject: true }) %><% }) %>
+        </ul>
+      </section>
+    <% } %>
     <section aria-labelledby="tasks-heading">
       <h2 id="tasks-heading" class="mb-2 font-semibold">Tasks <span class="text-muted"><%= due.length %></span></h2>
       <% if (due.length) { %>
