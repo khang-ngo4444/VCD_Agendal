@@ -1,4 +1,5 @@
 const Task = require('../models/Task');
+const { loadSummaries } = require('../services/habits');
 const { addDays, dayRange, formatDay, parseDateInput, startOfWeek, toDateInput, zonedTime } = require('../services/dates');
 
 // The instants a local day ("YYYY-MM-DD") starts and ends at in `timeZone`.
@@ -39,12 +40,13 @@ exports.today = async (req, res) => {
   const { start, end } = localDayRange(date, timeZone);
   const mine = { owner: req.user._id, deletedAt: null };
 
-  const [scheduled, due, overdue, week] = await Promise.all([
+  const [scheduled, due, overdue, week, habits] = await Promise.all([
     Task.find({ ...mine, 'schedule.start': { $gte: start, $lt: end } }).sort({ 'schedule.start': 1 }).lean(),
     Task.find({ ...mine, 'schedule.start': null, dueDate: { $gte: start, $lt: end } }).lean(),
     // Overdue only makes sense looking at today: a due date is the end of its day, so before today's start = late.
     date === today ? Task.find({ ...mine, completedAt: null, dueDate: { $lt: start } }).sort({ dueDate: 1 }).lean() : [],
     weekStrip(mine, date, today, req.user),
+    loadSummaries(req.user, date, { archivedAt: null }),
   ]);
   const dayTasks = [...scheduled, ...due];
   const firstName = (req.user.name || '').split(' ')[0];
@@ -59,6 +61,8 @@ exports.today = async (req, res) => {
     progress: { done: dayTasks.filter((task) => task.completedAt).length, total: dayTasks.length, firstName },
     counts: { scheduled: scheduled.length, due: due.length, overdue: overdue.length },
     overdue,
+    habits: habits.filter((summary) => summary.due),
+    habitsEditable: date <= today && date > addDays(today, -7), // the check-in window (controllers/habitsController.js)
     scheduled,
     due: due.sort((a, b) => Boolean(a.completedAt) - Boolean(b.completedAt) || a.createdAt - b.createdAt), // open first
   });

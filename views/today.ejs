@@ -1,7 +1,7 @@
 <%- include('partials/shell-top') %>
 <%#
   The Daily List (Figma W01 "Today"). Locals: date, today, week (the strip), heading, eyebrow, progress { done, total, firstName },
-  counts, overdue, scheduled, due.
+  counts, overdue, scheduled, due, habits (summaries due on the day), habitsEditable.
 %>
 <%
   const { done, total, firstName } = progress;
@@ -80,6 +80,15 @@
         </div>
       <% } %>
     </section>
+
+    <% if (habits.length) { %>
+      <section aria-labelledby="habits-heading">
+        <h2 id="habits-heading" class="mb-2 font-semibold">Habits <span class="text-muted"><%= habits.filter((summary) => summary.doneOnDate).length %>/<%= habits.length %></span></h2>
+        <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+          <% habits.forEach((summary) => { %><%- include('habits/_row', { summary, date, editable: habitsEditable }) %><% }) %>
+        </ul>
+      </section>
+    <% } %>
   </div>
 
   <section aria-labelledby="schedule-heading">

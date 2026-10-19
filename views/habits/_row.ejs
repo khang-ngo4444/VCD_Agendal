@@ -1,21 +1,30 @@
 <%#
-  One habit with its check-in toggle for the local day `date`. Locals: summary (loadSummaries in services/habits.js), date.
+  One habit with its check-in toggle for the local day `date`. Locals: summary (loadSummaries in services/habits.js), date,
+  editable? (default true; false shows the state without a toggle, for days outside the check-in window).
   Habits not due that day are greyed out but can still be checked in.
 %>
-<% const { habit, due, doneOnDate, streak, week, frequencyLabel } = summary; %>
+<%
+  const { habit, due, doneOnDate, streak, week, frequencyLabel } = summary;
+  const circle = `grid size-6 place-items-center rounded-full border-2 text-white ${due || doneOnDate ? '' : 'opacity-50'}`;
+  const fill = `border-color: ${habit.colour};${doneOnDate ? ` background-color: ${habit.colour}` : ''}`;
+%>
 <li class="relative flex items-center gap-3 px-4 py-3 hover:bg-base-200/60 <%= due ? '' : 'text-muted' %>">
-  <form method="post" action="/habits/<%= habit._id %>/check-ins" class="relative z-10 -my-2.5 -ml-3 shrink-0" data-fetch>
-    <%- include('../partials/csrf') %>
-    <input type="hidden" name="date" value="<%= date %>">
-    <input type="hidden" name="done" value="<%= doneOnDate ? '0' : '1' %>">
-    <input type="hidden" name="returnTo" value="<%= currentUrl %>">
-    <button type="submit" class="grid size-11 place-items-center rounded-full" aria-pressed="<%= doneOnDate %>" aria-label="Done: <%= habit.name %>">
-      <span class="grid size-6 place-items-center rounded-full border-2 text-white <%= due || doneOnDate ? '' : 'opacity-50' %>"
-        style="border-color: <%= habit.colour %>;<% if (doneOnDate) { %> background-color: <%= habit.colour %><% } %>">
-        <% if (doneOnDate) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-3.5' }) %><% } %>
-      </span>
-    </button>
-  </form>
+  <% if (locals.editable === false) { %>
+    <span class="-my-2.5 -ml-3 grid size-11 shrink-0 place-items-center">
+      <span class="<%= circle %>" style="<%= fill %>"><% if (doneOnDate) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-3.5' }) %><% } %></span>
+      <span class="sr-only"><%= doneOnDate ? 'Done' : 'Not done' %></span>
+    </span>
+  <% } else { %>
+    <form method="post" action="/habits/<%= habit._id %>/check-ins" class="relative z-10 -my-2.5 -ml-3 shrink-0" data-fetch>
+      <%- include('../partials/csrf') %>
+      <input type="hidden" name="date" value="<%= date %>">
+      <input type="hidden" name="done" value="<%= doneOnDate ? '0' : '1' %>">
+      <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+      <button type="submit" class="grid size-11 place-items-center rounded-full" aria-pressed="<%= doneOnDate %>" aria-label="Done: <%= habit.name %>">
+        <span class="<%= circle %>" style="<%= fill %>"><% if (doneOnDate) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-3.5' }) %><% } %></span>
+      </button>
+    </form>
+  <% } %>
   <div class="min-w-0 grow">
     <a href="/habits/<%= habit._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline"><%= habit.name %></a>
     <p class="mt-0.5 text-xs text-muted"><%= frequencyLabel %><%= due ? '' : ' · not due today' %></p>
