@@ -150,12 +150,15 @@ function swapPage(html) {
   document.dispatchEvent(new Event('agendal:render')); // pages with their own scripts set up the new content
 }
 
+// Names this tab in its background posts, so the live update they cause (below) isn't applied here a second time.
+const tabId = Math.random().toString(36).slice(2);
+
 // POSTs `fields` the way a form would (adding the page's CSRF token) and swaps in the page the server redirects to.
 // Used by data-fetch forms and by scripts like the Board's drag and drop (window.agendal.post).
 async function postAndSwap(url, fields) {
   const body = new URLSearchParams(fields);
   if (!body.has('_csrf')) body.set('_csrf', document.querySelector('input[name=_csrf]')?.value ?? '');
-  const response = await fetch(url, { method: 'post', body });
+  const response = await fetch(url, { method: 'post', body, headers: { 'X-Tab-Id': tabId } });
   // Sent somewhere else, e.g. to the login page because the session ended: go there for real.
   if (!response.ok || new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
   swapPage(await response.text());
@@ -180,6 +183,42 @@ document.addEventListener('submit', async (event) => {
     form.submit();
   }
 });
+
+// Live updates (services/sync.js): a change made in another tab or on another device makes this page fetch itself
+// again and swap in the new content, like a data-fetch form does. It waits while you're typing, dragging, in a dialog
+// or menu, or away from the tab, and catches up as soon as you're done.
+let stale = false;
+let pointerDown = false;
+
+const busy = () =>
+  document.hidden ||
+  pointerDown ||
+  document.querySelector('dialog[open], #main details[open]') ||
+  document.activeElement?.matches('input:not([type=checkbox], [type=radio]), textarea, select');
+
+async function refresh() {
+  stale = true;
+  if (busy()) return;
+  stale = false;
+  const response = await fetch(location.href, { headers: { 'X-Live-Refresh': '1' } }).catch(() => null);
+  if (response?.ok && new URL(response.url).pathname === location.pathname) swapPage(await response.text());
+}
+
+if (document.querySelector('.drawer-side nav') && window.EventSource) {
+  new EventSource('/sync').addEventListener('message', (event) => event.data !== tabId && refresh());
+  const catchUp = () => stale && setTimeout(refresh); // next tick, once focus has settled
+  document.addEventListener('pointerdown', () => (pointerDown = true));
+  ['pointerup', 'pointercancel'].forEach((type) =>
+    document.addEventListener(type, () => {
+      pointerDown = false;
+      catchUp();
+    })
+  );
+  document.addEventListener('focusout', catchUp);
+  document.addEventListener('visibilitychange', catchUp);
+  document.addEventListener('close', catchUp, true); // a dialog closed; neither close nor toggle bubbles
+  document.addEventListener('toggle', catchUp, true); // a menu closed
+}
 
 // While a form is being sent its submit button is disabled and says so, so a double click can't send it twice.
 // Registered after the confirm-dialog handler, and skipped when that handler already stopped the submit.
