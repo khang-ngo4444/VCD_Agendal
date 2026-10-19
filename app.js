@@ -15,6 +15,7 @@ const { passport, enabledProviders } = require('./config/passport');
 const settingsRoutes = require('./routes/settings');
 const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
+const habitRoutes = require('./routes/habits');
 const adminRoutes = require('./routes/admin');
 const welcome = require('./controllers/welcomeController');
 
@@ -98,6 +99,7 @@ app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' 
 app.use(settingsRoutes);
 app.use(projectRoutes);
 app.use(taskRoutes);
+app.use(habitRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
 
 // No route matched: the same page for every unknown address (and for /admin when you are not an admin).
