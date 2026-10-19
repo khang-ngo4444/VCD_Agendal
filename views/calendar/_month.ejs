@@ -5,9 +5,10 @@
   </div>
   <ol class="grid grid-cols-7">
     <% days.forEach((day, i) => { %>
-      <li class="min-h-28 border-base-300 p-1.5 <%= i % 7 ? 'border-l' : '' %> <%= i >= 7 ? 'border-t' : '' %> <%= day.inMonth ? '' : 'bg-base-200/50' %>" data-day="<%= day.date %>">
+      <li class="relative min-h-28 border-base-300 p-1.5 <%= i % 7 ? 'border-l' : '' %> <%= i >= 7 ? 'border-t' : '' %> <%= day.inMonth ? '' : 'bg-base-200/50' %>" data-day="<%= day.date %>">
         <a href="?view=day&date=<%= day.date %>" class="grid size-7 place-items-center rounded-full text-sm tabular-nums hover:bg-base-200
           <%= day.isToday ? 'bg-primary font-semibold text-primary-content hover:bg-primary' : day.inMonth ? '' : 'text-muted' %>" aria-label="<%= day.name %>"><%= day.number %></a>
+        <div class="absolute top-2 right-1.5"><%- include('_habit-dots', { day, align: i % 7 > 3 ? 'end' : 'start' }) %></div>
         <ul class="mt-1 space-y-1">
           <% day.items.slice(0, 3).forEach((item) => { %>
             <li>

@@ -1,3 +1,5 @@
+const Habit = require('../models/Habit');
+const HabitCheckIn = require('../models/HabitCheckIn');
 const Task = require('../models/Task');
 const User = require('../models/User');
 const { assignLanes } = require('../services/calendar');
@@ -58,6 +60,20 @@ async function unscheduledByProject(owner, projects) {
     .filter((group) => group.tasks.length);
 }
 
+// Habits checked in on each shown day, as { name, colour }; archived habits still count, their history is real.
+async function checkInsByDay(owner, days) {
+  const [habits, checkIns] = await Promise.all([
+    Habit.find({ owner }, { name: 1, colour: 1 }).lean(),
+    HabitCheckIn.find({ owner, date: { $gte: days[0], $lte: days.at(-1) } }, { habit: 1, date: 1 }).lean(),
+  ]);
+  const byDay = new Map(days.map((day) => [day, []]));
+  for (const checkIn of checkIns) {
+    const habit = habits.find((item) => item._id.equals(checkIn.habit));
+    if (habit) byDay.get(checkIn.date)?.push({ name: habit.name, colour: habit.colour });
+  }
+  return byDay;
+}
+
 // The Calendar (Figma W23 day, W03 week, W11 month): ?view=day|week|month (default: the user's saved layout)
 // and ?date=YYYY-MM-DD (default: today), in the user's time zone and first day of the week.
 exports.show = async (req, res) => {
@@ -68,9 +84,10 @@ exports.show = async (req, res) => {
   const step = { day: (n) => addDays(date, n), week: (n) => addDays(date, 7 * n), month: (n) => firstOfMonth(date, n) }[view];
   const [hour, minute] = toTimeInput(new Date(), timeZone).split(':').map(Number);
   const days = daysFor(view, date, preferences.weekStartsOn);
-  const [items, unscheduled] = await Promise.all([
+  const [items, unscheduled, habits] = await Promise.all([
     scheduledByDay(req.user._id, days, timeZone, res.locals.sidebarProjects),
     view === 'month' ? [] : unscheduledByProject(req.user._id, res.locals.sidebarProjects),
+    checkInsByDay(req.user._id, days),
   ]);
 
   res.render('calendar', {
@@ -92,6 +109,7 @@ exports.show = async (req, res) => {
       inMonth: day.slice(0, 7) === date.slice(0, 7),
       isToday: day === today,
       items: items.get(day),
+      habits: habits.get(day),
     })),
   });
 };

@@ -10,9 +10,12 @@
 <section class="overflow-hidden rounded-box bg-base-100" aria-label="<%= heading %>">
   <div class="grid border-b border-base-300" style="grid-template-columns: <%= columns %>">
     <span></span>
-    <% days.forEach((day) => { %>
-      <a href="?view=day&date=<%= day.date %>" class="border-l border-base-300 px-2 py-3 text-xs font-semibold uppercase <%= day.isToday ? 'text-primary' : 'text-muted' %> hover:underline"
-        aria-label="<%= day.name %>"><%= day.weekday %> <%= day.number %></a>
+    <% days.forEach((day, i) => { %>
+      <div class="flex flex-wrap items-center gap-1 border-l border-base-300 px-2 py-2">
+        <a href="?view=day&date=<%= day.date %>" class="py-1 text-xs font-semibold uppercase <%= day.isToday ? 'text-primary' : 'text-muted' %> hover:underline"
+          aria-label="<%= day.name %>"><%= day.weekday %> <%= day.number %></a>
+        <%- include('_habit-dots', { day, align: i > 3 ? 'end' : 'start' }) %>
+      </div>
     <% }) %>
   </div>
   <div class="relative h-[min(640px,70vh)] overflow-y-auto" data-calendar-scroll="<%= 7 * HOUR - 12 %>" data-hour="<%= HOUR %>">

@@ -21,7 +21,7 @@ document.addEventListener('agendal:render', setUpCalendar);
 document.addEventListener('click', (event) => {
   const day = event.target.closest('[data-day]');
   const dialog = document.getElementById('slot-dialog');
-  if (!day || !dialog || event.target.closest('a, button')) return;
+  if (!day || !dialog || event.target.closest('a, button, details')) return; // links, buttons and the habit list keep their own clicks
   const grid = day.closest('[data-hour]');
   const offset = (event.clientY - day.getBoundingClientRect().top) / Number(grid?.dataset.hour);
   const start = grid ? Math.floor((offset * 60) / SLOT_MINUTES) * SLOT_MINUTES : 9 * 60;
