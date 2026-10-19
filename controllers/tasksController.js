@@ -39,11 +39,7 @@ const CHEERS = ['Nice!', 'Well done!', 'Great work!', 'One down!', 'Nailed it!']
 exports.setComplete = async (req, res) => {
   const task = await findOwnedTask(req);
   const done = req.body?.done === '1';
-  if (done) setColumn(task, 'done');
-  else {
-    task.completedAt = null;
-    setColumn(task, reopenedStatus(task, req.user.timeZone));
-  }
+  setColumn(task, done ? 'done' : reopenedStatus(task, req.user.timeZone));
   task.order = await topOrder(req.user._id, task.status);
   await task.save();
   if (done) {

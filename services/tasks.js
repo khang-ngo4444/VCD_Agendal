@@ -16,11 +16,12 @@ async function topOrder(owner, status) {
   return first ? first.order - 1 : 0;
 }
 
-// Keeps a task's column and its done state together: moving a card into Done completes the task.
-// Every column change goes through here (Board moves, ticking a task off in any list).
+// Keeps a task's column and its done state together: moving a card into Done completes the task, and moving it
+// out of Done reopens it. Every column change goes through here (Board moves, ticking a task off in any list).
 function setColumn(task, status, now = new Date()) {
   task.status = status;
   if (status === 'done') task.completedAt ??= now;
+  else task.completedAt = null;
 }
 
 // The column a reopened task goes back to: Active once its day has come, Upcoming while it's still ahead,

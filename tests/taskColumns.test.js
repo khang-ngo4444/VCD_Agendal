@@ -10,6 +10,12 @@ describe('a task is in Done exactly when it is completed', () => {
     expect(task).toEqual({ status: 'done', completedAt: now });
   });
 
+  test('moving a card out of Done reopens the task', () => {
+    const task = { status: 'done', completedAt: new Date('2026-10-18T10:00:00Z') };
+    setColumn(task, 'active', now);
+    expect(task).toEqual({ status: 'active', completedAt: null });
+  });
+
   test('a task that was already completed keeps its completion time', () => {
     const earlier = new Date('2026-10-18T10:00:00Z');
     const task = { status: 'active', completedAt: earlier };
