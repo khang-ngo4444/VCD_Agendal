@@ -4,6 +4,7 @@ const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
 const { escapeRegex } = require('../services/regex');
+const { DUES, STATUSES, isFiltered, parseSearch, searchFilter } = require('../services/taskSearch');
 const { safeReturnTo } = require('../services/returnTo');
 const { columnLabel, followRepeat, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
 const { formatDay, formatTime, isOverdue, toDateInput, toTimeInput } = require('../services/dates');
@@ -19,23 +20,29 @@ exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agenda
 
 const MAX_RESULTS = 50;
 
-// Search (Figma W06): the header's search box, matched against titles and descriptions as you type (app.js).
-// Every word has to appear, in any case, so "lab draft" finds "Draft the lab report". Open tasks come first.
-// ponytail: a case-insensitive regex over the user's own tasks rather than a text index, which only matches whole
-// words and so finds nothing while a word is half typed; add one if a user's task list ever gets big.
+// Search (Figma W06): the header's search box and the filter panel (W21), applied as you type (app.js).
+// The matching rules are in services/taskSearch.js. Open tasks come first.
 exports.search = async (req, res) => {
-  const searchQuery = text(req.query.q).trim().slice(0, MAX_TITLE_LENGTH);
-  const words = searchQuery.split(/\s+/).filter(Boolean);
-  const matchesWord = (word) => {
-    const pattern = new RegExp(escapeRegex(word), 'i');
-    return { $or: [{ title: pattern }, { description: pattern }] };
-  };
-  const tasks = words.length
-    ? await Task.find({ owner: req.user._id, deletedAt: null, $and: words.map(matchesWord) }).sort({ completedAt: 1, updatedAt: -1 }).limit(MAX_RESULTS).lean()
-    : [];
+  const search = parseSearch(req.query);
+  const filtered = isFiltered(search);
+  const tasks =
+    search.words.length || filtered
+      ? await Task.find(searchFilter(search, req.user)).sort({ completedAt: 1, updatedAt: -1 }).limit(MAX_RESULTS).lean()
+      : [];
   // The typed words, for the result titles to highlight (a capture group, so String.split keeps the matches).
-  const highlight = words.length ? new RegExp(`(${words.map(escapeRegex).join('|')})`, 'gi') : null;
-  res.render('search', { title: searchQuery ? `${searchQuery} · Search · Agendal` : 'Search · Agendal', searchQuery, tasks, highlight });
+  const highlight = search.words.length ? new RegExp(`(${search.words.map(escapeRegex).join('|')})`, 'gi') : null;
+  res.render('search', {
+    title: search.q ? `${search.q} · Search · Agendal` : 'Search · Agendal',
+    searchQuery: search.q,
+    search,
+    filtered,
+    tasks,
+    maxResults: MAX_RESULTS,
+    highlight,
+    priorities: PRIORITIES,
+    statuses: STATUSES,
+    dues: DUES,
+  });
 };
 
 // Quick-add: a title is enough. The task starts in Backlog, in the Inbox unless a project was picked.

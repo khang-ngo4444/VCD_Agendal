@@ -194,7 +194,7 @@ let searchRequest;
 
 async function liveSearch() {
   const url = new URL(searchForm.action);
-  url.search = new URLSearchParams(new FormData(searchForm)).toString();
+  url.search = new URLSearchParams([...new FormData(searchForm)].filter(([, value]) => value !== '')).toString(); // no "&due=&from="
   searchRequest?.abort(); // an older, slower answer must not overwrite a newer one
   const request = (searchRequest = new AbortController());
   try {
