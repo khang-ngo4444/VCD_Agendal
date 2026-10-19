@@ -9,7 +9,8 @@ const taskSchema = new Schema(
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
     dueDate: Date,
     schedule: { start: Date, end: Date },
-    status: { type: String, enum: ['backlog', 'upcoming', 'active', 'done'], default: 'backlog' }, // Kanban column
+    // Kanban column. Every new task starts in Backlog, whichever page created it; the Board lists newest first there.
+    status: { type: String, enum: ['backlog', 'upcoming', 'active', 'done'], default: 'backlog' },
     order: { type: Number, default: 0 }, // position within the column
     completedAt: { type: Date, default: null },
     repeat: {
