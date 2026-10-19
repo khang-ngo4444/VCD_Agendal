@@ -10,5 +10,6 @@ router.get('/habits/:id/edit', habits.edit);
 router.post('/habits/:id', habits.update);
 router.post('/habits/:id/archive', habits.setArchived);
 router.post('/habits/:id/delete', habits.remove);
+router.post('/habits/:id/check-ins', habits.checkIn);
 
 module.exports = router;

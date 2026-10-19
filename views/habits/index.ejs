@@ -1,18 +1,16 @@
 <%- include('../partials/shell-top') %>
+<%# Habits (built from the DS list rows; no Figma frame yet). Locals: today, active, archived (summaries), doneCount, dueCount. %>
 <div class="flex flex-wrap items-end justify-between gap-4">
-  <h1 class="text-3xl font-bold tracking-tight">Habits</h1>
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">Habits</h1>
+    <p class="mt-1 text-sm text-muted"><%= dueCount ? `${doneCount} of ${dueCount} done today` : active.length ? 'Nothing due today' : 'Build a routine one small step at a time' %></p>
+  </div>
   <a href="/habits/new" class="btn btn-primary h-11 rounded-full px-4"><%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %> New habit</a>
 </div>
 
 <% if (active.length) { %>
   <ul class="mt-6 divide-y divide-base-300/60 rounded-box bg-base-100">
-    <% active.forEach((habit) => { %>
-      <li class="relative flex items-center gap-3 px-4 py-3 hover:bg-base-200/60">
-        <span class="size-3 shrink-0 rounded-full" style="background-color: <%= habit.colour %>" aria-hidden="true"></span>
-        <a href="/habits/<%= habit._id %>/edit" class="grow truncate font-medium after:absolute after:inset-0 hover:underline"><%= habit.name %></a>
-        <span class="text-xs text-muted"><%= label(habit) %></span>
-      </li>
-    <% }) %>
+    <% active.forEach((summary) => { %><%- include('_row', { summary, date: today }) %><% }) %>
   </ul>
 <% } else { %>
   <div class="mt-6 rounded-box bg-base-100">
@@ -24,11 +22,11 @@
   <details class="mt-6">
     <summary class="mb-2 flex min-h-11 cursor-pointer items-center font-semibold text-muted">Archived · <%= archived.length %></summary>
     <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
-      <% archived.forEach((habit) => { %>
+      <% archived.forEach(({ habit, frequencyLabel }) => { %>
         <li class="relative flex items-center gap-3 px-4 py-3 text-muted hover:bg-base-200/60">
           <span class="size-3 shrink-0 rounded-full opacity-60" style="background-color: <%= habit.colour %>" aria-hidden="true"></span>
           <a href="/habits/<%= habit._id %>/edit" class="grow truncate after:absolute after:inset-0 hover:underline"><%= habit.name %></a>
-          <span class="text-xs"><%= label(habit) %></span>
+          <span class="text-xs"><%= frequencyLabel %></span>
         </li>
       <% }) %>
     </ul>

@@ -3,20 +3,13 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
+const { safeReturnTo } = require('../services/returnTo');
 const { isOverdue, toDateInput, toTimeInput } = require('../services/dates');
 const { PRIORITIES, parseTaskForm } = require('../validators/task');
 
 const MAX_TITLE_LENGTH = 200;
 
 const text = (value) => (typeof value === 'string' ? value : '');
-
-// Only same-site paths, so a crafted returnTo can't bounce the user to another site. Parsed with URL, because
-// browsers read tricks like "/\evil.example" as "//evil.example".
-function safeReturnTo(path) {
-  if (typeof path !== 'string' || !path.startsWith('/')) return '/inbox';
-  const url = new URL(path, 'http://agendal.invalid');
-  return url.origin === 'http://agendal.invalid' ? url.pathname + url.search : '/inbox';
-}
 
 const findOwnedTask = (req) => findOwned(Task, req.params.id, req.user._id, { deletedAt: null });
 

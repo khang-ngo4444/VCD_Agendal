@@ -1,6 +1,8 @@
 // Habit maths on local days: "YYYY-MM-DD" strings in the user's time zone, the same strings HabitCheckIn stores.
-// Pure functions, so tests/habits.test.js can pin down every frequency type.
-const { addDays, weekdayOf, startOfWeek } = require('./dates');
+// Pure functions (tests/habits.test.js pins down every frequency type), plus loadSummaries for the pages.
+const Habit = require('../models/Habit');
+const HabitCheckIn = require('../models/HabitCheckIn');
+const { addDays, weekdayOf, startOfWeek, toDateInput } = require('./dates');
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -84,4 +86,30 @@ function describeFrequency(habit, weekStartsOn = 1) {
   return 'Every day';
 }
 
-module.exports = { DAY_NAMES, isDue, streaks, completion, weekProgress, describeFrequency };
+// Everything the habit lists show for `user` on the local day `date`: one summary per habit, oldest habit first.
+// The history starts at the habit's creation day, or at its first check-in if that is earlier (backfilled).
+// ponytail: loads every check-in the user has; limit it by date once histories run to years.
+async function loadSummaries(user, date, filter = {}) {
+  const habits = await Habit.find({ ...filter, owner: user._id }).sort({ createdAt: 1 }).lean();
+  const checkIns = await HabitCheckIn.find({ owner: user._id, habit: { $in: habits.map((habit) => habit._id) } }, { habit: 1, date: 1 }).lean();
+  const weekStartsOn = user.preferences.weekStartsOn;
+
+  return habits.map((habit) => {
+    const done = new Set(checkIns.filter((checkIn) => checkIn.habit.equals(habit._id)).map((checkIn) => checkIn.date));
+    const created = toDateInput(habit.createdAt, user.timeZone);
+    const first = [...done].sort()[0];
+    const start = first && first < created ? first : created;
+    return {
+      habit,
+      done,
+      start,
+      due: isDue(habit, date),
+      doneOnDate: done.has(date),
+      streak: streaks(habit, done, { start, today: date, weekStartsOn }),
+      week: weekProgress(habit, done, { today: date, weekStartsOn }),
+      frequencyLabel: describeFrequency(habit, weekStartsOn),
+    };
+  });
+}
+
+module.exports = { DAY_NAMES, isDue, streaks, completion, weekProgress, describeFrequency, loadSummaries };

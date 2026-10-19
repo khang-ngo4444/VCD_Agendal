@@ -2,22 +2,32 @@ const Habit = require('../models/Habit');
 const HabitCheckIn = require('../models/HabitCheckIn');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
+const { safeReturnTo } = require('../services/returnTo');
 const { PROJECT_COLOURS } = require('../services/projects');
-const { describeFrequency } = require('../services/habits');
+const { addDays, parseDateInput, toDateInput } = require('../services/dates');
+const { loadSummaries } = require('../services/habits');
 const { MAX_NAME_LENGTH, parseHabitForm } = require('../validators/habit');
+
+const BACKFILL_DAYS = 7; // check-ins can be added or undone for today and the 6 days before
 
 const NEW_HABIT = { name: '', colour: PROJECT_COLOURS[0].hex, frequencyType: 'daily', days: [], timesPerWeek: '3', reminderTime: '' };
 
 const findOwnedHabit = (req) => findOwned(Habit, req.params.id, req.user._id);
 
+const localToday = (user) => toDateInput(new Date(), user.timeZone);
+
+// Today's habits: the ones due today first, then the rest greyed out; archived ones in a collapsed list.
 exports.index = async (req, res) => {
-  const habits = await Habit.find({ owner: req.user._id }).sort({ createdAt: 1 }).lean();
-  const label = (habit) => describeFrequency(habit, req.user.preferences.weekStartsOn);
+  const today = localToday(req.user);
+  const summaries = await loadSummaries(req.user, today);
+  const active = summaries.filter(({ habit }) => !habit.archivedAt).sort((a, b) => b.due - a.due);
   res.render('habits/index', {
     title: 'Habits · Agendal',
-    active: habits.filter((habit) => !habit.archivedAt),
-    archived: habits.filter((habit) => habit.archivedAt),
-    label,
+    today,
+    active,
+    archived: summaries.filter(({ habit }) => habit.archivedAt),
+    doneCount: active.filter((summary) => summary.due && summary.doneOnDate).length,
+    dueCount: active.filter((summary) => summary.due).length,
   });
 };
 
@@ -85,4 +95,28 @@ exports.remove = async (req, res) => {
   await habit.deleteOne();
   flash(req, 'success', `Deleted “${habit.name}” and its check-ins.`);
   res.redirect('/habits');
+};
+
+// Check in (done=1) or undo (done=0) one local day. Only today and the 6 days before; never the future.
+exports.checkIn = async (req, res) => {
+  const habit = await findOwnedHabit(req);
+  const date = typeof req.body?.date === 'string' ? req.body.date : '';
+  const today = localToday(req.user);
+  const returnTo = safeReturnTo(req.body?.returnTo, '/habits');
+
+  if (!parseDateInput(date) || date > today || date <= addDays(today, -BACKFILL_DAYS)) {
+    flash(req, 'error', 'You can check in for today and the 6 days before, not other days.');
+    return res.redirect(returnTo);
+  }
+  if (req.body?.done === '1') {
+    // An upsert, so a repeated click finds the day already there; if two requests race, the unique index stops the second.
+    await HabitCheckIn.updateOne({ habit: habit._id, date }, { $setOnInsert: { owner: req.user._id } }, { upsert: true }).catch((err) => {
+      if (err.code !== 11000) throw err;
+    });
+    flash(req, 'success', `Checked in “${habit.name}”.`);
+  } else {
+    await HabitCheckIn.deleteOne({ habit: habit._id, date });
+    flash(req, 'success', `Check-in removed from “${habit.name}”.`);
+  }
+  res.redirect(returnTo);
 };
