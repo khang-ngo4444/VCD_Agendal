@@ -64,6 +64,7 @@ function formValues(task, timeZone) {
     scheduleStart: task.schedule?.start ? toTimeInput(task.schedule.start, timeZone) : '',
     scheduleEnd: task.schedule?.end ? toTimeInput(task.schedule.end, timeZone) : '',
     repeat: task.repeat?.frequency ?? '',
+    until: task.repeat?.until ? toDateInput(task.repeat.until, timeZone) : '',
   };
 }
 

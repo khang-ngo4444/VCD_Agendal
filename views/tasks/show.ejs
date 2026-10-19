@@ -12,7 +12,8 @@
 </div>
 
 <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_260px]">
-  <form method="post" action="/tasks/<%= task._id %>" class="rounded-box bg-base-100 p-5" novalidate>
+  <%# group: the Until field hides while "Does not repeat" is picked (CSS :has, no script) %>
+  <form method="post" action="/tasks/<%= task._id %>" class="group rounded-box bg-base-100 p-5" novalidate>
     <%- include('../partials/csrf') %>
 
     <label for="title" class="mb-1.5 block text-xs font-semibold">Title</label>
@@ -81,8 +82,14 @@
           <% }) %>
         </select>
       </div>
+      <div class="group-has-[[data-no-repeat]:checked]:hidden">
+        <label for="until" class="mb-1.5 block text-xs font-semibold">Until <span class="font-normal text-muted">(optional)</span></label>
+        <input id="until" name="until" type="date" value="<%= values.until %>" class="input h-11 w-full <%= errors.until ? 'input-error' : '' %>"
+          <% if (errors.until) { %>aria-invalid="true" aria-describedby="until-error"<% } %>>
+      </div>
     </div>
     <%- include('../partials/field-error', { id: 'repeat-error', message: errors.repeat }) %>
+    <%- include('../partials/field-error', { id: 'until-error', message: errors.until }) %>
 
     <div class="mt-6 flex justify-end">
       <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>

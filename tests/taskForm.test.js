@@ -54,3 +54,22 @@ describe('repeating a task', () => {
     expect(parseTaskForm({ ...base, dueDate: '2026-10-19', repeat: '' }, TZ).changes.repeat).toBeNull();
   });
 });
+
+describe('ending a repeat', () => {
+  const weekly = { ...base, dueDate: '2026-10-19', repeat: 'weekly' };
+
+  test('the last date covers the whole local day', () => {
+    const { errors, changes } = parseTaskForm({ ...weekly, until: '2026-12-18' }, TZ);
+    expect(errors).toEqual({});
+    expect(changes.repeat).toEqual({ frequency: 'weekly', until: new Date('2026-12-18T16:59:59.999Z') });
+  });
+
+  test('it can’t end before the task’s own date', () => {
+    expect(parseTaskForm({ ...weekly, until: '2026-10-18' }, TZ).errors.until).toMatch(/can’t end before/);
+  });
+
+  test('empty repeats forever, and without a repeat the date is ignored', () => {
+    expect(parseTaskForm(weekly, TZ).changes.repeat).toEqual({ frequency: 'weekly', until: undefined });
+    expect(parseTaskForm({ ...base, until: 'nonsense' }, TZ).errors).toEqual({});
+  });
+});

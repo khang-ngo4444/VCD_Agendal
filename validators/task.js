@@ -33,6 +33,7 @@ function parseTaskForm(body = {}, timeZone) {
     scheduleStart: text(body.scheduleStart),
     scheduleEnd: text(body.scheduleEnd),
     repeat: text(body.repeat),
+    until: text(body.until),
   };
   const errors = {};
   const changes = { title: values.title, description: values.description, priority: values.priority };
@@ -56,7 +57,14 @@ function parseTaskForm(body = {}, timeZone) {
   // The next occurrence is dated from this one, so a repeating task needs a date to start from.
   if (values.repeat && !FREQUENCIES.includes(values.repeat)) errors.repeat = 'Pick how often it repeats.';
   else if (values.repeat && !values.dueDate && !values.scheduleDate) errors.repeat = 'Give the task a due date or a scheduled time to repeat from.';
-  changes.repeat = values.repeat ? { frequency: values.repeat } : null;
+
+  // "Repeat until": no occurrence after the end of that local day. Empty repeats forever.
+  const until = values.repeat && values.until ? parseDateInput(values.until) : null;
+  if (values.repeat && values.until) {
+    if (!until) errors.until = 'Pick the last date, or leave it empty to repeat forever.';
+    else if (values.until < (values.scheduleDate || values.dueDate)) errors.until = 'The repeat can’t end before the task’s own date.';
+  }
+  changes.repeat = values.repeat ? { frequency: values.repeat, until: until ? endOfLocalDay(until, timeZone) : undefined } : null;
 
   return { values, errors, changes };
 }
