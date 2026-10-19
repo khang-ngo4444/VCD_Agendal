@@ -67,3 +67,44 @@ exports.today = async (req, res) => {
     due: due.sort((a, b) => Boolean(a.completedAt) - Boolean(b.completedAt) || a.createdAt - b.createdAt), // open first
   });
 };
+
+const UPCOMING_DAYS = 7;
+const MAX_LATER = 50; // ponytail: Later is capped, not paged; add paging if people plan months ahead
+
+// Upcoming (Figma W19): open tasks from tomorrow on, grouped by the day they're scheduled (or else due),
+// one group per day for the next 7 days, then everything after that under "Later".
+exports.upcoming = async (req, res) => {
+  const { timeZone } = req.user;
+  const today = toDateInput(new Date(), timeZone);
+  const from = localDayRange(addDays(today, 1), timeZone).start;
+  const tasks = await Task.find({
+    owner: req.user._id,
+    deletedAt: null,
+    completedAt: null,
+    $or: [{ 'schedule.start': { $gte: from } }, { 'schedule.start': null, dueDate: { $gte: from } }],
+  }).lean();
+
+  const when = (task) => task.schedule?.start ?? task.dueDate;
+  const lastDay = addDays(today, UPCOMING_DAYS);
+  const groups = new Map();
+  for (const task of tasks.sort((a, b) => when(a) - when(b))) {
+    const day = toDateInput(when(task), timeZone);
+    const key = day <= lastDay ? day : 'later';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(task);
+  }
+  const later = (groups.get('later') ?? []).slice(0, MAX_LATER);
+  groups.delete('later');
+  const dayLabel = (day) => new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
+
+  const days = [...groups].map(([day, dayTasks]) => ({ day, label: dayLabel(day), tomorrow: day === addDays(today, 1), tasks: dayTasks }));
+  const shown = [...days.flatMap((group) => group.tasks), ...later];
+
+  res.render('upcoming', {
+    title: 'Upcoming · Agendal',
+    days,
+    later,
+    count: shown.length,
+    highCount: shown.filter((task) => task.priority === 'high').length,
+  });
+};
