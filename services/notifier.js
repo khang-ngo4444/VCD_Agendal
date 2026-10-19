@@ -72,4 +72,41 @@ async function push(user, items, now) {
   }
 }
 
-module.exports = { email, push, buildReminderEmail, buildReminderPush };
+// Habit reminders (services/habitReminders.js): the habits whose reminder time has come and that aren't done today.
+function buildHabitEmail(user, habits) {
+  const single = habits.length === 1;
+  const unsubscribeUrl = `${appUrl()}/notifications/unsubscribe/${unsubscribeToken(user._id)}`;
+  return {
+    to: user.email,
+    subject: single ? `Habit: ${habits[0].name}` : `Habits: ${habits.length} still to do today`,
+    heading: single ? habits[0].name : `${habits.length} habits still to do today`,
+    paragraphs: single ? ['Your reminder for today. Check in when it’s done.'] : habits.map((habit) => habit.name),
+    action: single ? { label: 'Open habit', url: `${appUrl()}/habits/${habits[0]._id}` } : { label: 'Open habits', url: `${appUrl()}/habits` },
+    footnote: 'You get this because the habit has a reminder time. Change or remove it on the habit’s Edit page.',
+    footerLinks: [
+      { label: 'Turn off email reminders', url: unsubscribeUrl },
+      { label: 'Notification settings', url: `${appUrl()}/settings/notifications` },
+    ],
+    headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+  };
+}
+
+const buildHabitPush = (habit) => ({
+  title: habit.name,
+  body: 'Habit reminder · not checked in today yet',
+  url: `/habits/${habit._id}`,
+  tag: `habit-${habit._id}`,
+});
+
+async function habitEmail(user, habits) {
+  await sendMail(buildHabitEmail(user, habits));
+}
+
+async function habitPush(user, habits) {
+  for (const habit of habits) {
+    if (!webPush.isConfigured()) console.log(`[push] to ${user.email}: habit ${habit.name}`);
+    else await webPush.sendToUser(user._id, buildHabitPush(habit));
+  }
+}
+
+module.exports = { email, push, buildReminderEmail, buildReminderPush, habitEmail, habitPush, buildHabitEmail, buildHabitPush };
