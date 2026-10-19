@@ -190,7 +190,14 @@ exports.showReminder = async (req, res) => {
   });
 };
 
+// Added to the "Moved …" toast when a preset reminder followed the task, or had to go.
+const REMINDER_AFTER_MOVE = {
+  moved: ' Its reminder moved with it.',
+  passed: ' Its reminder was removed: that time before the new start has already passed.',
+};
+
 // Calendar drag and drop: a new date, start and end (local times), keeping everything else about the task.
+// A preset reminder moves with the task (services/taskReminders.js syncWithSchedule).
 exports.reschedule = async (req, res) => {
   const task = await findOwnedTask(req);
   const body = req.body ?? {};
@@ -202,7 +209,8 @@ exports.reschedule = async (req, res) => {
   }
   task.set('schedule', schedule);
   await task.save();
-  flash(req, 'success', `Moved “${task.title}” to ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}.`);
+  const reminder = await taskReminders.syncWithSchedule(task);
+  flash(req, 'success', `Moved “${task.title}” to ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}.${REMINDER_AFTER_MOVE[reminder] ?? ''}`);
   res.redirect(returnTo);
 };
 
