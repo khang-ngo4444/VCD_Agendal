@@ -7,13 +7,14 @@ const Task = require('../models/Task');
 const Reminder = require('../models/Reminder');
 const Habit = require('../models/Habit');
 const HabitCheckIn = require('../models/HabitCheckIn');
+const Event = require('../models/Event');
 const activity = require('./activity');
 
 const AVATAR_DIR = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
 const text = (value) => (typeof value === 'string' ? value : '');
 
-// Everything an account owns. Add new owned collections here (e.g. events, P8) so deletion stays complete.
-const OWNED = [Reminder, HabitCheckIn, Habit, Task, Project];
+// Everything an account owns. Add new owned collections here so deletion stays complete.
+const OWNED = [Reminder, HabitCheckIn, Habit, Event, Task, Project];
 
 // The confirmation the form asks for: the password, or the account's email for Google-only accounts,
 // plus the "I understand" box. Returns field errors; empty when the request may go ahead.

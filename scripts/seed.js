@@ -1,5 +1,5 @@
 // Demo data: one user, 4 projects, 40 tasks across the Daily List, Kanban and Calendar, a few reminders,
-// 5 habits with 60 days of check-ins,
+// 5 habits with 60 days of check-ins, 5 events (3 of them weekly),
 // plus the admin accounts for the /admin console.
 // Run with `npm run seed`. Re-running replaces the previous demo data.
 const mongoose = require('mongoose');
@@ -9,6 +9,8 @@ const Task = require('../models/Task');
 const Reminder = require('../models/Reminder');
 const Habit = require('../models/Habit');
 const HabitCheckIn = require('../models/HabitCheckIn');
+const Event = require('../models/Event');
+const { addInterval } = require('../services/recurrence');
 const { addDays, toDateInput, weekdayOf } = require('../services/dates');
 
 const DEMO_EMAIL = 'demo@agendal.app';
@@ -82,6 +84,15 @@ const HABITS = [
 ];
 const HABIT_HISTORY_DAYS = 60;
 
+// [title, project index (null = none), first day (offset from this week's Monday), start hour (null = all day), minutes, extra]
+const EVENTS = [
+  ['Database Systems lecture', 0, -7, 9, 90, { location: 'Room B4.12', weeks: 10, cancelWeek: 2 }],
+  ['Team meeting', 1, -5, 14, 60, { location: 'Online', weeks: 8 }],
+  ['Run club', 3, 5, 7, 90, { location: 'City park', weeks: 6 }],
+  ['Career fair', 0, 9, 10, 180, { location: 'Main hall' }],
+  ['Mum’s birthday', 2, 4, null, null, {}],
+];
+
 const day = (offset, hour, minute = 0) => {
   const d = new Date();
   d.setDate(d.getDate() + offset);
@@ -94,7 +105,7 @@ async function seed() {
 
   const old = await User.findOne({ email: DEMO_EMAIL });
   if (old) {
-    await Promise.all([Reminder, Task, Project, Habit, HabitCheckIn].map((M) => M.deleteMany({ owner: old._id })));
+    await Promise.all([Reminder, Task, Project, Habit, HabitCheckIn, Event].map((M) => M.deleteMany({ owner: old._id })));
     await old.deleteOne();
   }
 
@@ -140,9 +151,29 @@ async function seed() {
   );
   await HabitCheckIn.insertMany(checkIns);
 
+  const monday = -((new Date().getDay() + 6) % 7); // this week's Monday, as a day offset
+  const events = await Event.insertMany(
+    EVENTS.map(([title, project, offset, hour, minutes, { location, weeks, cancelWeek }]) => {
+      const start = day(monday + offset, hour ?? 0);
+      const repeat = weeks && { frequency: 'weekly', until: day(monday + offset + 7 * (weeks - 1), 23, 59) };
+      return {
+        owner: user._id,
+        project: projects[project]._id,
+        title,
+        location,
+        start,
+        end: hour === null ? day(monday + offset + 1, 0) : new Date(start.getTime() + minutes * 60_000),
+        allDay: hour === null,
+        repeat,
+        // e.g. no lecture in week 3: that occurrence is cancelled
+        exceptions: cancelWeek ? [{ original: addInterval(start, 'weekly', cancelWeek, user.timeZone), cancelled: true }] : undefined,
+      };
+    })
+  );
+
   console.log(
     `Seeded ${DEMO_EMAIL} (password ${DEMO_PASSWORD}): ${projects.length} projects, ${tasks.length} tasks, ${upcoming.length} reminders, ` +
-      `${habits.length} habits with ${checkIns.length} check-ins`
+      `${habits.length} habits with ${checkIns.length} check-ins, ${events.length} events`
   );
 
   // Admin accounts only use the console, so they get no projects or tasks. Re-running resets their passwords.

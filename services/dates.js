@@ -102,6 +102,7 @@ const formatTime = (date, timeZone) =>
   new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit' }).format(date);
 
 module.exports = {
+  zonedParts,
   zonedTime,
   dayRange,
   todayRange,

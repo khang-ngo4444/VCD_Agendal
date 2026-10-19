@@ -9,6 +9,8 @@ erDiagram
     USER ||--o{ HABIT : owns
     HABIT ||--o{ HABIT_CHECK_IN : "has (one per day)"
     USER |o--o{ ACTIVITY_LOG : "account (null = unknown email)"
+    USER ||--o{ EVENT : owns
+    PROJECT |o--o{ EVENT : "colours (optional)"
 
     USER {
         ObjectId _id PK
@@ -82,6 +84,21 @@ erDiagram
         ObjectId habit FK
         ObjectId owner FK
         String date "YYYY-MM-DD local, unique with habit"
+        Date createdAt
+        Date updatedAt
+    }
+    EVENT {
+        ObjectId _id PK
+        ObjectId owner FK
+        ObjectId project FK "optional, gives the colour"
+        String title
+        Date start
+        Date end "all-day: midnight after the last day"
+        Boolean allDay
+        String location
+        String notes
+        Object repeat "frequency, until"
+        Array exceptions "original, cancelled, start, end, title"
         Date createdAt
         Date updatedAt
     }
