@@ -1,10 +1,39 @@
-// The task's custom reminder form (views/tasks/_custom-reminder-form.ejs): says at once when the picked date and time
-// have already passed, in the user's time zone, and keeps the form from being sent like that (the server checks again).
-// Delegated, so forms swapped in later (app.js data-fetch, live updates) work too; loading it twice does no harm.
+// The task's reminder picker (views/tasks/_reminder.ejs) and custom form (views/tasks/_custom-reminder-form.ejs):
+// - the form says at once when the picked date and time have already passed, in the user's time zone, and isn't
+//   sent like that (the server checks again);
+// - the menu works from the keyboard: ↓ opens it, ↑/↓/Home/End move between choices, Esc closes it and goes back.
+// Delegated, so content swapped in later (app.js data-fetch, live updates) works too; loading it twice does no harm.
 
 (() => {
   if (window.agendalReminders) return;
   window.agendalReminders = true;
+
+  const choices = (menu) => [...menu.querySelectorAll('.dropdown-content button:not(:disabled), .dropdown-content a[href]')];
+
+  document.addEventListener('keydown', (event) => {
+    const menu = event.target.closest('[data-reminder-menu]');
+    if (!menu) return;
+    const summary = menu.querySelector('summary');
+    // app.js may have closed the menu already (its own Esc handler); either way focus goes back to the Reminder button.
+    if (event.key === 'Escape') {
+      menu.open = false;
+      summary.focus();
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const items = choices(menu);
+    if (!items.length) return;
+    if (event.target === summary) {
+      menu.open = true;
+      // Start on the current choice when there is one, like a native select.
+      (items.find((item) => item.getAttribute('aria-current') === 'true') ?? items[event.key === 'ArrowUp' || event.key === 'End' ? items.length - 1 : 0]).focus();
+      return;
+    }
+    const index = items.indexOf(event.target);
+    const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: items.length - 1 }[event.key];
+    items[(next + items.length) % items.length].focus();
+  });
 
   // "YYYY-MM-DDTHH:mm" for now in `timeZone`; strings in this shape compare in time order.
   function nowIn(timeZone) {
