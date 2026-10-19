@@ -11,11 +11,7 @@
           <%= column.label %> <span class="font-normal text-muted"><%= column.tasks.length %></span>
         </h2>
         <ul class="mt-1 min-h-16 space-y-2" data-column="<%= column.status %>">
-          <% column.tasks.forEach((task) => { %>
-            <li class="relative rounded-field bg-base-100 p-3 shadow-sm">
-              <a href="/tasks/<%= task._id %>" class="font-medium after:absolute after:inset-0 hover:underline"><%= task.title %></a>
-            </li>
-          <% }) %>
+          <% column.tasks.forEach((task) => { %><%- include('tasks/_card', { task, timeZone: currentUser.timeZone }) %><% }) %>
         </ul>
       </section>
     <% }) %>

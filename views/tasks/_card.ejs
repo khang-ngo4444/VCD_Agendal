@@ -1,0 +1,27 @@
+<%#
+  One task as a Board card (Figma W02): project chip, title, date and priority. The whole card opens the task.
+  Locals: task (lean), timeZone. The project comes from sidebarProjects, which every app page has.
+%>
+<%
+  const project = sidebarProjects.find((item) => item.id === (task.project ? String(task.project) : null));
+  const overdue = dates.isOverdue(task);
+  const when = task.schedule?.start
+    ? `${dates.formatDay(task.schedule.start, timeZone)}, ${dates.formatTime(task.schedule.start, timeZone)}`
+    : task.dueDate ? dates.formatDay(task.dueDate, timeZone) : 'No date';
+%>
+<li class="relative rounded-field bg-base-100 p-3 shadow-sm <%= task.completedAt ? 'opacity-70' : '' %>" data-task-id="<%= task._id %>">
+  <% if (project) { %>
+    <span class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-fill px-2 py-0.5 text-xs text-muted">
+      <span class="size-1.5 shrink-0 rounded-full <%= project.colour ? '' : 'bg-base-300' %>" <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span>
+      <span class="truncate"><%= project.name %></span>
+    </span>
+  <% } %>
+  <a href="/tasks/<%= task._id %>" class="mt-1.5 block font-semibold after:absolute after:inset-0 hover:underline <%= task.completedAt ? 'text-muted' : '' %>"><%= task.title %></a>
+  <p class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs <%= overdue ? 'font-semibold text-error' : 'text-muted' %>">
+    <%- include('../partials/icon', { icon: overdue ? 'alert' : 'calendar', cls: 'size-3.5' }) %>
+    <% if (overdue) { %>Overdue ·<% } %> <%= when %>
+    <% if (task.priority === 'high' && !task.completedAt) { %>
+      <span class="text-warning" title="High priority"><%- include('../partials/icon', { icon: 'flag', cls: 'size-3.5' }) %><span class="sr-only">High priority</span></span>
+    <% } %>
+  </p>
+</li>
