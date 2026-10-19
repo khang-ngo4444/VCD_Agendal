@@ -16,6 +16,7 @@ const settingsRoutes = require('./routes/settings');
 const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
 const habitRoutes = require('./routes/habits');
+const dailyRoutes = require('./routes/daily');
 const adminRoutes = require('./routes/admin');
 const welcome = require('./controllers/welcomeController');
 
@@ -95,7 +96,7 @@ app.use('/admin', requireLogin, adminRoutes);
 app.use(requireLogin, keepAdminsInConsole, requireOnboarding, loadShell);
 app.get(WELCOME_PATH, welcome.show);
 app.post(WELCOME_PATH, welcome.complete);
-app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
+app.use(dailyRoutes);
 app.use(settingsRoutes);
 app.use(projectRoutes);
 app.use(taskRoutes);

@@ -1,4 +1,30 @@
 <%- include('partials/shell-top') %>
-<h1 class="text-3xl font-bold tracking-tight">Today</h1>
-<p class="mt-2 text-muted">Hi <%= currentUser.name || currentUser.email %>. The Daily List arrives in P6.</p>
+<%# The Daily List (Figma W01 "Today"). Locals: date, heading, eyebrow, progress { done, total, firstName }, counts. %>
+<%
+  const { done, total, firstName } = progress;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+  const cheer = !total ? 'A clear day' : done === total ? 'All done. Well played' : done ? 'Nice pace' : 'Let’s get going';
+  const summary = [
+    `${counts.due} task${counts.due === 1 ? '' : 's'} due`,
+    `${counts.scheduled} scheduled`,
+  ];
+%>
+<header>
+  <p class="text-xs font-semibold tracking-wide text-primary uppercase"><%= eyebrow %></p>
+  <h1 class="mt-1 text-3xl font-bold tracking-tight"><%= heading %></h1>
+  <p class="mt-1 text-sm text-muted"><%= summary.join(' · ') %></p>
+</header>
+
+<div class="mt-6 grid gap-4 md:grid-cols-[minmax(0,320px)_1fr]">
+  <section class="flex items-center gap-4 rounded-box bg-base-100 p-5" aria-label="Progress">
+    <div class="radial-progress shrink-0 text-sm font-semibold tabular-nums text-success" style="--value: <%= percent %>; --size: 3.5rem; --thickness: 5px"
+      role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= done %> of <%= total %> done">
+      <span class="text-base-content"><%= done %>/<%= total %></span>
+    </div>
+    <div class="min-w-0">
+      <p class="font-semibold"><%= cheer %><%= firstName && total ? `, ${firstName}` : '' %>!</p>
+      <p class="text-sm text-muted"><%= total ? `${done} of ${total} done` : 'Nothing due or scheduled' %></p>
+    </div>
+  </section>
+</div>
 <%- include('partials/shell-bottom') %>
