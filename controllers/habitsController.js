@@ -52,7 +52,8 @@ exports.show = async (req, res) => {
   // Whole weeks, from the week holding the 1st to the week holding the last day.
   for (let date = startOfWeek(`${month}-01`, weekStartsOn); date <= lastOfMonth || days.length % 7; date = addDays(date, 1)) {
     const state = done.has(date) ? 'done' : date > today || date < start || !isDue(habit, date) ? 'idle' : date === today ? 'open' : 'missed';
-    days.push({ date, number: Number(date.slice(8)), inMonth: date.startsWith(month), isToday: date === today, state, label: format(date, { day: 'numeric', month: 'long' }) });
+    const editable = date <= today && date > addDays(today, -BACKFILL_DAYS);
+    days.push({ date, number: Number(date.slice(8)), inMonth: date.startsWith(month), isToday: date === today, state, editable, label: format(date, { day: 'numeric', month: 'long' }) });
   }
 
   res.render('habits/show', {

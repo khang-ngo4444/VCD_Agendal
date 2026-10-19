@@ -49,12 +49,27 @@
       </div>
       <ol class="mt-1 grid grid-cols-7 gap-1 text-center text-sm tabular-nums">
         <% days.forEach((day) => { %>
+          <%
+            const circle = `grid size-10 place-items-center rounded-full ${day.isToday ? 'font-bold outline-2 outline-offset-2 outline-base-content' : ''} ${
+              { done: 'text-white', missed: 'border-2 border-base-300', idle: 'text-muted', open: 'border-2 border-dashed border-base-300' }[day.state]}`;
+            const fill = day.state === 'done' ? `style="background-color: ${habit.colour}"` : '';
+          %>
           <li class="grid place-items-center py-1 <%= day.inMonth ? '' : 'opacity-40' %>">
-            <span class="grid size-10 place-items-center rounded-full <%= day.isToday ? 'font-bold outline-2 outline-offset-2 outline-base-content' : '' %>
-              <%= day.state === 'done' ? 'text-white' : day.state === 'missed' ? 'border-2 border-base-300' : day.state === 'idle' ? 'text-muted' : 'border-2 border-dashed border-base-300' %>"
-              <% if (day.state === 'done') { %>style="background-color: <%= habit.colour %>"<% } %>>
-              <span aria-hidden="true"><%= day.number %></span><span class="sr-only"><%= day.label %>: <%= stateText[day.state] %></span>
-            </span>
+            <% if (day.editable) { %>
+              <%# The last 7 days can be checked in or undone from here %>
+              <form method="post" action="/habits/<%= habit._id %>/check-ins" data-fetch="<%= day.date %>">
+                <%- include('../partials/csrf') %>
+                <input type="hidden" name="date" value="<%= day.date %>">
+                <input type="hidden" name="done" value="<%= day.state === 'done' ? '0' : '1' %>">
+                <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                <button type="submit" class="<%= circle %> cursor-pointer hover:ring-2 hover:ring-primary" <%- fill %>
+                  aria-pressed="<%= day.state === 'done' %>" aria-label="<%= day.label %>: done"><%= day.number %></button>
+              </form>
+            <% } else { %>
+              <span class="<%= circle %>" <%- fill %>>
+                <span aria-hidden="true"><%= day.number %></span><span class="sr-only"><%= day.label %>: <%= stateText[day.state] %></span>
+              </span>
+            <% } %>
           </li>
         <% }) %>
       </ol>
@@ -63,6 +78,7 @@
         <span class="inline-flex items-center gap-1.5"><span class="size-3 rounded-full border-2 border-base-300"></span>Missed</span>
         <span class="inline-flex items-center gap-1.5"><span class="size-3 rounded-full border-2 border-dashed border-base-300"></span>Today, not done yet</span>
       </p>
+      <p class="mt-1 text-xs text-muted">Forgot one? Tap any of the last 7 days to check it in or undo it.</p>
     </section>
   </div>
 
