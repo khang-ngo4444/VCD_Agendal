@@ -41,6 +41,7 @@ app.use(
   })
 );
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/js/vendor/sortable.min.js', (req, res) => res.sendFile(require.resolve('sortablejs/Sortable.min.js'))); // Board drag and drop
 app.use(express.urlencoded({ extended: false }));
 app.use(
   session({

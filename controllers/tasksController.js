@@ -4,6 +4,7 @@ const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
 const { safeReturnTo } = require('../services/returnTo');
+const { columnLabel, topOrder } = require('../services/tasks');
 const { isOverdue, toDateInput, toTimeInput } = require('../services/dates');
 const { PRIORITIES, parseTaskForm } = require('../validators/task');
 
@@ -121,4 +122,22 @@ exports.restore = async (req, res) => {
   await task.save();
   flash(req, 'success', `Restored “${task.title}”.`);
   res.redirect(listPath(task));
+};
+
+// Board: drag a card to another column, or use its "Move to" menu. The card lands at the top of that column.
+exports.move = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const status = req.body?.status;
+  const returnTo = safeReturnTo(req.body?.returnTo, '/board');
+  if (!columnLabel(status)) {
+    flash(req, 'error', 'Pick one of the board columns.');
+    return res.redirect(returnTo);
+  }
+  if (task.status !== status) {
+    task.order = await topOrder(req.user._id, status);
+    task.status = status;
+    await task.save();
+    flash(req, 'success', `Moved “${task.title}” to ${columnLabel(status)}.`);
+  }
+  res.redirect(returnTo);
 };

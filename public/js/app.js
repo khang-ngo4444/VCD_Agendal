@@ -150,6 +150,18 @@ function swapPage(html) {
   document.dispatchEvent(new Event('agendal:render')); // pages with their own scripts set up the new content
 }
 
+// POSTs `fields` the way a form would (adding the page's CSRF token) and swaps in the page the server redirects to.
+// Used by data-fetch forms and by scripts like the Board's drag and drop (window.agendal.post).
+async function postAndSwap(url, fields) {
+  const body = new URLSearchParams(fields);
+  if (!body.has('_csrf')) body.set('_csrf', document.querySelector('input[name=_csrf]')?.value ?? '');
+  const response = await fetch(url, { method: 'post', body });
+  // Sent somewhere else, e.g. to the login page because the session ended: go there for real.
+  if (!response.ok || new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
+  swapPage(await response.text());
+}
+window.agendal.post = postAndSwap;
+
 // Which form to give focus back to after the swap: data-fetch="<key>" when several forms share one action.
 const fetchKey = (form) => form.dataset.fetch || form.getAttribute('action');
 
@@ -162,10 +174,7 @@ document.addEventListener('submit', async (event) => {
   const key = form.contains(document.activeElement) ? fetchKey(form) : null;
   buttons.forEach((button) => (button.disabled = true));
   try {
-    const response = await fetch(form.action, { method: 'post', body: new URLSearchParams(new FormData(form)) });
-    // Sent somewhere else, e.g. to the login page because the session ended: go there for real.
-    if (!response.ok || new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
-    swapPage(await response.text());
+    await postAndSwap(form.action, new FormData(form));
     if (key) [...document.querySelectorAll('form[data-fetch]')].find((other) => fetchKey(other) === key)?.querySelector('button')?.focus();
   } catch {
     form.submit();

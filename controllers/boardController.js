@@ -1,12 +1,6 @@
 const Task = require('../models/Task');
+const { COLUMNS } = require('../services/tasks');
 
-// Kanban columns in board order (Task.status), with the dot colour each header shows (Figma W02).
-const COLUMNS = [
-  { status: 'backlog', label: 'Backlog', dot: 'bg-muted' },
-  { status: 'upcoming', label: 'Upcoming', dot: 'bg-primary' },
-  { status: 'active', label: 'Active', dot: 'bg-warning' },
-  { status: 'done', label: 'Done', dot: 'bg-success' },
-];
 const MAX_DONE = 50; // ponytail: Done shows the latest 50 completions; older ones stay on their project pages
 
 // The Board (Figma W02): every task by column, in each column's saved order.
@@ -22,5 +16,3 @@ exports.show = async (req, res) => {
     columns: COLUMNS.map((column) => ({ ...column, tasks: tasks.filter((task) => task.status === column.status) })),
   });
 };
-
-exports.COLUMNS = COLUMNS;

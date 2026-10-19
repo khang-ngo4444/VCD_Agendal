@@ -1,5 +1,5 @@
 <%- include('partials/shell-top') %>
-<%# The Board (Figma W02). Locals: columns [{ status, label, dot, tasks }]. Scrolls sideways on narrow screens. %>
+<%# The Board (Figma W02). Locals: columns [{ status, label, dot, tasks }]. Scrolls sideways on narrow screens; drag and drop in public/js/board.js. %>
 <h1 class="text-3xl font-bold tracking-tight">Board</h1>
 
 <div class="-mx-4 mt-6 overflow-x-auto px-4 pb-4 lg:-mx-8 lg:px-8">
@@ -11,10 +11,12 @@
           <%= column.label %> <span class="font-normal text-muted"><%= column.tasks.length %></span>
         </h2>
         <ul class="mt-1 min-h-16 space-y-2" data-column="<%= column.status %>">
-          <% column.tasks.forEach((task) => { %><%- include('tasks/_card', { task, timeZone: currentUser.timeZone }) %><% }) %>
+          <% column.tasks.forEach((task) => { %><%- include('tasks/_card', { task, timeZone: currentUser.timeZone, columns }) %><% }) %>
         </ul>
       </section>
     <% }) %>
   </div>
 </div>
+<script src="/js/vendor/sortable.min.js" defer></script>
+<script src="/js/board.js" defer></script>
 <%- include('partials/shell-bottom') %>
