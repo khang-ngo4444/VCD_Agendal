@@ -4,7 +4,7 @@ const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
 const { safeReturnTo } = require('../services/returnTo');
-const { columnLabel, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
+const { columnLabel, followRepeat, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
 const { formatDay, formatTime, isOverdue, toDateInput, toTimeInput } = require('../services/dates');
 const { PRIORITIES, parseSchedule, parseTaskForm } = require('../validators/task');
 
@@ -39,15 +39,19 @@ const CHEERS = ['Nice!', 'Well done!', 'Great work!', 'One down!', 'Nailed it!']
 
 // Done (done=1) or reopened. Finishing gets a little cheer and an Undo, which posts back here without done=1.
 // Either way the Board card follows: to the top of Done, or back to the column the task's date suggests.
+// A repeating task comes back as its next occurrence (services/tasks.js followRepeat), and Undo takes that back.
 exports.setComplete = async (req, res) => {
   const task = await findOwnedTask(req);
   const done = req.body?.done === '1';
+  const wasDone = task.status === 'done';
   setColumn(task, done ? 'done' : reopenedStatus(task, req.user.timeZone));
   task.order = await topOrder(req.user._id, task.status);
   await task.save();
+  const next = await followRepeat(task, wasDone, req.user.timeZone);
   if (done) {
     const cheer = CHEERS[Math.floor(Math.random() * CHEERS.length)];
-    flash(req, 'success', `${cheer} “${task.title}” is done.`, { undoUrl: `/tasks/${task._id}/complete` });
+    const again = next ? ` Next one: ${formatDay(next.schedule?.start ?? next.dueDate, req.user.timeZone)}.` : '';
+    flash(req, 'success', `${cheer} “${task.title}” is done.${again}`, { undoUrl: `/tasks/${task._id}/complete` });
   } else flash(req, 'success', `Reopened “${task.title}”.`);
   res.redirect(safeReturnTo(req.body?.returnTo));
 };
@@ -162,9 +166,11 @@ exports.move = async (req, res) => {
   }
 
   const changesColumn = task.status !== status;
+  const wasDone = task.status === 'done';
   if (!ids.includes(task.id)) task.order = await topOrder(req.user._id, status);
   setColumn(task, status);
   await task.save();
+  await followRepeat(task, wasDone, req.user.timeZone);
   if (ids.includes(task.id)) {
     // The owner in the filter means ids of other people's tasks change nothing.
     await Task.bulkWrite(ids.map((id, order) => ({ updateOne: { filter: { _id: id, owner: req.user._id }, update: { $set: { order } } } })));
