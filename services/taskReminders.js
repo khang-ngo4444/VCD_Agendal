@@ -60,10 +60,21 @@ function customDefaults(task, reminder, timeZone, now = new Date()) {
 }
 
 // "Remove reminder": the task's reminder that hasn't gone out is deleted, so the job never sends it.
-// Returns true when there was one.
+// Returns what Undo needs to put it back ({ remindAt, offsetMinutes }), or null when there was none.
 async function remove(task) {
-  const { deletedCount } = await Reminder.deleteMany(scope(task));
-  return deletedCount > 0;
+  const pending = await findPending(task);
+  if (!pending) return null;
+  await Reminder.deleteMany(scope(task));
+  return { remindAt: pending.remindAt, offsetMinutes: pending.offsetMinutes ?? null };
+}
+
+// Undo of "Remove reminder": the same reminder again, while its time is still ahead. A preset counts back from the
+// task's current start, in case the task moved in between. Returns { reminder } or { error: 'past' }.
+async function restore(task, removed, now = new Date()) {
+  const start = task.schedule?.start;
+  const remindAt = removed.offsetMinutes != null && start ? new Date(start.getTime() - removed.offsetMinutes * MINUTE_MS) : new Date(removed.remindAt);
+  if (!(remindAt > now)) return { error: 'past' };
+  return { reminder: await replace(task, remindAt, removed.offsetMinutes != null && start ? removed.offsetMinutes : null) };
 }
 
 // After the task's schedule changes: a preset reminder follows the new start time. It is removed when the task has no
@@ -96,4 +107,4 @@ function describe(reminder, timeZone, now = new Date()) {
   };
 }
 
-module.exports = { PRESETS, findPending, setPreset, setCustom, customDefaults, remove, syncWithSchedule, describe };
+module.exports = { PRESETS, findPending, setPreset, setCustom, customDefaults, remove, restore, syncWithSchedule, describe };

@@ -15,6 +15,7 @@ router.post('/tasks/:id/unschedule', tasks.unschedule);
 router.get('/tasks/:id/reminder', tasks.showReminder);
 router.post('/tasks/:id/reminder', tasks.setReminder);
 router.post('/tasks/:id/reminder/remove', tasks.removeReminder);
+router.post('/tasks/:id/reminder/restore', tasks.restoreReminder);
 router.post('/tasks/:id/delete', tasks.remove);
 router.post('/tasks/:id/restore', tasks.restore);
 

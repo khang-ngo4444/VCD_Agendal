@@ -171,10 +171,27 @@ exports.setReminder = async (req, res) => {
   res.redirect(`/tasks/${task._id}`);
 };
 
+// The removed reminder waits in the session for the toast's Undo (one at a time, like the toast itself).
 exports.removeReminder = async (req, res) => {
   const task = await findOwnedTask(req);
   const removed = await taskReminders.remove(task);
-  flash(req, 'success', removed ? 'Reminder removed. It won’t be sent.' : 'This task has no reminder.');
+  if (removed) {
+    req.session.removedReminder = { task: String(task._id), ...removed };
+    flash(req, 'success', 'Reminder removed. It won’t be sent.', { undoUrl: `/tasks/${task._id}/reminder/restore` });
+  } else flash(req, 'success', 'This task has no reminder.');
+  res.redirect(`/tasks/${task._id}`);
+};
+
+exports.restoreReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const removed = req.session.removedReminder;
+  delete req.session.removedReminder;
+  if (removed?.task !== String(task._id)) flash(req, 'error', 'That reminder can’t be brought back any more. Set it again.');
+  else {
+    const { reminder, error } = await taskReminders.restore(task, removed);
+    if (error) flash(req, 'error', 'That reminder’s time has passed, so it wasn’t brought back.');
+    else flash(req, 'success', `Reminder back: ${taskReminders.describe(reminder, req.user.timeZone).label}.`);
+  }
   res.redirect(`/tasks/${task._id}`);
 };
 

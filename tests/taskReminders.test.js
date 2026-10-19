@@ -121,14 +121,36 @@ test('customDefaults: the current reminder, else 15 minutes before the start, el
 });
 
 describe('remove', () => {
-  test('deletes the task’s unsent reminder, so the job never sends it', async () => {
+  test('deletes the task’s unsent reminder, so the job never sends it, and returns what Undo needs', async () => {
+    jest.spyOn(Reminder, 'findOne').mockResolvedValue({ remindAt: new Date('2026-10-18T07:45:00Z'), offsetMinutes: 15 });
     jest.spyOn(Reminder, 'deleteMany').mockResolvedValue({ deletedCount: 1 });
-    expect(await taskReminders.remove(scheduled('2026-10-18T08:00:00Z'))).toBe(true);
+    expect(await taskReminders.remove(scheduled('2026-10-18T08:00:00Z'))).toEqual({ remindAt: new Date('2026-10-18T07:45:00Z'), offsetMinutes: 15 });
     expect(Reminder.deleteMany).toHaveBeenCalledWith({ task: '64b0000000000000000000aa', owner, sent: false });
   });
 
   test('says so when there was nothing to remove', async () => {
+    jest.spyOn(Reminder, 'findOne').mockResolvedValue(null);
+    jest.spyOn(Reminder, 'deleteMany');
+    expect(await taskReminders.remove(unscheduled)).toBeNull();
+    expect(Reminder.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('restore (Undo of Remove reminder)', () => {
+  beforeEach(() => {
     jest.spyOn(Reminder, 'deleteMany').mockResolvedValue({ deletedCount: 0 });
-    expect(await taskReminders.remove(unscheduled)).toBe(false);
+    jest.spyOn(Reminder, 'create').mockImplementation(async (doc) => doc);
+  });
+
+  test('a preset comes back counted from the task’s current start, a chosen time as it was', async () => {
+    const preset = await taskReminders.restore(scheduled('2026-10-18T09:00:00Z'), { remindAt: '2026-10-18T07:45:00.000Z', offsetMinutes: 15 }, now);
+    expect(preset.reminder).toMatchObject({ remindAt: new Date('2026-10-18T08:45:00Z'), offsetMinutes: 15, sent: false });
+    const chosen = await taskReminders.restore(unscheduled, { remindAt: '2026-10-19T02:00:00.000Z', offsetMinutes: null }, now);
+    expect(chosen.reminder).toMatchObject({ remindAt: new Date('2026-10-19T02:00:00Z'), offsetMinutes: null });
+  });
+
+  test('not once its time has passed', async () => {
+    expect(await taskReminders.restore(unscheduled, { remindAt: '2026-10-18T05:00:00.000Z', offsetMinutes: null }, now)).toEqual({ error: 'past' });
+    expect(Reminder.create).not.toHaveBeenCalled();
   });
 });
