@@ -40,6 +40,7 @@
         <span aria-hidden="true">·</span>
       <% } %>
       <%= meta.join(' · ') %>
+      <%- include('_reminder-badge', { task, timeZone }) %>
       <% if (task.repeat?.frequency && !task.completedAt) { %>
         <span title="Repeats <%= task.repeat.frequency %>"><%- include('../partials/icon', { icon: 'repeat', cls: 'size-3.5' }) %><span class="sr-only">Repeats <%= task.repeat.frequency %></span></span>
       <% } %>

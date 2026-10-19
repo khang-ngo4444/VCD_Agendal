@@ -50,7 +50,8 @@
               <a href="<%= item.href %>" draggable="false" class="absolute cursor-grab touch-none overflow-hidden rounded-field border-2 bg-base-100 px-1.5 py-1 text-xs leading-tight select-none hover:z-10 hover:shadow-md <%= item.done ? 'opacity-60' : '' %>"
                 style="<%= place %>; border-color: <%= item.colour %>" data-task-id="<%= item.id %>" data-minutes="<%= item.endMinute - item.startMinute %>">
                 <span class="flex items-center gap-1 font-semibold <%= item.done ? 'line-through' : '' %>">
-                  <span class="size-2.5 shrink-0 rounded-full border-[1.5px] border-current" aria-hidden="true"></span><span class="truncate"><%= item.title %></span>
+                  <span class="size-2.5 shrink-0 rounded-full border-[1.5px] border-current" aria-hidden="true"></span><span class="min-w-0 truncate"><%= item.title %></span>
+                  <% if (!item.done && reminderFor(item.id)) { %><span class="ml-auto shrink-0 text-muted" title="Has a reminder"><%- include('../partials/icon', { icon: 'bell', cls: 'size-3' }) %><span class="sr-only">Has a reminder</span></span><% } %>
                 </span>
                 <span class="block truncate text-muted"><span data-time><%= item.time %></span><%= item.projectName ? ` · ${item.projectName}` : '' %></span>
               </a>
