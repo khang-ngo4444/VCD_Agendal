@@ -13,14 +13,35 @@
         <legend class="sr-only">How reminders reach you</legend>
         <h3 class="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">How reminders reach you</h3>
 
-        <label class="flex cursor-pointer items-center gap-4 border-b border-base-300 py-3">
-          <%- include('../partials/icon', { icon: 'bell', cls: 'size-5 shrink-0 text-muted' }) %>
-          <span class="flex-1">
-            <span class="block font-medium">Browser notifications</span>
-            <span class="block text-sm text-muted">Windows / Mac notification center, Android lock screen, iPhone app on the Home Screen.</span>
-          </span>
-          <input type="checkbox" name="push" class="toggle toggle-success" <%= values.push ? 'checked' : '' %>>
-        </label>
+        <div class="border-b border-base-300">
+          <label class="flex cursor-pointer items-center gap-4 py-3">
+            <%- include('../partials/icon', { icon: 'bell', cls: 'size-5 shrink-0 text-muted' }) %>
+            <span class="flex-1">
+              <span class="block font-medium">Browser notifications</span>
+              <span class="block text-sm text-muted">Windows / Mac notification center, Android lock screen, iPhone app on the Home Screen.</span>
+            </span>
+            <input type="checkbox" name="push" class="toggle toggle-success" <%= values.push ? 'checked' : '' %>>
+          </label>
+          <%# This browser's own state (public/js/push.js fills it in): the toggle above is for the whole account. %>
+          <div class="-mt-1 mb-3 ml-9 rounded-field bg-base-200 px-3 py-2.5 text-sm" data-push-status hidden aria-live="polite">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2" data-push-when="on" hidden>
+              <span class="flex items-center gap-2 grow"><span class="size-2 rounded-full bg-success"></span> On in this browser.</span>
+              <button type="button" class="btn btn-sm h-9 rounded-full border-0 bg-base-100" data-push-test>Send a test</button>
+              <button type="button" class="btn btn-ghost btn-sm h-9 rounded-full" data-push-off>Turn off here</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2" data-push-when="off" hidden>
+              <span class="grow text-muted">Not on in this browser yet.</span>
+              <button type="button" class="btn btn-primary btn-sm h-9 rounded-full" data-push-open>Turn on in this browser</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2" data-push-when="blocked" hidden>
+              <span class="flex items-center gap-2 grow"><span class="size-2 rounded-full bg-error"></span> Blocked in this browser.</span>
+              <button type="button" class="btn btn-sm h-9 rounded-full border-0 bg-base-100" data-push-open>How to unblock</button>
+            </div>
+            <p class="text-muted" data-push-when="unsupported" hidden>
+              This browser can’t show notifications from websites. On an iPhone, add Agendal to the Home Screen first.
+            </p>
+          </div>
+        </div>
 
         <label class="flex cursor-pointer items-center gap-4 py-3">
           <%- include('../partials/icon', { icon: 'mail', cls: 'size-5 shrink-0 text-muted' }) %>

@@ -91,4 +91,92 @@
 
   window.agendalPush = { supported, state, enable, disable, post };
   resync().catch(() => {}); // a failed resync just tries again on the next page
+
+  // Permission dialog (views/notifications/_permission-dialog.ejs, Figma W29).
+  const dialog = document.getElementById('push-permission-dialog');
+  const LATER_KEY = 'agendal-push-later'; // "Not now": the Daily List doesn't ask again for a while
+  const ASK_AGAIN_MS = 14 * 24 * 60 * 60 * 1000;
+
+  function openDialog(current) {
+    if (!dialog) return;
+    dialog.querySelector('[data-push-panel="ask"]').hidden = current === 'blocked';
+    dialog.querySelector('[data-push-panel="blocked"]').hidden = current !== 'blocked';
+    dialog.showModal();
+  }
+
+  dialog?.querySelector('[data-push-allow]').addEventListener('click', async (event) => {
+    event.currentTarget.disabled = true;
+    try {
+      const result = await enable();
+      if (result === 'blocked') openDialog('blocked');
+      else {
+        dialog.close();
+        if (result === 'on') window.agendal?.toast('Notifications are on in this browser.');
+      }
+    } catch {
+      dialog.close();
+      window.agendal?.toast('Notifications couldn’t be turned on. Try again in a moment.', { type: 'error' });
+    } finally {
+      event.currentTarget.disabled = false;
+    }
+  });
+
+  dialog?.querySelector('[data-push-later]').addEventListener('click', () => {
+    try {
+      localStorage.setItem(LATER_KEY, String(Date.now()));
+    } catch {}
+  });
+
+  // [data-push-status] blocks show the child [data-push-when] that matches this browser, and stay hidden otherwise.
+  async function renderStatus() {
+    const current = await state();
+    document.querySelectorAll('[data-push-status]').forEach((block) => {
+      let shown = false;
+      block.querySelectorAll('[data-push-when]').forEach((part) => {
+        part.hidden = !part.dataset.pushWhen.split(' ').includes(current);
+        shown ||= !part.hidden;
+      });
+      block.hidden = !shown;
+    });
+    return current;
+  }
+
+  document.addEventListener('click', async (event) => {
+    const opener = event.target.closest('[data-push-open]');
+    if (opener) return openDialog(await state());
+
+    const off = event.target.closest('[data-push-off]');
+    if (off) {
+      await disable();
+      return window.agendal?.toast('Notifications are off in this browser. Your other devices still get them.');
+    }
+
+    const test = event.target.closest('[data-push-test]');
+    if (test) {
+      test.disabled = true;
+      try {
+        await post('/notifications/push/test', {});
+        window.agendal?.toast('Test sent. It should appear in a few seconds.');
+      } catch {
+        window.agendal?.toast('The test couldn’t be sent. Turn notifications off and on again here.', { type: 'error' });
+      } finally {
+        test.disabled = false;
+      }
+    }
+  });
+
+  document.addEventListener('agendal:push', renderStatus);
+  document.addEventListener('agendal:render', renderStatus); // content swapped in by app.js (data-fetch, live updates)
+
+  // The Daily List asks once (Figma W29 shows it there), unless the user said "Not now" lately or turned the
+  // browser channel off in Settings.
+  (async () => {
+    const current = await renderStatus();
+    if (location.pathname !== '/today' || current !== 'off' || script?.dataset.channel === 'off') return;
+    let later = 0;
+    try {
+      later = Number(localStorage.getItem(LATER_KEY)) || 0;
+    } catch {}
+    if (Date.now() - later > ASK_AGAIN_MS) openDialog(current);
+  })();
 })();

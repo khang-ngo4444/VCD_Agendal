@@ -51,6 +51,19 @@
       <% } %>
     </div>
   </details>
+  <% if (reminder && currentUser.notifications?.push !== false) { %>
+    <%# A gentle nudge when this browser can't show the reminder yet (public/js/push.js shows the matching line). %>
+    <p class="mt-2 text-xs text-muted" data-push-status hidden>
+      <span data-push-when="off" hidden>
+        Get it as a notification on this device too.
+        <button type="button" class="font-semibold text-primary hover:underline" data-push-open>Turn on notifications</button>
+      </span>
+      <span data-push-when="blocked" hidden>
+        Notifications are blocked in this browser.
+        <button type="button" class="font-semibold text-primary hover:underline" data-push-open>How to unblock</button>
+      </span>
+    </p>
+  <% } %>
   <%# Outside the menu: a closed <details> hides its content, dialog included. %>
   <%- include('../partials/modal', {
     id: 'custom-reminder-dialog',

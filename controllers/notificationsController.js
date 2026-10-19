@@ -37,6 +37,17 @@ exports.unsubscribePush = async (req, res) => {
   res.status(204).end();
 };
 
+// "Send a test" in Settings → Notifications: one notification to each of the user's browsers. 409 when none has push on.
+exports.testPush = async (req, res) => {
+  const delivered = await webPush.sendToUser(req.user._id, {
+    title: 'Agendal',
+    body: 'Notifications are on. Your reminders will look like this.',
+    url: '/settings/notifications',
+    tag: 'test',
+  });
+  res.status(delivered ? 204 : 409).end();
+};
+
 // The "Turn off email reminders" link in every reminder email. No login needed: the signed token is the proof.
 function renderUnsubscribe(res, { token, valid, done }) {
   res.status(valid ? 200 : 404).render('notifications/unsubscribe', { title: 'Email reminders · Agendal', token, valid, done });
