@@ -10,10 +10,11 @@
           aria-label="Open navigation" data-key-click data-drawer-open>
           <%- include('icon', { icon: 'menu', cls: 'size-5' }) %>
         </label>
-        <form action="/search" method="get" role="search" class="max-w-sm grow">
+        <form id="search-form" action="/search" method="get" role="search" class="max-w-sm grow">
           <label class="input h-11 w-full bg-fill">
             <%- include('icon', { icon: 'search', cls: 'size-4 shrink-0 text-muted' }) %>
-            <input type="search" name="q" placeholder="Search tasks…" aria-label="Search tasks" class="h-full grow">
+            <input type="search" name="q" placeholder="Search tasks…" aria-label="Search tasks" class="h-full grow"
+              value="<%= locals.searchQuery ?? '' %>" <%= currentPath === '/search' ? 'autofocus' : '' %>>
           </label>
         </form>
         <a href="/tasks/new" class="btn btn-primary ml-auto h-11 min-w-11 rounded-full px-4" aria-label="New task" data-open-modal="new-task-dialog">

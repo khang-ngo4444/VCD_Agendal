@@ -1,4 +1,4 @@
-const { setColumn, reopenedStatus } = require('../services/tasks');
+const { setColumn, reopenedStatus, nextDates } = require('../services/tasks');
 
 const TZ = 'Asia/Ho_Chi_Minh'; // UTC+7
 const now = new Date('2026-10-19T03:00:00Z'); // 10:00 on Monday 19 October in UTC+7
@@ -37,5 +37,30 @@ describe('the column a reopened task goes back to', () => {
 
   test('Backlog without any date', () => {
     expect(reopenedStatus({}, TZ, now)).toBe('backlog');
+  });
+});
+
+describe('the next occurrence of a repeating task', () => {
+  test('a weekly slot comes back at the same local time, even across a DST change', () => {
+    const task = { repeat: { frequency: 'weekly' }, schedule: { start: new Date('2026-10-30T13:00:00Z'), end: new Date('2026-10-30T14:00:00Z') } };
+    // 09:00–10:00 in New York on Fri 30 Oct (EDT); clocks go back on 1 Nov, so the next one is 14:00 UTC
+    expect(nextDates(task, 'America/New_York').schedule).toEqual({ start: new Date('2026-11-06T14:00:00Z'), end: new Date('2026-11-06T15:00:00Z') });
+  });
+
+  test('a due date stays the end of its local day; a monthly one on the 31st lands on the 30th', () => {
+    const task = { repeat: { frequency: 'monthly' }, dueDate: new Date('2026-10-31T16:59:59.999Z') }; // 23:59:59.999 on 31 Oct in UTC+7
+    expect(nextDates(task, TZ)).toEqual({ dueDate: new Date('2026-11-30T16:59:59.999Z'), schedule: undefined });
+  });
+
+  test('nothing comes after the "until" date', () => {
+    const task = { repeat: { frequency: 'weekly', until: new Date('2026-10-25T16:59:59.999Z') }, dueDate: new Date('2026-10-19T16:59:59.999Z') };
+    expect(nextDates(task, TZ)).toBeNull();
+    task.repeat.until = new Date('2026-10-26T16:59:59.999Z'); // the last day itself still counts
+    expect(nextDates(task, TZ).dueDate).toEqual(new Date('2026-10-26T16:59:59.999Z'));
+  });
+
+  test('a task that doesn’t repeat, or has no date, has no next occurrence', () => {
+    expect(nextDates({ dueDate: new Date() }, TZ)).toBeNull();
+    expect(nextDates({ repeat: { frequency: 'daily' } }, TZ)).toBeNull();
   });
 });

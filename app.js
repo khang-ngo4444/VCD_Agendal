@@ -22,6 +22,7 @@ const calendarRoutes = require('./routes/calendar');
 const eventRoutes = require('./routes/events');
 const adminRoutes = require('./routes/admin');
 const welcome = require('./controllers/welcomeController');
+const sync = require('./services/sync');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -96,8 +97,11 @@ app.use(oauthRoutes);
 // Admin console: its own layout and routes. Non-admins fall through to the 404 below.
 app.use('/admin', requireLogin, adminRoutes);
 
+// Live updates between the user's open pages (services/sync.js); the stream needs no sidebar data.
+app.get('/sync', requireLogin, sync.subscribe);
+
 // Everything below needs a logged-in user. Admin accounts are sent to /admin instead.
-app.use(requireLogin, keepAdminsInConsole, requireOnboarding, loadShell);
+app.use(requireLogin, keepAdminsInConsole, requireOnboarding, loadShell, sync.announceChanges);
 app.get(WELCOME_PATH, welcome.show);
 app.post(WELCOME_PATH, welcome.complete);
 app.use(dailyRoutes);

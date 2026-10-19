@@ -1,5 +1,7 @@
+const Reminder = require('../models/Reminder');
 const Task = require('../models/Task');
-const { dayRange } = require('./dates');
+const { dayRange, endOfLocalDay, zonedParts } = require('./dates');
+const { addInterval } = require('./recurrence');
 
 // Kanban columns in board order (Task.status), with the dot colour each header shows (Figma W02).
 const COLUMNS = [
@@ -32,4 +34,51 @@ function reopenedStatus(task, timeZone, now = new Date()) {
   return when < dayRange(now, timeZone).end ? 'active' : 'upcoming';
 }
 
-module.exports = { COLUMNS, columnLabel, topOrder, setColumn, reopenedStatus };
+// The dates of a repeating task's next occurrence, one step on in the user's time zone (a 09:00 slot stays at 09:00,
+// a due date stays the end of its day), or null when the task doesn't repeat, has no date, or would pass its "until".
+// ponytail: each occurrence steps from the one before, so a task due on the 31st moves to the 30th after a 30-day
+// month and stays there; count from a series start (as services/recurrence.js does for events) if that matters.
+function nextDates(task, timeZone) {
+  const frequency = task.repeat?.frequency;
+  const anchor = task.schedule?.start ?? task.dueDate;
+  if (!frequency || !anchor) return null;
+  const step = (date) => addInterval(date, frequency, 1, timeZone);
+  if (task.repeat.until && step(anchor) > task.repeat.until) return null;
+  return {
+    dueDate: task.dueDate ? endOfLocalDay(zonedParts(step(task.dueDate), timeZone), timeZone) : undefined,
+    schedule: task.schedule?.start ? { start: step(task.schedule.start), end: step(task.schedule.end) } : undefined,
+  };
+}
+
+// Call after saving a task whose column may have changed (`wasDone`: it was in Done before). Completing a repeating
+// task creates its next occurrence, with the same title, notes, project, priority, repeat and reminders, in the column
+// its date suggests; the new task is returned. Reopening the task (Undo, or a card dragged out of Done) takes that
+// occurrence back while it is still open, so the same occurrence never shows up twice.
+async function followRepeat(task, wasDone, timeZone) {
+  const done = task.status === 'done';
+  if (done === wasDone) return null;
+  if (!done) {
+    const next = await Task.findOneAndDelete({ owner: task.owner, previousOccurrence: task._id, completedAt: null });
+    if (next) await Reminder.deleteMany({ task: next._id });
+    return null;
+  }
+
+  const dates = nextDates(task, timeZone);
+  if (!dates) return null;
+  const { owner, project, title, description, priority, repeat } = task;
+  const next = new Task({ owner, project, title, description, priority, repeat, previousOccurrence: task._id, ...dates });
+  next.status = reopenedStatus(next, timeZone);
+  next.order = await topOrder(owner, next.status);
+  await next.save();
+
+  // Reminders keep their distance from the task: one 15 minutes before this occurrence is 15 minutes before the next.
+  // offsetMinutes marks the P10 reminder presets; it is simply left out until that field is in the Reminder model.
+  const shift = (next.schedule?.start ?? next.dueDate) - (task.schedule?.start ?? task.dueDate);
+  const reminders = await Reminder.find({ task: task._id }).lean();
+  await Reminder.insertMany(
+    reminders.map(({ type, remindAt, offsetMinutes }) => ({ task: next._id, owner, type, offsetMinutes, remindAt: new Date(remindAt.getTime() + shift) }))
+  );
+  return next;
+}
+
+module.exports = { COLUMNS, columnLabel, topOrder, setColumn, reopenedStatus, nextDates, followRepeat };

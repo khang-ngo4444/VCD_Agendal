@@ -17,6 +17,8 @@ const taskSchema = new Schema(
       frequency: { type: String, enum: ['daily', 'weekly', 'monthly', 'yearly'] }, // unset = does not repeat
       until: Date,
     },
+    // On the occurrence that completing a repeating task created: that task. Reopening it takes this one back.
+    previousOccurrence: { type: Schema.Types.ObjectId, ref: 'Task' },
     deletedAt: { type: Date, default: null }, // soft delete
   },
   { timestamps: true }

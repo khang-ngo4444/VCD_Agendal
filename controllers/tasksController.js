@@ -3,8 +3,10 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
+const { escapeRegex } = require('../services/regex');
+const { DUES, STATUSES, isFiltered, parseSearch, searchFilter } = require('../services/taskSearch');
 const { safeReturnTo } = require('../services/returnTo');
-const { columnLabel, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
+const { columnLabel, followRepeat, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
 const { formatDay, formatTime, isOverdue, toDateInput, toTimeInput } = require('../services/dates');
 const { PRIORITIES, parseSchedule, parseTaskForm } = require('../validators/task');
 
@@ -15,6 +17,33 @@ const text = (value) => (typeof value === 'string' ? value : '');
 const findOwnedTask = (req) => findOwned(Task, req.params.id, req.user._id, { deletedAt: null });
 
 exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal' });
+
+const MAX_RESULTS = 50;
+
+// Search (Figma W06): the header's search box and the filter panel (W21), applied as you type (app.js).
+// The matching rules are in services/taskSearch.js. Open tasks come first.
+exports.search = async (req, res) => {
+  const search = parseSearch(req.query);
+  const filtered = isFiltered(search);
+  const tasks =
+    search.words.length || filtered
+      ? await Task.find(searchFilter(search, req.user)).sort({ completedAt: 1, updatedAt: -1 }).limit(MAX_RESULTS).lean()
+      : [];
+  // The typed words, for the result titles to highlight (a capture group, so String.split keeps the matches).
+  const highlight = search.words.length ? new RegExp(`(${search.words.map(escapeRegex).join('|')})`, 'gi') : null;
+  res.render('search', {
+    title: search.q ? `${search.q} · Search · Agendal` : 'Search · Agendal',
+    searchQuery: search.q,
+    search,
+    filtered,
+    tasks,
+    maxResults: MAX_RESULTS,
+    highlight,
+    priorities: PRIORITIES,
+    statuses: STATUSES,
+    dues: DUES,
+  });
+};
 
 // Quick-add: a title is enough. The task starts in Backlog, in the Inbox unless a project was picked.
 // The Calendar's slot form also sends scheduleDate, scheduleStart and scheduleEnd.
@@ -39,15 +68,19 @@ const CHEERS = ['Nice!', 'Well done!', 'Great work!', 'One down!', 'Nailed it!']
 
 // Done (done=1) or reopened. Finishing gets a little cheer and an Undo, which posts back here without done=1.
 // Either way the Board card follows: to the top of Done, or back to the column the task's date suggests.
+// A repeating task comes back as its next occurrence (services/tasks.js followRepeat), and Undo takes that back.
 exports.setComplete = async (req, res) => {
   const task = await findOwnedTask(req);
   const done = req.body?.done === '1';
+  const wasDone = task.status === 'done';
   setColumn(task, done ? 'done' : reopenedStatus(task, req.user.timeZone));
   task.order = await topOrder(req.user._id, task.status);
   await task.save();
+  const next = await followRepeat(task, wasDone, req.user.timeZone);
   if (done) {
     const cheer = CHEERS[Math.floor(Math.random() * CHEERS.length)];
-    flash(req, 'success', `${cheer} “${task.title}” is done.`, { undoUrl: `/tasks/${task._id}/complete` });
+    const again = next ? ` Next one: ${formatDay(next.schedule?.start ?? next.dueDate, req.user.timeZone)}.` : '';
+    flash(req, 'success', `${cheer} “${task.title}” is done.${again}`, { undoUrl: `/tasks/${task._id}/complete` });
   } else flash(req, 'success', `Reopened “${task.title}”.`);
   res.redirect(safeReturnTo(req.body?.returnTo));
 };
@@ -63,6 +96,8 @@ function formValues(task, timeZone) {
     scheduleDate: task.schedule?.start ? toDateInput(task.schedule.start, timeZone) : '',
     scheduleStart: task.schedule?.start ? toTimeInput(task.schedule.start, timeZone) : '',
     scheduleEnd: task.schedule?.end ? toTimeInput(task.schedule.end, timeZone) : '',
+    repeat: task.repeat?.frequency ?? '',
+    until: task.repeat?.until ? toDateInput(task.repeat.until, timeZone) : '',
   };
 }
 
@@ -93,9 +128,10 @@ exports.update = async (req, res) => {
   if (values.project && !project) errors.project = 'Pick a project from the list.';
   if (Object.keys(errors).length) return renderTask(req, res, task, { values, errors });
 
-  const { schedule, ...fields } = changes;
+  const { schedule, repeat, ...fields } = changes;
   task.set({ ...fields, project: project?._id ?? null });
   task.set('schedule', schedule ?? undefined);
+  task.set('repeat', repeat ?? undefined);
   await task.save();
   flash(req, 'success', 'Task saved.');
   res.redirect(`/tasks/${task._id}`);
@@ -159,9 +195,11 @@ exports.move = async (req, res) => {
   }
 
   const changesColumn = task.status !== status;
+  const wasDone = task.status === 'done';
   if (!ids.includes(task.id)) task.order = await topOrder(req.user._id, status);
   setColumn(task, status);
   await task.save();
+  await followRepeat(task, wasDone, req.user.timeZone);
   if (ids.includes(task.id)) {
     // The owner in the filter means ids of other people's tasks change nothing.
     await Task.bulkWrite(ids.map((id, order) => ({ updateOne: { filter: { _id: id, owner: req.user._id }, update: { $set: { order } } } })));
