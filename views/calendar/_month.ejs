@@ -1,0 +1,33 @@
+<%# Month layout: whole weeks, the days of other months dimmed. A day's number opens it in the day layout. %>
+<section class="overflow-hidden rounded-box bg-base-100" aria-label="<%= heading %>">
+  <div class="grid grid-cols-7 border-b border-base-300 text-xs font-semibold text-muted" aria-hidden="true">
+    <% days.slice(0, 7).forEach((day) => { %><span class="px-2 py-2"><%= day.weekday %></span><% }) %>
+  </div>
+  <ol class="grid grid-cols-7">
+    <% days.forEach((day, i) => { %>
+      <li class="relative min-h-28 border-base-300 p-1.5 <%= i % 7 ? 'border-l' : '' %> <%= i >= 7 ? 'border-t' : '' %> <%= day.inMonth ? '' : 'bg-base-200/50' %>" data-day="<%= day.date %>">
+        <a href="?view=day&date=<%= day.date %>" class="grid size-7 place-items-center rounded-full text-sm tabular-nums hover:bg-base-200
+          <%= day.isToday ? 'bg-primary font-semibold text-primary-content hover:bg-primary' : day.inMonth ? '' : 'text-muted' %>" aria-label="<%= day.name %>"><%= day.number %></a>
+        <div class="absolute top-2 right-1.5"><%- include('_habit-dots', { day, align: i % 7 > 3 ? 'end' : 'start' }) %></div>
+        <% const entries = [...day.allDay.map((event) => ({ ...event, kind: 'event' })), ...day.items]; %>
+        <ul class="mt-1 space-y-1">
+          <% entries.slice(0, 3).forEach((item) => { %>
+            <li>
+              <% if (item.kind === 'event') { %>
+                <%- include('_event-chip', { event: item }) %>
+              <% } else { %>
+                <a href="<%= item.href %>" class="flex items-center gap-1 truncate rounded-selector border px-1.5 py-0.5 text-xs hover:bg-base-200 <%= item.done ? 'text-muted line-through' : '' %>"
+                  style="border-color: <%= item.colour %>" title="<%= item.time %> <%= item.title %>">
+                  <span class="size-2 shrink-0 rounded-full border-[1.5px] border-current" aria-hidden="true"></span><span class="truncate"><%= item.title %></span>
+                </a>
+              <% } %>
+            </li>
+          <% }) %>
+          <% if (entries.length > 3) { %>
+            <li><a href="?view=day&date=<%= day.date %>" class="px-1.5 text-xs font-semibold text-primary hover:underline">+<%= entries.length - 3 %> more</a></li>
+          <% } %>
+        </ul>
+      </li>
+    <% }) %>
+  </ol>
+</section>

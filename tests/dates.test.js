@@ -70,3 +70,22 @@ describe('overdue', () => {
     expect(formatDay(endOfLocalDay({ year: 2026, month: 10, day: 20 }, UTC_PLUS_7), UTC_PLUS_7, now)).toBe('Tomorrow');
   });
 });
+
+describe('local day strings', () => {
+  const { addDays, weekdayOf, startOfWeek } = require('../services/dates');
+
+  test('adding days crosses month and year ends', () => {
+    expect(addDays('2026-10-31', 1)).toBe('2026-11-01');
+    expect(addDays('2027-01-01', -1)).toBe('2026-12-31');
+  });
+
+  test('the day the clocks go back is still exactly one day long', () => {
+    expect(addDays('2026-11-01', 1)).toBe('2026-11-02');
+  });
+
+  test('weeks start on the user’s first day of the week', () => {
+    expect(weekdayOf('2026-10-18')).toBe(0); // a Sunday
+    expect(startOfWeek('2026-10-18', 1)).toBe('2026-10-12'); // Monday-first: the Sunday ends the week
+    expect(startOfWeek('2026-10-18', 0)).toBe('2026-10-18'); // Sunday-first: it starts one
+  });
+});

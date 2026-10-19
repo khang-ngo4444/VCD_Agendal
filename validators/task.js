@@ -1,3 +1,4 @@
+const { FREQUENCIES } = require('../models/Event'); // tasks repeat on the same steps as events
 const { parseDateInput, parseTimeInput, zonedTime, endOfLocalDay } = require('../services/dates');
 
 const MAX_TITLE_LENGTH = 200;
@@ -5,6 +6,18 @@ const MAX_DESCRIPTION_LENGTH = 2000;
 const PRIORITIES = ['low', 'medium', 'high'];
 
 const text = (value) => (typeof value === 'string' ? value : '');
+
+// The three schedule fields (local date, start and end time) as { schedule } in UTC, or { error } to show.
+// All three empty means "not scheduled": { schedule: null }.
+function parseSchedule({ scheduleDate, scheduleStart, scheduleEnd }, timeZone) {
+  if (![scheduleDate, scheduleStart, scheduleEnd].some(Boolean)) return { schedule: null };
+  const day = parseDateInput(scheduleDate);
+  const start = parseTimeInput(scheduleStart);
+  const end = parseTimeInput(scheduleEnd);
+  if (!day || !start || !end) return { error: 'Fill in the date, start and end time, or leave all three empty.' };
+  if (end.hour * 60 + end.minute <= start.hour * 60 + start.minute) return { error: 'The end time must be after the start time.' };
+  return { schedule: { start: zonedTime({ ...day, ...start }, timeZone), end: zonedTime({ ...day, ...end }, timeZone) } };
+}
 
 // Reads the task detail form. Dates and times are the user's local wall clock, converted with their time zone.
 // Returns { values } to re-fill the form, { errors } per field, and { changes } to apply when there are no errors.
@@ -19,6 +32,8 @@ function parseTaskForm(body = {}, timeZone) {
     scheduleDate: text(body.scheduleDate),
     scheduleStart: text(body.scheduleStart),
     scheduleEnd: text(body.scheduleEnd),
+    repeat: text(body.repeat),
+    until: text(body.until),
   };
   const errors = {};
   const changes = { title: values.title, description: values.description, priority: values.priority };
@@ -35,18 +50,23 @@ function parseTaskForm(body = {}, timeZone) {
     else errors.dueDate = 'Pick a date from the calendar.';
   }
 
-  const scheduleFields = [values.scheduleDate, values.scheduleStart, values.scheduleEnd];
-  if (scheduleFields.every((field) => !field)) changes.schedule = null; // all empty: not scheduled
-  else {
-    const day = parseDateInput(values.scheduleDate);
-    const start = parseTimeInput(values.scheduleStart);
-    const end = parseTimeInput(values.scheduleEnd);
-    if (!day || !start || !end) errors.schedule = 'Fill in the date, start and end time, or leave all three empty.';
-    else if (end.hour * 60 + end.minute <= start.hour * 60 + start.minute) errors.schedule = 'The end time must be after the start time.';
-    else changes.schedule = { start: zonedTime({ ...day, ...start }, timeZone), end: zonedTime({ ...day, ...end }, timeZone) };
+  const { error, schedule } = parseSchedule(values, timeZone);
+  if (error) errors.schedule = error;
+  else changes.schedule = schedule;
+
+  // The next occurrence is dated from this one, so a repeating task needs a date to start from.
+  if (values.repeat && !FREQUENCIES.includes(values.repeat)) errors.repeat = 'Pick how often it repeats.';
+  else if (values.repeat && !values.dueDate && !values.scheduleDate) errors.repeat = 'Give the task a due date or a scheduled time to repeat from.';
+
+  // "Repeat until": no occurrence after the end of that local day. Empty repeats forever.
+  const until = values.repeat && values.until ? parseDateInput(values.until) : null;
+  if (values.repeat && values.until) {
+    if (!until) errors.until = 'Pick the last date, or leave it empty to repeat forever.';
+    else if (values.until < (values.scheduleDate || values.dueDate)) errors.until = 'The repeat can’t end before the task’s own date.';
   }
+  changes.repeat = values.repeat ? { frequency: values.repeat, until: until ? endOfLocalDay(until, timeZone) : undefined } : null;
 
   return { values, errors, changes };
 }
 
-module.exports = { PRIORITIES, parseTaskForm };
+module.exports = { PRIORITIES, parseSchedule, parseTaskForm };

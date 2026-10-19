@@ -1,8 +1,10 @@
 <%#
-  One task in a list, with its done / reopen button. Locals: task (lean), timeZone.
-  Dates read in the user's time zone (services/dates.js).
+  One task in a list, with its done / reopen button. Locals: task (lean), timeZone, showProject? (adds the project's
+  dot and name, for lists that mix projects), highlight? (a RegExp with one capture group: matches in the title are
+  marked, for search results). Dates read in the user's time zone (services/dates.js).
 %>
 <%
+  const project = locals.showProject && sidebarProjects.find((item) => item.id === (task.project ? String(task.project) : null));
   const meta = [];
   if (task.completedAt) meta.push(`Done ${dates.formatDay(task.completedAt, timeZone)}`);
   else {
@@ -12,10 +14,10 @@
   }
 %>
 <li class="relative flex items-start gap-3 px-4 py-3 hover:bg-base-200/60">
-  <form method="post" action="/tasks/<%= task._id %>/complete" class="relative z-10 -my-2.5 -ml-3 shrink-0">
+  <form method="post" action="/tasks/<%= task._id %>/complete" class="relative z-10 -my-2.5 -ml-3 shrink-0" data-fetch>
     <%- include('../partials/csrf') %>
     <input type="hidden" name="done" value="<%= task.completedAt ? '0' : '1' %>">
-    <input type="hidden" name="returnTo" value="<%= currentPath %>">
+    <input type="hidden" name="returnTo" value="<%= currentUrl %>">
     <button type="submit" class="group grid size-11 place-items-center rounded-full"
       aria-label="<%= task.completedAt ? `Reopen “${task.title}”` : `Mark “${task.title}” as done` %>">
       <span class="grid size-5 place-items-center rounded-full border-2 <%= task.completedAt ? 'border-success bg-success text-success-content' : 'border-base-300 group-hover:border-primary' %>">
@@ -24,14 +26,23 @@
     </button>
   </form>
   <div class="min-w-0 grow">
-    <a href="/tasks/<%= task._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></a>
+    <a href="/tasks/<%= task._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%
+      if (locals.highlight) { task.title.split(highlight).forEach((part, i) => { %><% if (i % 2) { %><mark class="bg-transparent font-semibold text-primary"><%= part %></mark><% } else { %><%= part %><% } %><% }) } else { %><%= task.title %><% } %></a>
     <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
       <% if (dates.isOverdue(task)) { %>
         <%# Text and icon, not colour alone %>
         <span class="inline-flex items-center gap-1 font-semibold text-error"><%- include('../partials/icon', { icon: 'alert', cls: 'size-3.5' }) %>Overdue</span>
         <span aria-hidden="true">·</span>
       <% } %>
+      <% if (project) { %>
+        <span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-full <%= project.colour ? '' : 'bg-base-300' %>"
+          <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span><%= project.name %></span>
+        <span aria-hidden="true">·</span>
+      <% } %>
       <%= meta.join(' · ') %>
+      <% if (task.repeat?.frequency && !task.completedAt) { %>
+        <span title="Repeats <%= task.repeat.frequency %>"><%- include('../partials/icon', { icon: 'repeat', cls: 'size-3.5' }) %><span class="sr-only">Repeats <%= task.repeat.frequency %></span></span>
+      <% } %>
     </p>
   </div>
   <% if (task.priority === 'high' && !task.completedAt) { %>

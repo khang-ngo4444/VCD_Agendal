@@ -1,0 +1,9 @@
+<%# One event occurrence in a list (Daily List schedule, Upcoming): a bar in its colour, title, time and place. Locals: event (from eventsBetween). %>
+<li class="relative flex items-stretch gap-3 px-4 py-3 hover:bg-base-200/60">
+  <span class="w-1 shrink-0 rounded-full" style="background-color: <%= event.colour %>" aria-hidden="true"></span>
+  <div class="min-w-0 grow">
+    <a href="<%= event.href %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline"><%= event.title %></a>
+    <p class="mt-0.5 truncate text-xs text-muted"><%= [event.time, event.event.location, event.projectName].filter(Boolean).join(' · ') %></p>
+  </div>
+  <span class="self-center text-xs text-muted">Event</span>
+</li>

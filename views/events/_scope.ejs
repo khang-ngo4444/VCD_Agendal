@@ -1,0 +1,23 @@
+<%#
+  Which occurrences of a repeating event a change applies to (Figma W25). Locals: legend, scope (the checked one),
+  occurrence (the one opened), idPrefix.
+%>
+<%
+  const day = new Intl.DateTimeFormat('en-GB', { timeZone: currentUser.timeZone, weekday: 'short', day: 'numeric', month: 'short' }).format(occurrence.start);
+  const choices = [
+    ['this', 'This event only', 'The other occurrences stay as they are'],
+    ['following', 'This and following events', `From ${day} on`],
+    ['all', 'All events in the series', 'Including past ones'],
+  ];
+%>
+<fieldset class="mt-5">
+  <legend class="mb-2 text-xs font-semibold"><%= legend %></legend>
+  <div class="space-y-2">
+    <% choices.forEach(([value, label, hint]) => { %>
+      <label class="flex cursor-pointer items-start gap-3 rounded-field border border-base-300 p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/[0.07]">
+        <input type="radio" name="scope" value="<%= value %>" class="radio radio-sm radio-primary mt-0.5" <%= scope === value ? 'checked' : '' %>>
+        <span><span class="block text-sm font-medium"><%= label %></span><span class="block text-xs text-muted"><%= hint %></span></span>
+      </label>
+    <% }) %>
+  </div>
+</fieldset>

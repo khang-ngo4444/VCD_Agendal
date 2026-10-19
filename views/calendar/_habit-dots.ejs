@@ -1,0 +1,17 @@
+<%#
+  The habits checked in on one day: a dot in each habit's colour. Hover shows the names; tapping or the keyboard opens
+  the list. Locals: day ({ name, habits }), align ('start' | 'end').
+%>
+<% if (day.habits.length) { %>
+  <details class="dropdown <%= align === 'end' ? 'dropdown-end' : '' %>" data-dismissable>
+    <summary class="flex min-h-6 cursor-pointer list-none flex-wrap items-center gap-0.5 rounded-full px-1" title="<%= day.habits.map((habit) => habit.name).join(', ') %>"
+      aria-label="<%= day.habits.length %> habit<%= day.habits.length === 1 ? '' : 's' %> done on <%= day.name %>">
+      <% day.habits.forEach((habit) => { %><span class="size-1.5 rounded-full" style="background-color: <%= habit.colour %>" aria-hidden="true"></span><% }) %>
+    </summary>
+    <ul class="dropdown-content z-40 mt-1 w-52 space-y-1 rounded-box border border-base-300 bg-base-100 p-3 text-xs font-normal normal-case shadow-lg">
+      <% day.habits.forEach((habit) => { %>
+        <li class="flex items-center gap-2 text-base-content"><span class="size-2 shrink-0 rounded-full" style="background-color: <%= habit.colour %>" aria-hidden="true"></span><%= habit.name %></li>
+      <% }) %>
+    </ul>
+  </details>
+<% } %>

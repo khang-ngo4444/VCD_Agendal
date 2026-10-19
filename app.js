@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
-const { SESSION_COOKIE, WELCOME_PATH, requireLogin, requireOnboarding, keepAdminsInConsole } = require('./middleware/auth');
+const { SESSION_COOKIE, WELCOME_PATH, requireLogin, requireOnboarding, keepAdminsInConsole, guestOnly } = require('./middleware/auth');
 const csrf = require('./middleware/csrf');
 const avatarUpload = require('./middleware/avatarUpload');
 const { showFlash } = require('./middleware/flash');
@@ -15,9 +15,15 @@ const { passport, enabledProviders } = require('./config/passport');
 const settingsRoutes = require('./routes/settings');
 const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
+const habitRoutes = require('./routes/habits');
+const dailyRoutes = require('./routes/daily');
+const boardRoutes = require('./routes/board');
+const calendarRoutes = require('./routes/calendar');
+const eventRoutes = require('./routes/events');
 const adminRoutes = require('./routes/admin');
 const welcome = require('./controllers/welcomeController');
 const notifications = require('./controllers/notificationsController');
+const sync = require('./services/sync');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -39,6 +45,7 @@ app.use(
   })
 );
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/js/vendor/sortable.min.js', (req, res) => res.sendFile(require.resolve('sortablejs/Sortable.min.js'))); // Board drag and drop
 app.use(express.urlencoded({ extended: false }));
 app.use(
   session({
@@ -64,8 +71,8 @@ app.use(showFlash);
 app.use(passport.initialize());
 app.locals.oauthProviders = enabledProviders; // which sign-in buttons the auth pages show
 
-// Public routes
-app.get('/', (req, res) =>
+// Public routes. Logged-in visitors skip the landing page and go straight to their Daily List.
+app.get('/', guestOnly, (req, res) =>
   res.render('home', {
     title: 'Agendal: plan the week, live the day',
     description:
@@ -94,14 +101,21 @@ app.use(oauthRoutes);
 // Admin console: its own layout and routes. Non-admins fall through to the 404 below.
 app.use('/admin', requireLogin, adminRoutes);
 
+// Live updates between the user's open pages (services/sync.js); the stream needs no sidebar data.
+app.get('/sync', requireLogin, sync.subscribe);
+
 // Everything below needs a logged-in user. Admin accounts are sent to /admin instead.
-app.use(requireLogin, keepAdminsInConsole, requireOnboarding, loadShell);
+app.use(requireLogin, keepAdminsInConsole, requireOnboarding, loadShell, sync.announceChanges);
 app.get(WELCOME_PATH, welcome.show);
 app.post(WELCOME_PATH, welcome.complete);
-app.get('/today', (req, res) => res.render('today', { title: 'Today · Agendal' }));
+app.use(dailyRoutes);
+app.use(boardRoutes);
+app.use(calendarRoutes);
+app.use(eventRoutes);
 app.use(settingsRoutes);
 app.use(projectRoutes);
 app.use(taskRoutes);
+app.use(habitRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
 
 // No route matched: the same page for every unknown address (and for /admin when you are not an admin).

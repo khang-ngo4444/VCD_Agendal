@@ -1,0 +1,40 @@
+<%- include('partials/shell-top') %>
+<%# Upcoming (Figma W19). Locals: days [{ day, label, tomorrow, items ({ event } or a task) }] for the next 7 days, later, count, eventCount, highCount. %>
+<header>
+  <p class="text-xs font-semibold tracking-wide text-primary uppercase">Next 7 days</p>
+  <h1 class="mt-1 text-3xl font-bold tracking-tight">Upcoming</h1>
+  <p class="mt-1 text-sm text-muted">
+    <%= count ? `${count} item${count === 1 ? '' : 's'} across ${days.length} day${days.length === 1 ? '' : 's'}${later.length ? ' and later' : ''}` : 'Nothing planned yet' %><% if (eventCount) { %> · <%= eventCount %> event<%= eventCount === 1 ? '' : 's' %><% } %><% if (highCount) { %> · <%= highCount %> high priority<% } %>
+  </p>
+</header>
+
+<div class="mt-6 max-w-[720px] space-y-6">
+  <% days.forEach((group) => { %>
+    <section aria-labelledby="day-<%= group.day %>">
+      <h2 id="day-<%= group.day %>" class="mb-2 flex items-center gap-2 font-semibold">
+        <%= group.label %><% if (group.tomorrow) { %><span class="text-xs font-semibold text-primary">Tomorrow</span><% } %>
+      </h2>
+      <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+        <% group.items.forEach((item) => { %>
+          <% if (item.event) { %><%- include('events/_row', { event: item.event }) %><% } else { %><%- include('tasks/_row', { task: item, timeZone: currentUser.timeZone, showProject: true }) %><% } %>
+        <% }) %>
+      </ul>
+    </section>
+  <% }) %>
+
+  <% if (later.length) { %>
+    <section aria-labelledby="later-heading">
+      <h2 id="later-heading" class="mb-2 font-semibold">Later</h2>
+      <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+        <% later.forEach((task) => { %><%- include('tasks/_row', { task, timeZone: currentUser.timeZone, showProject: true }) %><% }) %>
+      </ul>
+    </section>
+  <% } %>
+
+  <% if (!count && !eventCount) { %>
+    <div class="rounded-box bg-base-100">
+      <%- include('partials/empty-state', { icon: 'calendar', heading: 'Nothing coming up', text: 'Give tasks a due date or a time and they line up here by day.' }) %>
+    </div>
+  <% } %>
+</div>
+<%- include('partials/shell-bottom') %>

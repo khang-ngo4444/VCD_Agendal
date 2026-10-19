@@ -1,0 +1,3 @@
+<%# An event as a small filled chip (all-day row, month cells). Locals: event ({ title, href, colour, time }). %>
+<a href="<%= event.href %>" class="block truncate rounded-selector border-l-[3px] px-1.5 py-0.5 text-xs hover:brightness-95"
+  style="border-color: <%= event.colour %>; background-color: color-mix(in srgb, <%= event.colour %> 16%, var(--color-base-100))" title="<%= event.time %> <%= event.title %>"><%= event.title %></a>

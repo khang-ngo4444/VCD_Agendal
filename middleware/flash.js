@@ -4,8 +4,9 @@ function flash(req, type, message, { undoUrl } = {}) {
   req.session.flash = { type, message, undoUrl };
 }
 
+// A live refresh (X-Live-Refresh, public/js/app.js) leaves the message for the tab whose redirect it was meant for.
 function showFlash(req, res, next) {
-  if (req.session.flash) {
+  if (req.session.flash && !req.get('X-Live-Refresh')) {
     res.locals.flash = req.session.flash;
     delete req.session.flash;
   }
