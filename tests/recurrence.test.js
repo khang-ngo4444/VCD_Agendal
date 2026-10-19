@@ -56,3 +56,49 @@ describe('expanding a repeating event', () => {
     expect(starts(occurrences(once, ...october, HCM))).toEqual(['2026-10-20T08:00']);
   });
 });
+
+describe('changing one occurrence: this, following or all (Figma W25)', () => {
+  const { applyEdit, applyDelete } = require('../services/recurrence');
+  // Weekly, Mondays 09:00–10:00 UTC+7, 4 weeks: 5, 12, 19 and 26 October.
+  const series = {
+    title: 'Lecture',
+    start: new Date('2026-10-05T02:00:00Z'),
+    end: new Date('2026-10-05T03:00:00Z'),
+    repeat: { frequency: 'weekly', until: new Date('2026-10-26T16:59:59Z') },
+  };
+  const range = [new Date('2026-10-01T00:00:00Z'), new Date('2026-11-30T00:00:00Z')];
+  const third = new Date('2026-10-19T02:00:00Z');
+  // The third lecture moved an hour later, to 10:00–11:00.
+  const moved = { title: 'Lecture', start: new Date('2026-10-19T03:00:00Z'), end: new Date('2026-10-19T04:00:00Z'), repeat: series.repeat };
+  const show = (...events) =>
+    events
+      .filter(Boolean)
+      .flatMap((event) => occurrences(event, ...range, HCM))
+      .map(({ start }) => start.toISOString().slice(5, 16))
+      .sort();
+
+  test('"this event only" moves just that occurrence', () => {
+    const { series: saved, newSeries } = applyEdit(series, third, moved, 'this');
+    expect(newSeries).toBeNull();
+    expect(show(saved)).toEqual(['10-05T02:00', '10-12T02:00', '10-19T03:00', '10-26T02:00']);
+  });
+
+  test('"this and following" leaves the earlier ones and moves this one and the rest', () => {
+    const { series: saved, newSeries } = applyEdit(series, third, moved, 'following');
+    expect(show(saved)).toEqual(['10-05T02:00', '10-12T02:00']);
+    expect(show(newSeries)).toEqual(['10-19T03:00', '10-26T03:00']);
+  });
+
+  test('"all events" moves every occurrence, earlier ones included', () => {
+    const { series: saved, newSeries } = applyEdit(series, third, moved, 'all');
+    expect(newSeries).toBeNull();
+    expect(show(saved)).toEqual(['10-05T03:00', '10-12T03:00', '10-19T03:00', '10-26T03:00']);
+  });
+
+  test('deleting: this one, this and the rest, or the whole series', () => {
+    expect(show(applyDelete(series, third, 'this'))).toEqual(['10-05T02:00', '10-12T02:00', '10-26T02:00']);
+    expect(show(applyDelete(series, third, 'following'))).toEqual(['10-05T02:00', '10-12T02:00']);
+    expect(applyDelete(series, third, 'all')).toBeNull();
+    expect(applyDelete(series, series.start, 'following')).toBeNull(); // from the first one, nothing is left
+  });
+});

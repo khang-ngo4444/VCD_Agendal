@@ -1,6 +1,7 @@
 <%#
   Event fields (Figma W24), shared by the event page and the Calendar's New event dialog.
-  Locals: values, errors, action, submitLabel, returnTo, idPrefix (keeps ids unique on the page).
+  Locals: values, errors, action, submitLabel, returnTo, idPrefix (keeps ids unique on the page), occurrence? and scope?
+  (one opened occurrence of a repeating event: the form then asks which occurrences to change).
   The time fields hide for all-day events and the end date hides when nothing repeats: CSS :has, no script needed.
 %>
 <%
@@ -77,6 +78,11 @@
   <label for="<%= id('notes') %>" class="mt-4 mb-1.5 block text-xs font-semibold">Notes <span class="font-normal text-muted">(optional)</span></label>
   <textarea id="<%= id('notes') %>" name="notes" rows="2" maxlength="2000" placeholder="Agenda, links…" class="textarea w-full <%= errors.notes ? 'textarea-error' : '' %>" <%- describedBy('notes') %>><%= values.notes %></textarea>
   <%- include('../partials/field-error', { id: id('notes') + '-error', message: errors.notes }) %>
+
+  <% if (locals.occurrence) { %>
+    <input type="hidden" name="occurrence" value="<%= occurrence.original.toISOString() %>">
+    <%- include('_scope', { legend: 'Save the changes to', scope, occurrence }) %>
+  <% } %>
 
   <div class="mt-6 flex justify-end gap-2">
     <a href="<%= returnTo %>" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
