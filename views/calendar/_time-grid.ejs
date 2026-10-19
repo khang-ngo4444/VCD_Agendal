@@ -26,13 +26,13 @@
         <div class="relative border-l border-base-300" style="background-image: <%= hourLines %>" data-day="<%= day.date %>">
           <% day.items.forEach((item) => { %>
             <%# Tasks are outlined with a check circle in their project colour (Figma DS 13) %>
-            <a href="<%= item.href %>" class="absolute overflow-hidden rounded-field border-2 bg-base-100 px-1.5 py-1 text-xs leading-tight hover:z-10 hover:shadow-md <%= item.done ? 'opacity-60' : '' %>"
+            <a href="<%= item.href %>" draggable="false" class="absolute cursor-grab touch-none overflow-hidden rounded-field border-2 bg-base-100 px-1.5 py-1 text-xs leading-tight select-none hover:z-10 hover:shadow-md <%= item.done ? 'opacity-60' : '' %>"
               style="top: <%= (item.startMinute / 60) * HOUR %>px; height: <%= Math.max(20, ((item.endMinute - item.startMinute) / 60) * HOUR) %>px; left: calc(<%= item.lane %> * 100% / <%= item.lanes %> + 2px); width: calc(100% / <%= item.lanes %> - 4px); border-color: <%= item.colour %>"
               data-task-id="<%= item.id %>" data-minutes="<%= item.endMinute - item.startMinute %>">
               <span class="flex items-center gap-1 font-semibold <%= item.done ? 'line-through' : '' %>">
                 <span class="size-2.5 shrink-0 rounded-full border-[1.5px] border-current" aria-hidden="true"></span><span class="truncate"><%= item.title %></span>
               </span>
-              <span class="block truncate text-muted"><%= item.time %><%= item.projectName ? ` · ${item.projectName}` : '' %></span>
+              <span class="block truncate text-muted"><span data-time><%= item.time %></span><%= item.projectName ? ` · ${item.projectName}` : '' %></span>
             </a>
           <% }) %>
           <% if (day.isToday) { %>

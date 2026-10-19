@@ -101,6 +101,22 @@ exports.update = async (req, res) => {
   res.redirect(`/tasks/${task._id}`);
 };
 
+// Calendar drag and drop: a new date, start and end (local times), keeping everything else about the task.
+exports.reschedule = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const body = req.body ?? {};
+  const returnTo = safeReturnTo(body.returnTo, '/calendar');
+  const { error, schedule } = parseSchedule({ scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) }, req.user.timeZone);
+  if (error || !schedule) {
+    flash(req, 'error', error ?? 'Pick a time to move the task to.');
+    return res.redirect(returnTo);
+  }
+  task.set('schedule', schedule);
+  await task.save();
+  flash(req, 'success', `Moved “${task.title}” to ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}.`);
+  res.redirect(returnTo);
+};
+
 // "Remove schedule": the task keeps its project and due date and simply becomes unscheduled again.
 exports.unschedule = async (req, res) => {
   const task = await findOwnedTask(req);
