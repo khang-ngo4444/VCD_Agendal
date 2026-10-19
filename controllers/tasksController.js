@@ -3,6 +3,7 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
+const { escapeRegex } = require('../services/regex');
 const { safeReturnTo } = require('../services/returnTo');
 const { columnLabel, followRepeat, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
 const { formatDay, formatTime, isOverdue, toDateInput, toTimeInput } = require('../services/dates');
@@ -15,6 +16,25 @@ const text = (value) => (typeof value === 'string' ? value : '');
 const findOwnedTask = (req) => findOwned(Task, req.params.id, req.user._id, { deletedAt: null });
 
 exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal' });
+
+const MAX_RESULTS = 50;
+
+// Search (Figma W06): the header's search box, matched against titles and descriptions as you type (app.js).
+// Every word has to appear, in any case, so "lab draft" finds "Draft the lab report". Open tasks come first.
+// ponytail: a case-insensitive regex over the user's own tasks rather than a text index, which only matches whole
+// words and so finds nothing while a word is half typed; add one if a user's task list ever gets big.
+exports.search = async (req, res) => {
+  const searchQuery = text(req.query.q).trim().slice(0, MAX_TITLE_LENGTH);
+  const words = searchQuery.split(/\s+/).filter(Boolean);
+  const matchesWord = (word) => {
+    const pattern = new RegExp(escapeRegex(word), 'i');
+    return { $or: [{ title: pattern }, { description: pattern }] };
+  };
+  const tasks = words.length
+    ? await Task.find({ owner: req.user._id, deletedAt: null, $and: words.map(matchesWord) }).sort({ completedAt: 1, updatedAt: -1 }).limit(MAX_RESULTS).lean()
+    : [];
+  res.render('search', { title: searchQuery ? `${searchQuery} · Search · Agendal` : 'Search · Agendal', searchQuery, tasks });
+};
 
 // Quick-add: a title is enough. The task starts in Backlog, in the Inbox unless a project was picked.
 // The Calendar's slot form also sends scheduleDate, scheduleStart and scheduleEnd.

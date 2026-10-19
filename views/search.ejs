@@ -1,0 +1,21 @@
+<%- include('partials/shell-top') %>
+<%#
+  Search (Figma W06). The query is the header's search box (form#search-form); app.js swaps in each [data-live]
+  part as you type. Locals: searchQuery, tasks.
+%>
+<h1 class="text-3xl font-bold tracking-tight">Search</h1>
+<p class="sr-only" aria-live="polite" data-search-status></p>
+
+<div class="mt-6" data-live="results">
+  <% if (!searchQuery) { %>
+    <%- include('partials/empty-state', { icon: 'search', heading: 'Search your tasks', text: 'Type in the search box above. Titles and descriptions both count.' }) %>
+  <% } else if (!tasks.length) { %>
+    <%- include('partials/empty-state', { icon: 'search', heading: `Nothing matches “${searchQuery}”`, text: 'Check the spelling, or try fewer words.' }) %>
+  <% } else { %>
+    <p class="text-sm text-muted" data-summary><%= tasks.length %> <%= tasks.length === 1 ? 'task matches' : 'tasks match' %> “<%= searchQuery %>”</p>
+    <ul class="mt-3 divide-y divide-base-300 overflow-hidden rounded-box bg-base-100">
+      <% tasks.forEach((task) => { %><%- include('tasks/_row', { task, timeZone: currentUser.timeZone }) %><% }) %>
+    </ul>
+  <% } %>
+</div>
+<%- include('partials/shell-bottom') %>

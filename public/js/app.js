@@ -184,6 +184,46 @@ document.addEventListener('submit', async (event) => {
   }
 });
 
+// Search page (Figma W06): results follow the header's search box as you type, 250 ms after the last key, swapping in
+// each [data-live] part without a reload. The address bar follows, so Back and Reload show the same results.
+// On other pages the box simply opens the search page on Enter.
+const searchForm = document.getElementById('search-form');
+const SEARCH_DELAY_MS = 250;
+let searchTimer;
+let searchRequest;
+
+async function liveSearch() {
+  const url = new URL(searchForm.action);
+  url.search = new URLSearchParams(new FormData(searchForm)).toString();
+  searchRequest?.abort(); // an older, slower answer must not overwrite a newer one
+  const request = (searchRequest = new AbortController());
+  try {
+    const response = await fetch(url, { signal: request.signal });
+    if (!response.ok || new URL(response.url).pathname !== url.pathname) throw new Error(`HTTP ${response.status}`);
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+    document.querySelectorAll('[data-live]').forEach((part) => part.replaceWith(page.querySelector(`[data-live="${part.dataset.live}"]`)));
+    history.replaceState(null, '', url);
+    // Screen readers hear the count or the empty-state heading.
+    const summary = document.querySelector('[data-live="results"] [data-summary], [data-live="results"] h2');
+    document.querySelector('[data-search-status]').textContent = summary?.textContent.trim() ?? '';
+  } catch (err) {
+    if (err.name !== 'AbortError') location.assign(url); // e.g. the session ended: let the server answer
+  }
+}
+
+if (searchForm && location.pathname === '/search') {
+  document.addEventListener('input', (event) => {
+    if (event.target.form !== searchForm) return;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(liveSearch, SEARCH_DELAY_MS);
+  });
+  searchForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    clearTimeout(searchTimer);
+    liveSearch();
+  });
+}
+
 // Live updates (services/sync.js): a change made in another tab or on another device makes this page fetch itself
 // again and swap in the new content, like a data-fetch form does. It waits while you're typing, dragging, in a dialog
 // or menu, or away from the tab, and catches up as soon as you're done.

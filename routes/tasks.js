@@ -3,6 +3,7 @@ const tasks = require('../controllers/tasksController');
 
 const router = Router();
 
+router.get('/search', tasks.search);
 router.get('/tasks/new', tasks.new);
 router.post('/tasks', tasks.create);
 router.get('/tasks/:id', tasks.show);
