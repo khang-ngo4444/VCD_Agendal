@@ -33,7 +33,9 @@ exports.search = async (req, res) => {
   const tasks = words.length
     ? await Task.find({ owner: req.user._id, deletedAt: null, $and: words.map(matchesWord) }).sort({ completedAt: 1, updatedAt: -1 }).limit(MAX_RESULTS).lean()
     : [];
-  res.render('search', { title: searchQuery ? `${searchQuery} · Search · Agendal` : 'Search · Agendal', searchQuery, tasks });
+  // The typed words, for the result titles to highlight (a capture group, so String.split keeps the matches).
+  const highlight = words.length ? new RegExp(`(${words.map(escapeRegex).join('|')})`, 'gi') : null;
+  res.render('search', { title: searchQuery ? `${searchQuery} · Search · Agendal` : 'Search · Agendal', searchQuery, tasks, highlight });
 };
 
 // Quick-add: a title is enough. The task starts in Backlog, in the Inbox unless a project was picked.

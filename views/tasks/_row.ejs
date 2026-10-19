@@ -1,6 +1,7 @@
 <%#
   One task in a list, with its done / reopen button. Locals: task (lean), timeZone, showProject? (adds the project's
-  dot and name, for lists that mix projects). Dates read in the user's time zone (services/dates.js).
+  dot and name, for lists that mix projects), highlight? (a RegExp with one capture group: matches in the title are
+  marked, for search results). Dates read in the user's time zone (services/dates.js).
 %>
 <%
   const project = locals.showProject && sidebarProjects.find((item) => item.id === (task.project ? String(task.project) : null));
@@ -25,7 +26,8 @@
     </button>
   </form>
   <div class="min-w-0 grow">
-    <a href="/tasks/<%= task._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></a>
+    <a href="/tasks/<%= task._id %>" class="block truncate font-medium after:absolute after:inset-0 hover:underline <%= task.completedAt ? 'text-muted line-through' : '' %>"><%
+      if (locals.highlight) { task.title.split(highlight).forEach((part, i) => { %><% if (i % 2) { %><mark class="bg-transparent font-semibold text-primary"><%= part %></mark><% } else { %><%= part %><% } %><% }) } else { %><%= task.title %><% } %></a>
     <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
       <% if (dates.isOverdue(task)) { %>
         <%# Text and icon, not colour alone %>
