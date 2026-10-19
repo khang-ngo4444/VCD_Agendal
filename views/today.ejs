@@ -1,5 +1,5 @@
 <%- include('partials/shell-top') %>
-<%# The Daily List (Figma W01 "Today"). Locals: date, heading, eyebrow, progress { done, total, firstName }, counts, scheduled. %>
+<%# The Daily List (Figma W01 "Today"). Locals: date, heading, eyebrow, progress { done, total, firstName }, counts, scheduled, due. %>
 <%
   const { done, total, firstName } = progress;
   const percent = total ? Math.round((done / total) * 100) : 0;
@@ -30,6 +30,18 @@
 
 <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
   <div class="min-w-0 space-y-6">
+    <section aria-labelledby="tasks-heading">
+      <h2 id="tasks-heading" class="mb-2 font-semibold">Tasks <span class="text-muted"><%= due.length %></span></h2>
+      <% if (due.length) { %>
+        <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+          <% due.forEach((task) => { %><%- include('tasks/_row', { task, timeZone: currentUser.timeZone, showProject: true }) %><% }) %>
+        </ul>
+      <% } else { %>
+        <div class="rounded-box bg-base-100">
+          <%- include('partials/empty-state', { icon: 'check', heading: 'Nothing due', text: 'Tasks due on this day without a set time show up here.' }) %>
+        </div>
+      <% } %>
+    </section>
   </div>
 
   <section aria-labelledby="schedule-heading">

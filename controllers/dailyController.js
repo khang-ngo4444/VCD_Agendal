@@ -27,5 +27,6 @@ exports.today = async (req, res) => {
     progress: { done: dayTasks.filter((task) => task.completedAt).length, total: dayTasks.length, firstName },
     counts: { scheduled: scheduled.length, due: due.length },
     scheduled,
+    due: due.sort((a, b) => Boolean(a.completedAt) - Boolean(b.completedAt) || a.createdAt - b.createdAt), // open first
   });
 };
