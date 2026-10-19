@@ -50,6 +50,14 @@ async function scheduledByDay(owner, days, timeZone, projects) {
   return byDay;
 }
 
+// Open tasks without a time, for the side panel: one group per project in sidebar order (Inbox first).
+async function unscheduledByProject(owner, projects) {
+  const tasks = await Task.find({ owner, deletedAt: null, completedAt: null, 'schedule.start': null }).sort({ dueDate: 1, createdAt: 1 }).lean();
+  return projects
+    .map((project) => ({ ...project, tasks: tasks.filter((task) => (task.project ? String(task.project) : null) === project.id) }))
+    .filter((group) => group.tasks.length);
+}
+
 // The Calendar (Figma W23 day, W03 week, W11 month): ?view=day|week|month (default: the user's saved layout)
 // and ?date=YYYY-MM-DD (default: today), in the user's time zone and first day of the week.
 exports.show = async (req, res) => {
@@ -60,7 +68,10 @@ exports.show = async (req, res) => {
   const step = { day: (n) => addDays(date, n), week: (n) => addDays(date, 7 * n), month: (n) => firstOfMonth(date, n) }[view];
   const [hour, minute] = toTimeInput(new Date(), timeZone).split(':').map(Number);
   const days = daysFor(view, date, preferences.weekStartsOn);
-  const items = await scheduledByDay(req.user._id, days, timeZone, res.locals.sidebarProjects);
+  const [items, unscheduled] = await Promise.all([
+    scheduledByDay(req.user._id, days, timeZone, res.locals.sidebarProjects),
+    view === 'month' ? [] : unscheduledByProject(req.user._id, res.locals.sidebarProjects),
+  ]);
 
   res.render('calendar', {
     title: 'Calendar · Agendal',
@@ -68,6 +79,7 @@ exports.show = async (req, res) => {
     date,
     today,
     nowMinutes: hour * 60 + minute,
+    unscheduled,
     previous: step(-1),
     next: step(1),
     eyebrow: view === 'day' ? label(date, { weekday: 'long' }) : null,

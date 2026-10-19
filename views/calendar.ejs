@@ -1,7 +1,7 @@
 <%- include('partials/shell-top') %>
 <%#
   The Calendar (Figma W23 / W03 / W11). Locals: view, date, today, days [{ date, number, weekday, name, inMonth, isToday }],
-  previous, next (dates for the arrows), eyebrow, heading, nowMinutes.
+  previous, next (dates for the arrows), eyebrow, heading, nowMinutes, unscheduled (open tasks without a time, by project).
 %>
 <% const views = [['day', 'Day'], ['week', 'Week'], ['month', 'Month']]; %>
 <header class="flex flex-wrap items-end justify-between gap-4">
@@ -22,13 +22,14 @@
   </div>
 </header>
 
-<div class="mt-6">
-  <% if (view === 'month') { %>
-    <%- include('calendar/_month') %>
-  <% } else { %>
-    <%- include('calendar/_time-grid') %>
-  <% } %>
-</div>
+<% if (view === 'month') { %>
+  <div class="mt-6"><%- include('calendar/_month') %></div>
+<% } else { %>
+  <div class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_280px]">
+    <div class="min-w-0"><%- include('calendar/_time-grid') %></div>
+    <%- include('calendar/_unscheduled') %>
+  </div>
+<% } %>
 <%- include('partials/modal', { id: 'slot-dialog', heading: 'New task', body: include('calendar/_slot-form', { returnTo: currentUrl }) }) %>
 <script src="/js/calendar.js" defer></script>
 <%- include('partials/shell-bottom') %>
