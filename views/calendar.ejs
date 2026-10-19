@@ -1,0 +1,33 @@
+<%- include('partials/shell-top') %>
+<%#
+  The Calendar (Figma W23 / W03 / W11). Locals: view, date, today, days [{ date, number, weekday, name, inMonth, isToday }],
+  previous, next (dates for the arrows), eyebrow, heading, nowMinutes.
+%>
+<% const views = [['day', 'Day'], ['week', 'Week'], ['month', 'Month']]; %>
+<header class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <% if (eyebrow) { %><p class="text-xs font-semibold tracking-wide text-primary uppercase"><%= eyebrow %></p><% } %>
+    <h1 class="mt-1 text-3xl font-bold tracking-tight"><%= heading %></h1>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="?view=<%= view %>&date=<%= previous %>" class="btn btn-circle size-11 border-0 bg-fill" aria-label="Previous <%= view %>"><%- include('partials/icon', { icon: 'chevron-left', cls: 'size-4' }) %></a>
+    <a href="?view=<%= view %>" class="btn h-11 rounded-full border-0 bg-fill px-4 <%= days.some((day) => day.isToday) ? 'text-primary' : '' %>">Today</a>
+    <a href="?view=<%= view %>&date=<%= next %>" class="btn btn-circle size-11 border-0 bg-fill" aria-label="Next <%= view %>"><%- include('partials/icon', { icon: 'chevron-right', cls: 'size-4' }) %></a>
+    <nav class="join rounded-full bg-fill p-1" aria-label="Calendar layout">
+      <% views.forEach(([value, name]) => { %>
+        <a href="?view=<%= value %>&date=<%= date %>" class="join-item btn h-9 min-w-16 rounded-full border-0 <%= view === value ? 'bg-base-100 shadow-sm' : 'bg-transparent' %>"
+          <% if (view === value) { %>aria-current="page"<% } %>><%= name %></a>
+      <% }) %>
+    </nav>
+  </div>
+</header>
+
+<div class="mt-6">
+  <% if (view === 'month') { %>
+    <%- include('calendar/_month') %>
+  <% } else { %>
+    <%- include('calendar/_time-grid') %>
+  <% } %>
+</div>
+<script src="/js/calendar.js" defer></script>
+<%- include('partials/shell-bottom') %>

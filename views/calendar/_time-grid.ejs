@@ -1,0 +1,34 @@
+<%#
+  Day and week layouts: one column per day, hours as rows of HOUR px, everything placed by its minute of the day.
+  Opens scrolled to the morning (public/js/calendar.js).
+%>
+<%
+  const HOUR = 48;
+  const columns = `3.5rem repeat(${days.length}, minmax(0, 1fr))`;
+  const hourLines = `repeating-linear-gradient(to bottom, transparent 0 ${HOUR - 1}px, var(--color-base-300) ${HOUR - 1}px ${HOUR}px)`;
+%>
+<section class="overflow-hidden rounded-box bg-base-100" aria-label="<%= heading %>">
+  <div class="grid border-b border-base-300" style="grid-template-columns: <%= columns %>">
+    <span></span>
+    <% days.forEach((day) => { %>
+      <a href="?view=day&date=<%= day.date %>" class="border-l border-base-300 px-2 py-3 text-xs font-semibold uppercase <%= day.isToday ? 'text-primary' : 'text-muted' %> hover:underline"
+        aria-label="<%= day.name %>"><%= day.weekday %> <%= day.number %></a>
+    <% }) %>
+  </div>
+  <div class="relative h-[min(640px,70vh)] overflow-y-auto" data-calendar-scroll="<%= 7 * HOUR - 12 %>">
+    <div class="grid" style="grid-template-columns: <%= columns %>; height: <%= 24 * HOUR %>px">
+      <div class="relative" aria-hidden="true">
+        <% for (let hour = 1; hour < 24; hour++) { %>
+          <span class="absolute right-2 -translate-y-1/2 text-xs text-muted tabular-nums" style="top: <%= hour * HOUR %>px"><%= String(hour).padStart(2, '0') %>:00</span>
+        <% } %>
+      </div>
+      <% days.forEach((day) => { %>
+        <div class="relative border-l border-base-300" style="background-image: <%= hourLines %>" data-day="<%= day.date %>">
+          <% if (day.isToday) { %>
+            <span class="pointer-events-none absolute inset-x-0 z-20 h-0.5 bg-error" style="top: <%= (nowMinutes / 60) * HOUR %>px" aria-hidden="true"></span>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
