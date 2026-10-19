@@ -1,4 +1,5 @@
 // Demo data: one user, 4 projects, 40 tasks across the Daily List, Kanban and Calendar, a few reminders,
+// 5 habits with 60 days of check-ins,
 // plus the admin accounts for the /admin console.
 // Run with `npm run seed`. Re-running replaces the previous demo data.
 const mongoose = require('mongoose');
@@ -6,6 +7,9 @@ const User = require('../models/User');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const Reminder = require('../models/Reminder');
+const Habit = require('../models/Habit');
+const HabitCheckIn = require('../models/HabitCheckIn');
+const { addDays, toDateInput, weekdayOf } = require('../services/dates');
 
 const DEMO_EMAIL = 'demo@agendal.app';
 const DEMO_PASSWORD = 'demo1234';
@@ -67,6 +71,17 @@ const TASKS = [
   ['Look up summer internships', null, 10, null],
 ];
 
+// [name, colour, frequency, reminder time, was it done `ago` days back (weekday 0 = Sunday)?]
+// Fixed patterns, not random, so the demo looks the same on every run. Today is left open to tick off live.
+const HABITS = [
+  ['Drink 2 litres of water', '#2f6fde', { type: 'daily' }, '09:00', (ago) => ago >= 1 && ago !== 41], // 40-day streak
+  ['Review lecture notes', '#2e9e6a', { type: 'weekdays' }, null, (ago, weekday) => ago >= 1 && weekday >= 1 && weekday <= 5 && ago !== 12],
+  ['Gym', '#e8730c', { type: 'days', days: [1, 3, 5] }, '17:30', (ago, weekday) => ago >= 1 && [1, 3, 5].includes(weekday) && ago % 9 !== 4],
+  ['Read 20 pages', '#8b5cf6', { type: 'timesPerWeek', timesPerWeek: 3 }, null, (ago, weekday) => ago >= 1 && [0, 2, 4].includes(weekday)],
+  ['Meditate 10 minutes', '#e5484d', { type: 'daily' }, '07:00', (ago) => (ago >= 1 && ago <= 3) || (ago >= 6 && ago <= 30)], // broken streak
+];
+const HABIT_HISTORY_DAYS = 60;
+
 const day = (offset, hour, minute = 0) => {
   const d = new Date();
   d.setDate(d.getDate() + offset);
@@ -79,7 +94,7 @@ async function seed() {
 
   const old = await User.findOne({ email: DEMO_EMAIL });
   if (old) {
-    await Promise.all([Reminder, Task, Project].map((M) => M.deleteMany({ owner: old._id })));
+    await Promise.all([Reminder, Task, Project, Habit, HabitCheckIn].map((M) => M.deleteMany({ owner: old._id })));
     await old.deleteOne();
   }
 
@@ -113,7 +128,22 @@ async function seed() {
     upcoming.map((t) => ({ task: t._id, owner: user._id, remindAt: new Date(t.schedule.start - 15 * 60 * 1000) }))
   );
 
-  console.log(`Seeded ${DEMO_EMAIL} (password ${DEMO_PASSWORD}): ${projects.length} projects, ${tasks.length} tasks, ${upcoming.length} reminders`);
+  const today = toDateInput(new Date(), user.timeZone);
+  const created = day(-HABIT_HISTORY_DAYS, 9);
+  const habits = await Habit.insertMany(
+    HABITS.map(([name, colour, frequency, reminderTime]) => ({ owner: user._id, name, colour, frequency, reminderTime, createdAt: created }))
+  );
+  const checkIns = habits.flatMap((habit, i) =>
+    Array.from({ length: HABIT_HISTORY_DAYS }, (_, ago) => addDays(today, -ago))
+      .filter((date, ago) => HABITS[i][4](ago, weekdayOf(date)))
+      .map((date) => ({ habit: habit._id, owner: user._id, date }))
+  );
+  await HabitCheckIn.insertMany(checkIns);
+
+  console.log(
+    `Seeded ${DEMO_EMAIL} (password ${DEMO_PASSWORD}): ${projects.length} projects, ${tasks.length} tasks, ${upcoming.length} reminders, ` +
+      `${habits.length} habits with ${checkIns.length} check-ins`
+  );
 
   // Admin accounts only use the console, so they get no projects or tasks. Re-running resets their passwords.
   for (const [email, name] of ADMINS) {
