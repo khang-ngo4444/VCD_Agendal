@@ -4,7 +4,7 @@ const Task = require('../models/Task');
 const { flash } = require('../middleware/flash');
 const { findOwned } = require('../services/ownership');
 const { safeReturnTo } = require('../services/returnTo');
-const { columnLabel, topOrder } = require('../services/tasks');
+const { columnLabel, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
 const { isOverdue, toDateInput, toTimeInput } = require('../services/dates');
 const { PRIORITIES, parseTaskForm } = require('../validators/task');
 
@@ -35,10 +35,16 @@ exports.create = async (req, res) => {
 const CHEERS = ['Nice!', 'Well done!', 'Great work!', 'One down!', 'Nailed it!'];
 
 // Done (done=1) or reopened. Finishing gets a little cheer and an Undo, which posts back here without done=1.
+// Either way the Board card follows: to the top of Done, or back to the column the task's date suggests.
 exports.setComplete = async (req, res) => {
   const task = await findOwnedTask(req);
   const done = req.body?.done === '1';
-  task.completedAt = done ? new Date() : null;
+  if (done) setColumn(task, 'done');
+  else {
+    task.completedAt = null;
+    setColumn(task, reopenedStatus(task, req.user.timeZone));
+  }
+  task.order = await topOrder(req.user._id, task.status);
   await task.save();
   if (done) {
     const cheer = CHEERS[Math.floor(Math.random() * CHEERS.length)];
@@ -139,7 +145,7 @@ exports.move = async (req, res) => {
 
   const changesColumn = task.status !== status;
   if (!ids.includes(task.id)) task.order = await topOrder(req.user._id, status);
-  task.status = status;
+  setColumn(task, status);
   await task.save();
   if (ids.includes(task.id)) {
     // The owner in the filter means ids of other people's tasks change nothing.

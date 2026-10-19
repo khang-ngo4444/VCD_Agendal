@@ -1,4 +1,5 @@
 const Task = require('../models/Task');
+const { dayRange } = require('./dates');
 
 // Kanban columns in board order (Task.status), with the dot colour each header shows (Figma W02).
 const COLUMNS = [
@@ -15,4 +16,19 @@ async function topOrder(owner, status) {
   return first ? first.order - 1 : 0;
 }
 
-module.exports = { COLUMNS, columnLabel, topOrder };
+// Keeps a task's column and its done state together: moving a card into Done completes the task.
+// Every column change goes through here (Board moves, ticking a task off in any list).
+function setColumn(task, status, now = new Date()) {
+  task.status = status;
+  if (status === 'done') task.completedAt ??= now;
+}
+
+// The column a reopened task goes back to: Active once its day has come, Upcoming while it's still ahead,
+// Backlog when it has no date (the same rule the seed uses).
+function reopenedStatus(task, timeZone, now = new Date()) {
+  const when = task.schedule?.start ?? task.dueDate;
+  if (!when) return 'backlog';
+  return when < dayRange(now, timeZone).end ? 'active' : 'upcoming';
+}
+
+module.exports = { COLUMNS, columnLabel, topOrder, setColumn, reopenedStatus };
