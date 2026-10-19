@@ -13,7 +13,7 @@ exports.today = async (req, res) => {
   const mine = { owner: req.user._id, deletedAt: null };
 
   const [scheduled, due] = await Promise.all([
-    Task.find({ ...mine, 'schedule.start': { $gte: start, $lt: end } }).lean(),
+    Task.find({ ...mine, 'schedule.start': { $gte: start, $lt: end } }).sort({ 'schedule.start': 1 }).lean(),
     Task.find({ ...mine, 'schedule.start': null, dueDate: { $gte: start, $lt: end } }).lean(),
   ]);
   const dayTasks = [...scheduled, ...due];
@@ -26,5 +26,6 @@ exports.today = async (req, res) => {
     eyebrow: new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(start),
     progress: { done: dayTasks.filter((task) => task.completedAt).length, total: dayTasks.length, firstName },
     counts: { scheduled: scheduled.length, due: due.length },
+    scheduled,
   });
 };

@@ -1,8 +1,9 @@
 <%#
-  One task in a list, with its done / reopen button. Locals: task (lean), timeZone.
-  Dates read in the user's time zone (services/dates.js).
+  One task in a list, with its done / reopen button. Locals: task (lean), timeZone, showProject? (adds the project's
+  dot and name, for lists that mix projects). Dates read in the user's time zone (services/dates.js).
 %>
 <%
+  const project = locals.showProject && sidebarProjects.find((item) => item.id === (task.project ? String(task.project) : null));
   const meta = [];
   if (task.completedAt) meta.push(`Done ${dates.formatDay(task.completedAt, timeZone)}`);
   else {
@@ -29,6 +30,11 @@
       <% if (dates.isOverdue(task)) { %>
         <%# Text and icon, not colour alone %>
         <span class="inline-flex items-center gap-1 font-semibold text-error"><%- include('../partials/icon', { icon: 'alert', cls: 'size-3.5' }) %>Overdue</span>
+        <span aria-hidden="true">·</span>
+      <% } %>
+      <% if (project) { %>
+        <span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-full <%= project.colour ? '' : 'bg-base-300' %>"
+          <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span><%= project.name %></span>
         <span aria-hidden="true">·</span>
       <% } %>
       <%= meta.join(' · ') %>

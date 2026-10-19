@@ -1,5 +1,5 @@
 <%- include('partials/shell-top') %>
-<%# The Daily List (Figma W01 "Today"). Locals: date, heading, eyebrow, progress { done, total, firstName }, counts. %>
+<%# The Daily List (Figma W01 "Today"). Locals: date, heading, eyebrow, progress { done, total, firstName }, counts, scheduled. %>
 <%
   const { done, total, firstName } = progress;
   const percent = total ? Math.round((done / total) * 100) : 0;
@@ -25,6 +25,22 @@
       <p class="font-semibold"><%= cheer %><%= firstName && total ? `, ${firstName}` : '' %>!</p>
       <p class="text-sm text-muted"><%= total ? `${done} of ${total} done` : 'Nothing due or scheduled' %></p>
     </div>
+  </section>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
+  <div class="min-w-0 space-y-6">
+  </div>
+
+  <section aria-labelledby="schedule-heading">
+    <h2 id="schedule-heading" class="mb-2 font-semibold">Schedule <span class="text-muted"><%= scheduled.length %></span></h2>
+    <% if (scheduled.length) { %>
+      <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+        <% scheduled.forEach((task) => { %><%- include('tasks/_row', { task, timeZone: currentUser.timeZone, showProject: true }) %><% }) %>
+      </ul>
+    <% } else { %>
+      <p class="rounded-box bg-base-100 px-4 py-6 text-center text-sm text-muted">Nothing scheduled. Give a task a time to see it here.</p>
+    <% } %>
   </section>
 </div>
 <%- include('partials/shell-bottom') %>
