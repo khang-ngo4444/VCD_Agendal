@@ -82,6 +82,22 @@ function formatDay(date, timeZone, now = new Date()) {
   return relative ?? new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'short', day: 'numeric', month: 'short' }).format(date);
 }
 
+// Calendar arithmetic on local days written as "YYYY-MM-DD" (habit check-ins, day pickers). Done on UTC dates,
+// so a DST change can never make a day 23 or 25 hours long.
+const fromDateString = (dateString) => new Date(`${dateString}T00:00:00Z`);
+const toDateString = (date) => date.toISOString().slice(0, 10);
+
+function addDays(dateString, days) {
+  const date = fromDateString(dateString);
+  date.setUTCDate(date.getUTCDate() + days);
+  return toDateString(date);
+}
+
+const weekdayOf = (dateString) => fromDateString(dateString).getUTCDay(); // 0 = Sunday … 6 = Saturday
+
+// The first day of the week containing `dateString`; weekStartsOn is 0 (Sunday) or 1 (Monday).
+const startOfWeek = (dateString, weekStartsOn) => addDays(dateString, -((weekdayOf(dateString) - weekStartsOn + 7) % 7));
+
 const formatTime = (date, timeZone) =>
   new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit' }).format(date);
 
@@ -97,4 +113,7 @@ module.exports = {
   isOverdue,
   formatDay,
   formatTime,
+  addDays,
+  weekdayOf,
+  startOfWeek,
 };
