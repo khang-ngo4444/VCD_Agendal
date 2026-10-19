@@ -89,7 +89,7 @@
       <form method="post" action="/habits/<%= habit._id %>/archive">
         <%- include('../partials/csrf') %>
         <input type="hidden" name="archived" value="<%= habit.archivedAt ? '0' : '1' %>">
-        <button type="submit" class="btn h-11 w-full rounded-full"><%= habit.archivedAt ? 'Unarchive habit' : 'Archive habit' %></button>
+        <button type="submit" class="btn h-11 w-full rounded-full border border-base-300 bg-base-100 text-primary"><%= habit.archivedAt ? 'Unarchive habit' : 'Archive habit' %></button>
       </form>
       <p class="px-2 text-xs text-muted">Archiving hides the habit and keeps its history.</p>
       <form method="post" action="/habits/<%= habit._id %>/delete"

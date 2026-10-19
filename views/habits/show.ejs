@@ -51,7 +51,7 @@
         <% days.forEach((day) => { %>
           <%
             const circle = `grid size-10 place-items-center rounded-full ${day.isToday ? 'font-bold outline-2 outline-offset-2 outline-base-content' : ''} ${
-              { done: 'text-white', missed: 'border-2 border-base-300', idle: 'text-muted', open: 'border-2 border-dashed border-base-300' }[day.state]}`;
+              { done: 'text-white', missed: 'border-2 border-base-300', idle: 'text-muted', open: '' }[day.state]}`;
             const fill = day.state === 'done' ? `style="background-color: ${habit.colour}"` : '';
           %>
           <li class="grid place-items-center py-1 <%= day.inMonth ? '' : 'opacity-40' %>">
@@ -76,14 +76,14 @@
       <p class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted" aria-hidden="true">
         <span class="inline-flex items-center gap-1.5"><span class="size-3 rounded-full" style="background-color: <%= habit.colour %>"></span>Done</span>
         <span class="inline-flex items-center gap-1.5"><span class="size-3 rounded-full border-2 border-base-300"></span>Missed</span>
-        <span class="inline-flex items-center gap-1.5"><span class="size-3 rounded-full border-2 border-dashed border-base-300"></span>Today, not done yet</span>
+        <span class="inline-flex items-center gap-1.5"><span class="size-3 rounded-full outline-2 outline-base-content"></span>Today</span>
       </p>
       <p class="mt-1 text-xs text-muted">Forgot one? Tap any of the last 7 days to check it in or undo it.</p>
     </section>
   </div>
 
   <aside class="space-y-3">
-    <a href="/habits/<%= habit._id %>/edit" class="btn h-11 w-full rounded-full">Edit habit</a>
+    <a href="/habits/<%= habit._id %>/edit" class="btn h-11 w-full rounded-full border border-base-300 bg-base-100 text-primary">Edit habit</a>
   </aside>
 </div>
 <%- include('../partials/shell-bottom') %>
