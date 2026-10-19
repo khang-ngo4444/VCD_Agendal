@@ -17,6 +17,7 @@ const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
 const habitRoutes = require('./routes/habits');
 const dailyRoutes = require('./routes/daily');
+const boardRoutes = require('./routes/board');
 const adminRoutes = require('./routes/admin');
 const welcome = require('./controllers/welcomeController');
 
@@ -97,6 +98,7 @@ app.use(requireLogin, keepAdminsInConsole, requireOnboarding, loadShell);
 app.get(WELCOME_PATH, welcome.show);
 app.post(WELCOME_PATH, welcome.complete);
 app.use(dailyRoutes);
+app.use(boardRoutes);
 app.use(settingsRoutes);
 app.use(projectRoutes);
 app.use(taskRoutes);

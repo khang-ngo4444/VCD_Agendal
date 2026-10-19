@@ -1,0 +1,24 @@
+<%- include('partials/shell-top') %>
+<%# The Board (Figma W02). Locals: columns [{ status, label, dot, tasks }]. Scrolls sideways on narrow screens. %>
+<h1 class="text-3xl font-bold tracking-tight">Board</h1>
+
+<div class="-mx-4 mt-6 overflow-x-auto px-4 pb-4 lg:-mx-8 lg:px-8">
+  <div class="grid min-w-[880px] grid-cols-4 items-start gap-4">
+    <% columns.forEach((column) => { %>
+      <section class="rounded-box bg-base-300/40 p-2" aria-labelledby="column-<%= column.status %>">
+        <h2 id="column-<%= column.status %>" class="flex items-center gap-2 px-2 py-1.5 font-semibold">
+          <span class="size-2.5 rounded-full <%= column.dot %>" aria-hidden="true"></span>
+          <%= column.label %> <span class="font-normal text-muted"><%= column.tasks.length %></span>
+        </h2>
+        <ul class="mt-1 min-h-16 space-y-2" data-column="<%= column.status %>">
+          <% column.tasks.forEach((task) => { %>
+            <li class="relative rounded-field bg-base-100 p-3 shadow-sm">
+              <a href="/tasks/<%= task._id %>" class="font-medium after:absolute after:inset-0 hover:underline"><%= task.title %></a>
+            </li>
+          <% }) %>
+        </ul>
+      </section>
+    <% }) %>
+  </div>
+</div>
+<%- include('partials/shell-bottom') %>
