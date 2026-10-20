@@ -1,0 +1,52 @@
+<%- include('partials/shell-top') %>
+<%# Insights (Figma W14). Locals: what services/insights.js loadInsights returns. Every chart has its numbers in a
+    table for screen readers. %>
+<%
+  const label = (day, options) => new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
+  const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
+  const rings = [
+    { key: 'tasks', label: 'Tasks today', done: todayProgress.tasks.done, total: todayProgress.tasks.total, href: '/today', tone: 'var(--color-success)' },
+    { key: 'habits', label: 'Habits today', done: todayProgress.habits.done, total: todayProgress.habits.total, href: '/habits', tone: 'var(--color-primary)' },
+  ];
+%>
+<div class="insights">
+<header class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="mt-1 text-3xl font-bold tracking-tight">Insights</h1>
+    <p class="mt-1 text-sm text-muted">Times in your time zone (<%= currentUser.timeZone %>)</p>
+  </div>
+</header>
+
+<div class="mt-5 max-w-[720px]">
+  <%# Today: the same counts as the Daily List (card: "Statistics page: today's overview") %>
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="today-heading">
+    <div class="flex items-baseline justify-between gap-2">
+      <h2 id="today-heading" class="font-semibold">Today</h2>
+      <a href="/today" class="text-sm font-medium text-primary hover:underline">Open Daily List</a>
+    </div>
+    <ul class="mt-5 grid grid-cols-3 gap-4">
+      <% rings.forEach((ring) => { const p = pct(ring.done, ring.total); %>
+        <li>
+          <a href="<%= ring.href %>" class="flex flex-col items-center gap-2 rounded-box p-2 text-center hover:bg-base-200">
+            <span class="grid size-20 place-items-center rounded-full" style="background: conic-gradient(<%= ring.tone %> <%= p %>%, var(--color-base-300) 0)"
+              role="progressbar" aria-valuenow="<%= p %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= ring.label %>: <%= ring.done %> of <%= ring.total %> done">
+              <span class="grid size-16 place-items-center rounded-full bg-base-100 text-lg font-bold tabular-nums"><%= ring.done %>/<%= ring.total %></span>
+            </span>
+            <span class="text-sm font-medium"><%= ring.label %></span>
+          </a>
+        </li>
+      <% }) %>
+      <li>
+        <a href="/today" class="flex flex-col items-center gap-2 rounded-box p-2 text-center hover:bg-base-200">
+          <span class="grid size-20 place-items-center rounded-full border-4 <%= todayProgress.overdue ? 'border-error text-error' : 'border-base-300' %> text-2xl font-bold tabular-nums"
+            aria-label="<%= todayProgress.overdue %> overdue"><%= todayProgress.overdue %></span>
+          <span class="text-sm font-medium">Overdue</span>
+        </a>
+      </li>
+    </ul>
+  </section>
+
+</div>
+
+</div>
+<%- include('partials/shell-bottom') %>
