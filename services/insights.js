@@ -3,7 +3,7 @@
 // loadInsights gathers the data for one user.
 const Task = require('../models/Task');
 const HabitCheckIn = require('../models/HabitCheckIn');
-const { loadSummaries } = require('./habits');
+const { loadSummaries, completion } = require('./habits');
 const { taskCounts } = require('./projects');
 const { addDays, dayRange, parseDateInput, startOfWeek, toDateInput, zonedTime } = require('./dates');
 
@@ -56,7 +56,19 @@ function countByDay(dates, timeZone) {
   return counts;
 }
 
-async function loadInsights(user, { period = 'week', projects = [], now = new Date() } = {}) {
+// Habit table rows, sorted by the column the user picked (ties by name).
+const HABIT_SORTS = {
+  current: (a, b) => b.current - a.current,
+  longest: (a, b) => b.longest - a.longest,
+  rate: (a, b) => (b.rate ?? -1) - (a.rate ?? -1),
+};
+const sortKey = (sort) => (typeof sort === 'string' && Object.hasOwn(HABIT_SORTS, sort) ? sort : 'current'); // not ?sort=constructor
+function sortHabits(rows, sort) {
+  const by = HABIT_SORTS[sortKey(sort)];
+  return [...rows].sort((a, b) => by(a, b) || a.name.localeCompare(b.name));
+}
+
+async function loadInsights(user, { period = 'week', sort = 'current', projects = [], now = new Date() } = {}) {
   const timeZone = user.timeZone || 'UTC';
   const weekStartsOn = user.preferences?.weekStartsOn ?? 1;
   const today = toDateInput(now, timeZone);
@@ -91,6 +103,19 @@ async function loadInsights(user, { period = 'week', projects = [], now = new Da
   const checkInCounts = new Map();
   for (const { date } of checkIns) checkInCounts.set(date, (checkInCounts.get(date) ?? 0) + 1);
 
+  const habitRows = summaries.map(({ habit, done, start, streak }) => {
+    const last30 = completion(habit, done, { start: [start, addDays(today, -29)].sort()[1], today, weekStartsOn });
+    return {
+      id: String(habit._id),
+      name: habit.name,
+      colour: habit.colour,
+      current: streak.current,
+      longest: streak.longest,
+      unit: streak.unit,
+      rate: last30.rate == null ? null : Math.round(last30.rate * 100),
+    };
+  });
+
   return {
     today,
     period: kind,
@@ -108,7 +133,10 @@ async function loadInsights(user, { period = 'week', projects = [], now = new Da
       return { ...project, done, open: total - done, total };
     }),
     trend: { tasks: fillDays(trendDays, completedCounts), checkIns: fillDays(trendDays, checkInCounts) },
+    habits: sortHabits(habitRows, sort),
+    sort: sortKey(sort),
+    bestStreak: habitRows.reduce((best, row) => (row.current > (best?.current ?? 0) ? row : best), null),
   };
 }
 
-module.exports = { periods, completionRate, change, fillDays, countByDay, loadInsights, TREND_DAYS };
+module.exports = { periods, completionRate, change, fillDays, countByDay, sortHabits, loadInsights, TREND_DAYS };

@@ -3,10 +3,11 @@ const { safeReturnTo } = require('../services/returnTo');
 
 const CHART_TYPES = ['bar', 'line'];
 
-// Insights (Figma W14): /insights?period=week|month
+// Insights (Figma W14): /insights?period=week|month&sort=current|longest|rate
 exports.show = async (req, res) => {
   const insights = await loadInsights(req.user, {
     period: req.query.period,
+    sort: req.query.sort,
     projects: res.locals.sidebarProjects,
   });
   res.render('insights', { title: 'Insights · Agendal', ...insights, chartType: req.user.preferences?.insightsChart ?? 'bar' });
