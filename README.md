@@ -1,5 +1,7 @@
 # Agendal
 
+[![CI](https://github.com/khang-ngo4444/VCD_Agendal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/khang-ngo4444/VCD_Agendal/actions/workflows/ci.yml)
+
 Agendal is a personal productivity and task management web application developed as the final project for **Advanced Web Design**.
 
 The application helps users organize tasks, manage projects, schedule activities, track habits, and monitor their productivity from one centralized workspace.
@@ -369,6 +371,20 @@ MAIL_PASSWORD=
 ```
 
 Do not commit the `.env` file to the repository.
+
+## Running the Tests
+
+```bash
+npm test            # every test, including the HTTP tests
+npm run test:unit   # only the fast tests that need no database
+```
+
+- **Unit tests** (`tests/*.test.js`) check calculations and validators with no database.
+- **HTTP tests** (`tests/*.http.test.js`) send real requests to the app (Supertest) against a throwaway in-memory MongoDB (`mongodb-memory-server`), so your own database is never touched. They cover sign-up, login and lockout, the main task flows, habit check-ins and streaks, data isolation between accounts and the admin-only routes. Shared setup is in `tests/helpers/http.js`.
+- The first run downloads a MongoDB binary (about 100 MB); later runs reuse it.
+- `npm test` runs Jest with `--experimental-vm-modules`, because the MongoDB driver loads `os` with a dynamic `import()` that Jest only allows with that flag.
+
+**CI:** GitHub Actions (`.github/workflows/ci.yml`) builds the CSS and runs `npm test` on every pull request into `develop` or `main`. To make a green run required before merging, turn on branch protection for `develop` and `main` (Settings › Branches) and require the **CI / test** check.
 
 ## Project Scope
 
