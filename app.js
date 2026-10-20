@@ -46,6 +46,8 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/js/vendor/sortable.min.js', (req, res) => res.sendFile(require.resolve('sortablejs/Sortable.min.js'))); // Board drag and drop
+// Insights charts. The UMD build isn't in chart.js's "exports", so it is found next to the package's main file.
+app.get('/js/vendor/chart.umd.min.js', (req, res) => res.sendFile(path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.min.js')));
 app.use(express.urlencoded({ extended: false }));
 app.use(
   session({

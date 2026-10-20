@@ -2,9 +2,12 @@
 // and habit streaks, all in the user's time zone. The calculations are pure functions (tests/insights.test.js);
 // loadInsights gathers the data for one user.
 const Task = require('../models/Task');
+const HabitCheckIn = require('../models/HabitCheckIn');
 const { loadSummaries } = require('./habits');
 const { taskCounts } = require('./projects');
 const { addDays, dayRange, parseDateInput, startOfWeek, toDateInput, zonedTime } = require('./dates');
+
+const TREND_DAYS = 30;
 
 // The instants a local day ("YYYY-MM-DD") starts at in `timeZone`.
 const dayStart = (date, timeZone) => dayRange(zonedTime({ ...parseDateInput(date), hour: 12 }, timeZone), timeZone).start;
@@ -40,6 +43,19 @@ function completionRate(tasks, from, to) {
 // Change between two percentages (or counts) for the "↑ 12 points vs last week" line: null when either is missing.
 const change = (current, previous) => (current == null || previous == null ? null : current - previous);
 
+// One entry per local day, 0 where nothing happened. counts: Map of "YYYY-MM-DD" → number.
+const fillDays = (days, counts) => days.map((date) => ({ date, count: counts.get(date) ?? 0 }));
+
+// Count Dates per local day.
+function countByDay(dates, timeZone) {
+  const counts = new Map();
+  for (const date of dates) {
+    const day = toDateInput(date, timeZone);
+    counts.set(day, (counts.get(day) ?? 0) + 1);
+  }
+  return counts;
+}
+
 async function loadInsights(user, { period = 'week', projects = [], now = new Date() } = {}) {
   const timeZone = user.timeZone || 'UTC';
   const weekStartsOn = user.preferences?.weekStartsOn ?? 1;
@@ -48,16 +64,19 @@ async function loadInsights(user, { period = 'week', projects = [], now = new Da
   const tomorrowStart = dayStart(addDays(today, 1), timeZone);
   const kind = period === 'month' ? 'month' : 'week';
   const { current, previous } = periods(kind, today, weekStartsOn);
+  const trendDays = Array.from({ length: TREND_DAYS }, (_, i) => addDays(today, i - TREND_DAYS + 1));
   const mine = { owner: user._id, deletedAt: null };
   const windowStart = dayStart(previous.from, timeZone);
   const windowEnd = dayStart(current.to, timeZone);
 
-  const [periodTasks, todayScheduled, todayDue, overdue, summaries, countsFor] = await Promise.all([
+  const [periodTasks, todayScheduled, todayDue, overdue, completedRecently, checkIns, summaries, countsFor] = await Promise.all([
     Task.find({ ...mine, $or: [{ dueDate: { $gte: windowStart, $lt: windowEnd } }, { dueDate: null, 'schedule.start': { $gte: windowStart, $lt: windowEnd } }] }, { dueDate: 1, schedule: 1, completedAt: 1 }).lean(),
     // Today: the same tasks the Daily List shows (scheduled today, or unscheduled and due today).
     Task.find({ ...mine, 'schedule.start': { $gte: todayStart, $lt: tomorrowStart } }, { completedAt: 1 }).lean(),
     Task.find({ ...mine, 'schedule.start': null, dueDate: { $gte: todayStart, $lt: tomorrowStart } }, { completedAt: 1 }).lean(),
     Task.countDocuments({ ...mine, completedAt: null, dueDate: { $lt: todayStart } }),
+    Task.find({ ...mine, completedAt: { $gte: dayStart(trendDays[0], timeZone) } }, { completedAt: 1 }).lean(),
+    HabitCheckIn.find({ owner: user._id, date: { $gte: trendDays[0], $lte: today } }, { date: 1 }).lean(),
     loadSummaries(user, today, { archivedAt: null }),
     taskCounts(user._id),
   ]);
@@ -68,6 +87,9 @@ async function loadInsights(user, { period = 'week', projects = [], now = new Da
     current: completionRate(periodTasks, dayStart(current.from, timeZone), dayStart(current.to, timeZone)),
     previous: completionRate(periodTasks, dayStart(previous.from, timeZone), dayStart(previous.to, timeZone)),
   };
+  const completedCounts = countByDay(completedRecently.map((task) => task.completedAt), timeZone);
+  const checkInCounts = new Map();
+  for (const { date } of checkIns) checkInCounts.set(date, (checkInCounts.get(date) ?? 0) + 1);
 
   return {
     today,
@@ -85,7 +107,8 @@ async function loadInsights(user, { period = 'week', projects = [], now = new Da
       const { done, total } = countsFor(project.id ?? 'inbox');
       return { ...project, done, open: total - done, total };
     }),
+    trend: { tasks: fillDays(trendDays, completedCounts), checkIns: fillDays(trendDays, checkInCounts) },
   };
 }
 
-module.exports = { periods, completionRate, change, loadInsights };
+module.exports = { periods, completionRate, change, fillDays, countByDay, loadInsights, TREND_DAYS };

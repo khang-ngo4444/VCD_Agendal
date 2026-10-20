@@ -1,5 +1,5 @@
 // No database: the pure calculations behind Insights.
-const { periods, completionRate, change } = require('../services/insights');
+const { periods, completionRate, change, fillDays, countByDay } = require('../services/insights');
 
 describe('periods', () => {
   test('this week and last week, starting on the user’s first day of the week', () => {
@@ -42,4 +42,11 @@ test('change: difference, or null when either side is missing', () => {
   expect(change(40, 50)).toBe(-10);
   expect(change(null, 50)).toBeNull();
   expect(change(50, null)).toBeNull();
+});
+
+test('countByDay and fillDays: per local day, with empty days as 0', () => {
+  const counts = countByDay([new Date('2026-10-19T17:30:00Z'), new Date('2026-10-19T18:00:00Z'), new Date('2026-10-20T01:00:00Z')], 'Asia/Ho_Chi_Minh');
+  // 17:30 UTC is 00:30 on the 20th in Ho Chi Minh City
+  expect([...counts]).toEqual([['2026-10-20', 3]]);
+  expect(fillDays(['2026-10-19', '2026-10-20'], counts)).toEqual([{ date: '2026-10-19', count: 0 }, { date: '2026-10-20', count: 3 }]);
 });
