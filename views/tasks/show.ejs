@@ -97,6 +97,9 @@
   </form>
 
   <aside class="space-y-3">
+    <% if (!task.completedAt) { %>
+      <a href="/focus/<%= task._id %>" class="btn h-11 w-full rounded-full border-0 bg-fill"><%- include('../partials/icon', { icon: 'timer', cls: 'size-4' }) %> Focus on this task</a>
+    <% } %>
     <form method="post" action="/tasks/<%= task._id %>/complete">
       <%- include('../partials/csrf') %>
       <input type="hidden" name="done" value="<%= task.completedAt ? '0' : '1' %>">
