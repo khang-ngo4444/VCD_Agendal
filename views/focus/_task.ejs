@@ -1,0 +1,35 @@
+<%#
+  One task on the Focus page: done button, title with project and time, and Start. Locals: task (lean), timeZone.
+  The row stays plain (no link on the title) so Start is the one obvious action.
+%>
+<%
+  const project = sidebarProjects.find((item) => item.id === (task.project ? String(task.project) : null));
+  const meta = [];
+  if (task.schedule?.start) meta.push(`${dates.formatDay(task.schedule.start, timeZone)}, ${dates.formatTime(task.schedule.start, timeZone)}`);
+  else if (task.dueDate) meta.push(`Due ${dates.formatDay(task.dueDate, timeZone)}`);
+%>
+<li class="flex items-center gap-3 px-4 py-2.5" data-focus-task="<%= task.title.toLowerCase() %>">
+  <form method="post" action="/tasks/<%= task._id %>/complete" class="-ml-3 shrink-0" data-fetch>
+    <%- include('../partials/csrf') %>
+    <input type="hidden" name="done" value="1">
+    <input type="hidden" name="returnTo" value="/focus">
+    <button type="submit" class="group grid size-11 place-items-center rounded-full" aria-label="Mark “<%= task.title %>” as done">
+      <span class="size-5 rounded-full border-2 border-base-300 group-hover:border-primary"></span>
+    </button>
+  </form>
+  <div class="min-w-0 grow">
+    <p class="truncate font-medium"><%= task.title %></p>
+    <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
+      <% if (dates.isOverdue(task)) { %>
+        <span class="inline-flex items-center gap-1 font-semibold text-error"><%- include('../partials/icon', { icon: 'alert', cls: 'size-3.5' }) %>Overdue</span>
+        <span aria-hidden="true">·</span>
+      <% } %>
+      <span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-full <%= project?.colour ? '' : 'bg-base-300' %>"
+        <% if (project?.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span><%= project?.name ?? 'Inbox' %></span>
+      <% if (meta.length) { %><span aria-hidden="true">·</span><%= meta.join(' · ') %><% } %>
+    </p>
+  </div>
+  <a href="/focus/<%= task._id %>" class="btn btn-primary h-10 shrink-0 gap-1.5 rounded-full px-4 pointer-coarse:h-11" aria-label="Start focusing on “<%= task.title %>”">
+    <%- include('../partials/icon', { icon: 'play', cls: 'size-3.5 fill-current' }) %> Start
+  </a>
+</li>
