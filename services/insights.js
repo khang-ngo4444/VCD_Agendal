@@ -3,6 +3,7 @@
 // loadInsights gathers the data for one user.
 const Task = require('../models/Task');
 const { loadSummaries } = require('./habits');
+const { taskCounts } = require('./projects');
 const { addDays, dayRange, parseDateInput, startOfWeek, toDateInput, zonedTime } = require('./dates');
 
 // The instants a local day ("YYYY-MM-DD") starts at in `timeZone`.
@@ -39,7 +40,7 @@ function completionRate(tasks, from, to) {
 // Change between two percentages (or counts) for the "↑ 12 points vs last week" line: null when either is missing.
 const change = (current, previous) => (current == null || previous == null ? null : current - previous);
 
-async function loadInsights(user, { period = 'week', now = new Date() } = {}) {
+async function loadInsights(user, { period = 'week', projects = [], now = new Date() } = {}) {
   const timeZone = user.timeZone || 'UTC';
   const weekStartsOn = user.preferences?.weekStartsOn ?? 1;
   const today = toDateInput(now, timeZone);
@@ -51,13 +52,14 @@ async function loadInsights(user, { period = 'week', now = new Date() } = {}) {
   const windowStart = dayStart(previous.from, timeZone);
   const windowEnd = dayStart(current.to, timeZone);
 
-  const [periodTasks, todayScheduled, todayDue, overdue, summaries] = await Promise.all([
+  const [periodTasks, todayScheduled, todayDue, overdue, summaries, countsFor] = await Promise.all([
     Task.find({ ...mine, $or: [{ dueDate: { $gte: windowStart, $lt: windowEnd } }, { dueDate: null, 'schedule.start': { $gte: windowStart, $lt: windowEnd } }] }, { dueDate: 1, schedule: 1, completedAt: 1 }).lean(),
     // Today: the same tasks the Daily List shows (scheduled today, or unscheduled and due today).
     Task.find({ ...mine, 'schedule.start': { $gte: todayStart, $lt: tomorrowStart } }, { completedAt: 1 }).lean(),
     Task.find({ ...mine, 'schedule.start': null, dueDate: { $gte: todayStart, $lt: tomorrowStart } }, { completedAt: 1 }).lean(),
     Task.countDocuments({ ...mine, completedAt: null, dueDate: { $lt: todayStart } }),
     loadSummaries(user, today, { archivedAt: null }),
+    taskCounts(user._id),
   ]);
 
   const dayTasks = [...todayScheduled, ...todayDue];
@@ -79,6 +81,10 @@ async function loadInsights(user, { period = 'week', now = new Date() } = {}) {
     rates,
     rateChange: change(rates.current.rate, rates.previous.rate),
     doneChange: change(rates.current.done, rates.previous.done),
+    projects: projects.map((project) => {
+      const { done, total } = countsFor(project.id ?? 'inbox');
+      return { ...project, done, open: total - done, total };
+    }),
   };
 }
 

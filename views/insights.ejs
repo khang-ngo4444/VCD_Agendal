@@ -15,6 +15,7 @@
     { key: 'tasks', label: 'Tasks today', done: todayProgress.tasks.done, total: todayProgress.tasks.total, href: '/today', tone: 'var(--color-success)' },
     { key: 'habits', label: 'Habits today', done: todayProgress.habits.done, total: todayProgress.habits.total, href: '/habits', tone: 'var(--color-primary)' },
   ];
+  const projectMax = Math.max(1, ...projects.map((p) => p.total));
 %>
 <div class="insights">
 <header class="flex flex-wrap items-end justify-between gap-4">
@@ -54,7 +55,7 @@
   </li>
 </ul>
 
-<div class="mt-5 max-w-[720px]">
+<div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
   <%# Today: the same counts as the Daily List (card: "Statistics page: today's overview") %>
   <section class="rounded-box bg-base-100 p-6" aria-labelledby="today-heading">
     <div class="flex items-baseline justify-between gap-2">
@@ -83,6 +84,33 @@
     </ul>
   </section>
 
+  <%# Open and done tasks per project, in the project colours; matches the sidebar counts %>
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="projects-heading">
+    <h2 id="projects-heading" class="font-semibold">Tasks by project</h2>
+    <ul class="mt-4 space-y-4">
+      <% projects.forEach((project, i) => { %>
+        <li>
+          <a href="<%= project.href %>" class="block rounded-field hover:bg-base-200 -mx-2 px-2 py-1">
+            <span class="flex items-center justify-between text-sm">
+              <span class="flex items-center gap-2 font-medium"><span class="size-2.5 rounded-full <%= project.colour ? '' : 'bg-base-300' %>" <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span><%= project.name %></span>
+              <span class="text-muted tabular-nums"><%= project.done %> done · <%= project.open %> open</span>
+            </span>
+            <%# Done in the project colour, open as its tint; the bar's length is the project's share of the biggest one %>
+            <span class="mt-1.5 flex h-2 overflow-hidden rounded-full bg-fill" style="width: <%= Math.max(4, pct(project.total, projectMax)) %>%" aria-hidden="true">
+              <span class="grow-x h-full <%= project.colour ? '' : 'bg-muted' %>" style="--i: <%= i %>; width: <%= pct(project.done, project.total) %>%; <%= project.colour ? `background-color: ${project.colour}` : '' %>"></span>
+            </span>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
+    <div class="sr-only">
+      <table>
+        <caption>Tasks by project</caption>
+        <thead><tr><th scope="col">Project</th><th scope="col">Done</th><th scope="col">Open</th></tr></thead>
+        <tbody><% projects.forEach((p) => { %><tr><td><%= p.name %></td><td><%= p.done %></td><td><%= p.open %></td></tr><% }) %></tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
 </div>
