@@ -1,0 +1,48 @@
+# Runs on every pull request into develop or main, and on pushes to them: the CSS must build and every test must pass.
+# The HTTP tests start their own throwaway MongoDB (mongodb-memory-server), so no database service is needed here.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SESSION_SECRET: ci-only-session-secret
+      # Keep the MongoDB download between runs (about 100 MB).
+      MONGOMS_DOWNLOAD_DIR: ${{ github.workspace }}/.cache/mongodb-binaries
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache the MongoDB binary used by the tests
+        uses: actions/cache@v4
+        with:
+          path: .cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: mongodb-binaries-${{ runner.os }}-
+
+      # package-lock.json is not committed (see .gitignore), so `npm ci` cannot be used.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build the CSS
+        run: npm run css
+
+      - name: Run the tests
+        run: npm test -- --ci
