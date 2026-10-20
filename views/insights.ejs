@@ -3,7 +3,14 @@
     table for screen readers. %>
 <%
   const label = (day, options) => new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
+  const lastDay = dates.addDays(range.to, -1);
+  const rangeText = period === 'month' ? label(range.from, { month: 'long', year: 'numeric' }) : `${label(range.from, { day: 'numeric', month: 'short' })} – ${label(lastDay, { day: 'numeric', month: 'short' })}`;
+  const versus = period === 'month' ? 'last month' : 'last week';
   const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
+  // "↑ 3 vs last week" in words as well as colour (WCAG 1.4.1); unit is '' for counts or ' points' for percentages.
+  const delta = (value, unit = '') => value == null ? { text: `Nothing to compare with ${versus}`, tone: 'text-muted' }
+    : value === 0 ? { text: `Same as ${versus}`, tone: 'text-muted' }
+    : { text: `${value > 0 ? '↑' : '↓'} ${Math.abs(value)}${unit} vs ${versus}`, tone: value > 0 ? 'text-success' : 'text-error' };
   const rings = [
     { key: 'tasks', label: 'Tasks today', done: todayProgress.tasks.done, total: todayProgress.tasks.total, href: '/today', tone: 'var(--color-success)' },
     { key: 'habits', label: 'Habits today', done: todayProgress.habits.done, total: todayProgress.habits.total, href: '/habits', tone: 'var(--color-primary)' },
@@ -12,10 +19,40 @@
 <div class="insights">
 <header class="flex flex-wrap items-end justify-between gap-4">
   <div>
+    <p class="text-xs font-semibold tracking-wide text-primary uppercase"><%= rangeText %></p>
     <h1 class="mt-1 text-3xl font-bold tracking-tight">Insights</h1>
-    <p class="mt-1 text-sm text-muted">Times in your time zone (<%= currentUser.timeZone %>)</p>
+    <p class="mt-1 text-sm text-muted">Compared with <%= versus %> · times in your time zone (<%= currentUser.timeZone %>)</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <%# Week / Month: plain links, so the choice is in the address and Back works %>
+    <nav class="flex rounded-full bg-fill p-1" aria-label="Period">
+      <% [['week', 'Week'], ['month', 'Month']].forEach(([key, text]) => { %>
+        <a href="?period=<%= key %>" class="inline-flex min-h-9 items-center rounded-full px-4 text-sm font-medium <%= period === key ? 'bg-base-100 shadow-sm' : 'text-muted hover:text-base-content' %>"
+          <% if (period === key) { %>aria-current="page"<% } %>><%= text %></a>
+      <% }) %>
+    </nav>
   </div>
 </header>
+
+<%# Headline numbers for the period (W14 top row) %>
+<ul class="mt-6 grid gap-4 sm:grid-cols-3" aria-label="This <%= period %> at a glance">
+  <% const done = delta(doneChange); const rate = delta(rateChange, ' points'); %>
+  <li class="rounded-box bg-base-100 p-5">
+    <p class="text-sm text-muted">Tasks completed</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><%= rates.current.done %> <span class="text-base font-normal text-muted">of <%= rates.current.due %> due</span></p>
+    <p class="mt-1 text-xs font-medium <%= done.tone %>"><%= done.text %></p>
+  </li>
+  <li class="rounded-box bg-base-100 p-5">
+    <p class="text-sm text-muted">Completion rate</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><%= rates.current.rate ?? '–' %><span class="text-base font-normal text-muted"><%= rates.current.rate == null ? '' : ' %' %></span></p>
+    <p class="mt-1 text-xs font-medium <%= rate.tone %>"><%= rates.current.rate == null ? `Nothing due this ${period} yet` : rate.text %></p>
+  </li>
+  <li class="rounded-box bg-base-100 p-5">
+    <p class="text-sm text-muted">Done on time</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><%= rates.current.onTime ?? '–' %><span class="text-base font-normal text-muted"><%= rates.current.onTime == null ? '' : ' %' %></span></p>
+    <p class="mt-1 text-xs text-muted">Of the tasks done, finished by their due date</p>
+  </li>
+</ul>
 
 <div class="mt-5 max-w-[720px]">
   <%# Today: the same counts as the Daily List (card: "Statistics page: today's overview") %>

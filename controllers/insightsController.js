@@ -1,7 +1,9 @@
 const { loadInsights } = require('../services/insights');
 
-// Insights (Figma W14): /insights
+// Insights (Figma W14): /insights?period=week|month
 exports.show = async (req, res) => {
-  const insights = await loadInsights(req.user);
+  const insights = await loadInsights(req.user, {
+    period: req.query.period,
+  });
   res.render('insights', { title: 'Insights · Agendal', ...insights });
 };
