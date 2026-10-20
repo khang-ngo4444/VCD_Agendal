@@ -36,6 +36,17 @@
           <% if (period === key) { %>aria-current="page"<% } %>><%= text %></a>
       <% }) %>
     </nav>
+    <details class="dropdown dropdown-end" data-dismissable>
+      <summary class="btn h-11 gap-2 rounded-full border-0 bg-fill px-4 font-medium">
+        <%- include('partials/icon', { icon: 'inbox', cls: 'size-4' }) %> Export
+      </summary>
+      <ul class="dropdown-content z-30 mt-2 w-64 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+        <li><a href="/insights/export/tasks.csv" download class="flex min-h-11 flex-col justify-center rounded-field px-3 hover:bg-base-200">
+          <span class="text-sm font-medium">Tasks (.csv)</span><span class="text-xs text-muted">Every task, with its dates and project</span></a></li>
+        <li><a href="/insights/export/habit-checkins.csv" download class="flex min-h-11 flex-col justify-center rounded-field px-3 hover:bg-base-200">
+          <span class="text-sm font-medium">Habit check-ins (.csv)</span><span class="text-xs text-muted">One row per habit per day checked in</span></a></li>
+      </ul>
+    </details>
   </div>
 </header>
 
