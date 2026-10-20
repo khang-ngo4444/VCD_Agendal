@@ -1,5 +1,5 @@
-// Focus mode (Figma W13): which tasks to offer, today's finished sessions,.
-// lengthFor is a pure function (tests/focus.test.js).
+// Focus mode (Figma W13): which tasks to offer, today's finished sessions, and the check a session passes before
+// it is saved. The checks are pure functions (tests/focus.test.js).
 const FocusSession = require('../models/FocusSession');
 const Task = require('../models/Task');
 const { todayRange } = require('./dates');
@@ -10,6 +10,22 @@ const LENGTHS = [
   { focus: 50, rest: 10 },
 ];
 const lengthFor = (focusMinutes) => LENGTHS.find((length) => length.focus === Number(focusMinutes)) ?? LENGTHS[0];
+
+const CLOCK_SLACK_MS = 60 * 1000; // the browser's clock may be a little ahead of the server's
+const MAX_AGE_MS = 24 * 60 * 60 * 1000; // a block saved from a tab left open overnight still counts, older ones don't
+
+// A finished block as the timer page sends it ({ startedAt: ISO string, minutes }), or an error message.
+// It must be one of the offered lengths, and at least that long ago: pauses make a block take longer, never shorter.
+function checkSession({ startedAt, minutes } = {}, now = new Date()) {
+  const length = LENGTHS.find((item) => item.focus === Number(minutes));
+  const start = new Date(typeof startedAt === 'string' ? startedAt : NaN);
+  if (!length) return { error: 'Unknown focus length.' };
+  if (Number.isNaN(start.getTime())) return { error: 'Missing start time.' };
+  const elapsed = now - start;
+  if (elapsed + CLOCK_SLACK_MS < length.focus * 60 * 1000) return { error: 'This block hasn’t finished yet.' };
+  if (elapsed > MAX_AGE_MS) return { error: 'This block is too old to save.' };
+  return { session: { startedAt: start, minutes: length.focus } };
+}
 
 // Today's finished blocks, oldest first, with the task titles, and their total minutes.
 async function todaysSessions(user, now = new Date()) {
@@ -41,4 +57,4 @@ async function focusChoices(user, now = new Date()) {
   return { today, other, maxOther: MAX_OTHER_TASKS };
 }
 
-module.exports = { LENGTHS, lengthFor, todaysSessions, focusChoices };
+module.exports = { LENGTHS, lengthFor, checkSession, todaysSessions, focusChoices };
