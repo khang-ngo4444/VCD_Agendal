@@ -31,7 +31,8 @@
     "start": "node --env-file-if-exists=.env app.js",
     "css": "tailwindcss -i src/css/app.css -o public/css/style.css --minify",
     "css:watch": "tailwindcss -i src/css/app.css -o public/css/style.css --watch",
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:unit": "jest --testPathIgnorePatterns \".http.test.js$\"",
     "seed": "node --env-file-if-exists=.env scripts/seed.js",
     "seed:users": "node --env-file-if-exists=.env scripts/seed-users.js",
     "vapid": "web-push generate-vapid-keys"
@@ -48,6 +49,8 @@
   },
   "homepage": "https://github.com/khang-ngo4444/Thay_Dinh_Dep_Trai#readme",
   "devDependencies": {
-    "jest": "^30.5.2"
+    "jest": "^30.5.2",
+    "mongodb-memory-server": "^11.3.0",
+    "supertest": "^7.3.1"
   }
 }
