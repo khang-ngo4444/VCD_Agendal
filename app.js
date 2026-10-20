@@ -21,6 +21,7 @@ const boardRoutes = require('./routes/board');
 const calendarRoutes = require('./routes/calendar');
 const eventRoutes = require('./routes/events');
 const adminRoutes = require('./routes/admin');
+const insightsRoutes = require('./routes/insights');
 const welcome = require('./controllers/welcomeController');
 const sync = require('./services/sync');
 
@@ -45,6 +46,8 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/js/vendor/sortable.min.js', (req, res) => res.sendFile(require.resolve('sortablejs/Sortable.min.js'))); // Board drag and drop
+// Insights charts. The UMD build isn't in chart.js's "exports", so it is found next to the package's main file.
+app.get('/js/vendor/chart.umd.min.js', (req, res) => res.sendFile(path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.min.js')));
 app.use(express.urlencoded({ extended: false }));
 app.use(
   session({
@@ -112,6 +115,7 @@ app.use(settingsRoutes);
 app.use(projectRoutes);
 app.use(taskRoutes);
 app.use(habitRoutes);
+app.use(insightsRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
 
 // No route matched: the same page for every unknown address (and for /admin when you are not an admin).

@@ -164,6 +164,7 @@ async function postAndSwap(url, fields) {
   swapPage(await response.text());
 }
 window.agendal.post = postAndSwap;
+window.agendal.tabId = tabId; // for scripts that post with their own fetch (public/js/insights.js)
 
 // Which form to give focus back to after the swap: data-fetch="<key>" when several forms share one action.
 const fetchKey = (form) => form.dataset.fetch || form.getAttribute('action');
