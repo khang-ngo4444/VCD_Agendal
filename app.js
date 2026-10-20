@@ -22,6 +22,7 @@ const calendarRoutes = require('./routes/calendar');
 const eventRoutes = require('./routes/events');
 const adminRoutes = require('./routes/admin');
 const insightsRoutes = require('./routes/insights');
+const focusRoutes = require('./routes/focus');
 const welcome = require('./controllers/welcomeController');
 const sync = require('./services/sync');
 
@@ -116,6 +117,7 @@ app.use(projectRoutes);
 app.use(taskRoutes);
 app.use(habitRoutes);
 app.use(insightsRoutes);
+app.use(focusRoutes);
 if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'));
 
 // No route matched: the same page for every unknown address (and for /admin when you are not an admin).

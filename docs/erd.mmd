@@ -11,6 +11,8 @@ erDiagram
     USER |o--o{ ACTIVITY_LOG : "account (null = unknown email)"
     USER ||--o{ EVENT : owns
     PROJECT |o--o{ EVENT : "colours (optional)"
+    USER ||--o{ FOCUS_SESSION : owns
+    TASK ||--o{ FOCUS_SESSION : "focused on in"
 
     USER {
         ObjectId _id PK
@@ -20,7 +22,7 @@ erDiagram
         String avatar
         String timeZone
         String role "user | admin (admins only use /admin)"
-        Object preferences "theme, accentColour, weekStartsOn, calendarLayout, insightsChart"
+        Object preferences "theme, accentColour, weekStartsOn, calendarLayout, insightsChart, focusMinutes"
         String googleId UK
         Number sessionVersion "bumped to end all sessions"
         Object loginFailures "count, since"
@@ -100,6 +102,15 @@ erDiagram
         String notes
         Object repeat "frequency, until"
         Array exceptions "original, cancelled, start, end, title"
+        Date createdAt
+        Date updatedAt
+    }
+    FOCUS_SESSION {
+        ObjectId _id PK
+        ObjectId owner FK
+        ObjectId task FK
+        Date startedAt
+        Number minutes "the block's length; only finished blocks are saved"
         Date createdAt
         Date updatedAt
     }
