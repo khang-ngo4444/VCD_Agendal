@@ -10,4 +10,9 @@
   heading: 'New task',
   body: include('../tasks/_quick-add-form', { projects: sidebarProjects, returnTo: currentPath, idPrefix: 'dialog-task', autofocus: true }),
 }) %>
+<%# Web Push (public/js/push.js), only when the server has VAPID keys. %>
+<% if (vapidPublicKey) { %>
+  <%- include('../notifications/_permission-dialog') %>
+  <script src="/js/push.js" defer data-key="<%= vapidPublicKey %>" data-channel="<%= currentUser.notifications?.push === false ? 'off' : 'on' %>"></script>
+<% } %>
 <%- include('footer') %>

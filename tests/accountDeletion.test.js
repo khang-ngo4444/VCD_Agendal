@@ -50,10 +50,10 @@ describe('deleteAccount', () => {
     const counts = await deleteAccount(req, user);
     expect(order[0]).toBe('log');
     expect(order.at(-1)).toBe('User');
-    expect(order.slice(1, -1).sort()).toEqual(['Event', 'FocusSession', 'Habit', 'HabitCheckIn', 'Project', 'Reminder', 'Task']);
+    expect(order.slice(1, -1).sort()).toEqual(['Event', 'FocusSession', 'Habit', 'HabitCheckIn', 'Project', 'PushSubscription', 'Reminder', 'Task']);
     for (const Model of OWNED) expect(Model.deleteMany).toHaveBeenCalledWith({ owner: user._id });
     expect(User.deleteOne).toHaveBeenCalledWith({ _id: user._id });
-    expect(counts).toEqual({ Reminder: 2, HabitCheckIn: 2, Habit: 2, Event: 2, FocusSession: 2, Task: 2, Project: 2 });
+    expect(counts).toEqual({ PushSubscription: 2, Reminder: 2, HabitCheckIn: 2, Habit: 2, Event: 2, FocusSession: 2, Task: 2, Project: 2 });
   });
 
   test('the log entry keeps the email, since the account itself is gone', async () => {

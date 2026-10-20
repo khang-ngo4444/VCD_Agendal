@@ -9,6 +9,7 @@ const { safeReturnTo } = require('../services/returnTo');
 const { columnLabel, followRepeat, reopenedStatus, setColumn, topOrder } = require('../services/tasks');
 const { formatDay, formatTime, isOverdue, toDateInput, toTimeInput } = require('../services/dates');
 const { PRIORITIES, parseSchedule, parseTaskForm } = require('../validators/task');
+const taskReminders = require('../services/taskReminders');
 
 const MAX_TITLE_LENGTH = 200;
 
@@ -103,9 +104,14 @@ function formValues(task, timeZone) {
 
 async function renderTask(req, res, task, { values, errors = {} } = {}) {
   const project = task.project && (await Project.findOne({ _id: task.project, owner: req.user._id }).lean());
+  const pending = await taskReminders.findPending(task);
+  const reminder = taskReminders.describe(pending, req.user.timeZone);
   res.status(Object.keys(errors).length ? 422 : 200).render('tasks/show', {
     title: `${task.title} · Agendal`,
     task,
+    reminder,
+    reminderPresets: taskReminders.PRESETS,
+    reminderDefaults: taskReminders.customDefaults(task, pending, req.user.timeZone),
     values: values ?? formValues(task, req.user.timeZone),
     errors,
     priorities: PRIORITIES,
@@ -133,11 +139,82 @@ exports.update = async (req, res) => {
   task.set('schedule', schedule ?? undefined);
   task.set('repeat', repeat ?? undefined);
   await task.save();
-  flash(req, 'success', 'Task saved.');
+  const reminder = await taskReminders.syncWithSchedule(task);
+  flash(req, 'success', REMINDER_AFTER_SAVE[reminder] ?? 'Task saved.');
   res.redirect(`/tasks/${task._id}`);
 };
 
+// What the toast says when saving the task also moved or removed its preset reminder.
+const REMINDER_AFTER_SAVE = {
+  moved: 'Task saved. Its reminder moved with the new time.',
+  removed: 'Task saved. Its reminder was removed: the task has no start time it can count back from.',
+  passed: 'Task saved. Its reminder was removed: that time before the new start has already passed.',
+};
+
+const REMINDER_ERRORS = {
+  unknown_preset: 'Pick one of the reminder times in the list.',
+  not_scheduled: 'Schedule the task first: presets count back from its start time.',
+  past: 'That time has already passed. Pick a later reminder.',
+  invalid_time: 'Pick a date and a time for the reminder.',
+};
+
+// Reminder picker (W30): a preset counted back from the scheduled start, or (custom=1) a date and time the user picks.
+exports.setReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const body = req.body ?? {};
+  const { reminder, error } =
+    body.custom === '1'
+      ? await taskReminders.setCustom(task, body.reminderDate, body.reminderTime, req.user.timeZone)
+      : await taskReminders.setPreset(task, body.preset);
+  if (error) flash(req, 'error', REMINDER_ERRORS[error]);
+  else flash(req, 'success', `Reminder set: ${taskReminders.describe(reminder, req.user.timeZone).label}.`);
+  res.redirect(`/tasks/${task._id}`);
+};
+
+// The removed reminder waits in the session for the toast's Undo (one at a time, like the toast itself).
+exports.removeReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const removed = await taskReminders.remove(task);
+  if (removed) {
+    req.session.removedReminder = { task: String(task._id), ...removed };
+    flash(req, 'success', 'Reminder removed. It won’t be sent.', { undoUrl: `/tasks/${task._id}/reminder/restore` });
+  } else flash(req, 'success', 'This task has no reminder.');
+  res.redirect(`/tasks/${task._id}`);
+};
+
+exports.restoreReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const removed = req.session.removedReminder;
+  delete req.session.removedReminder;
+  if (removed?.task !== String(task._id)) flash(req, 'error', 'That reminder can’t be brought back any more. Set it again.');
+  else {
+    const { reminder, error } = await taskReminders.restore(task, removed);
+    if (error) flash(req, 'error', 'That reminder’s time has passed, so it wasn’t brought back.');
+    else flash(req, 'success', `Reminder back: ${taskReminders.describe(reminder, req.user.timeZone).label}.`);
+  }
+  res.redirect(`/tasks/${task._id}`);
+};
+
+// The custom date-and-time form on its own page: the dialog's no-JS version.
+exports.showReminder = async (req, res) => {
+  const task = await findOwnedTask(req);
+  const pending = await taskReminders.findPending(task);
+  res.render('tasks/reminder', {
+    title: `Reminder · ${task.title} · Agendal`,
+    task,
+    reminder: taskReminders.describe(pending, req.user.timeZone),
+    defaults: taskReminders.customDefaults(task, pending, req.user.timeZone),
+  });
+};
+
+// Added to the "Moved …" toast when a preset reminder followed the task, or had to go.
+const REMINDER_AFTER_MOVE = {
+  moved: ' Its reminder moved with it.',
+  passed: ' Its reminder was removed: that time before the new start has already passed.',
+};
+
 // Calendar drag and drop: a new date, start and end (local times), keeping everything else about the task.
+// A preset reminder moves with the task (services/taskReminders.js syncWithSchedule).
 exports.reschedule = async (req, res) => {
   const task = await findOwnedTask(req);
   const body = req.body ?? {};
@@ -149,7 +226,8 @@ exports.reschedule = async (req, res) => {
   }
   task.set('schedule', schedule);
   await task.save();
-  flash(req, 'success', `Moved “${task.title}” to ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}.`);
+  const reminder = await taskReminders.syncWithSchedule(task);
+  flash(req, 'success', `Moved “${task.title}” to ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}.${REMINDER_AFTER_MOVE[reminder] ?? ''}`);
   res.redirect(returnTo);
 };
 
@@ -158,7 +236,8 @@ exports.unschedule = async (req, res) => {
   const task = await findOwnedTask(req);
   task.set('schedule', undefined);
   await task.save();
-  flash(req, 'success', 'Schedule removed. The task is unscheduled again.');
+  const reminder = await taskReminders.syncWithSchedule(task);
+  flash(req, 'success', reminder === 'removed' ? 'Schedule removed, and its reminder with it.' : 'Schedule removed. The task is unscheduled again.');
   res.redirect(`/tasks/${task._id}`);
 };
 

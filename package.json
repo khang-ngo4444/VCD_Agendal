@@ -13,12 +13,14 @@
     "helmet": "^8.3.0",
     "mongoose": "^9.11.2",
     "multer": "^2.4.0",
+    "node-cron": "^4.6.0",
     "nodemailer": "^10.1.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "sharp": "^0.35.5",
     "sortablejs": "^1.15.7",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "web-push": "^3.6.7"
   },
   "name": "advanced-web-design",
   "version": "1.0.0",
@@ -31,7 +33,8 @@
     "css:watch": "tailwindcss -i src/css/app.css -o public/css/style.css --watch",
     "test": "jest",
     "seed": "node --env-file-if-exists=.env scripts/seed.js",
-    "seed:users": "node --env-file-if-exists=.env scripts/seed-users.js"
+    "seed:users": "node --env-file-if-exists=.env scripts/seed-users.js",
+    "vapid": "web-push generate-vapid-keys"
   },
   "repository": {
     "type": "git",

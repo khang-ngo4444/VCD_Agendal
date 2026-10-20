@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+<main class="flex min-h-screen items-center justify-center px-4 py-12">
+  <div class="w-full max-w-sm rounded-box bg-base-200 p-6">
+    <a href="/" class="inline-flex items-center gap-2 font-bold">
+      <span class="grid size-8 place-items-center rounded-field bg-base-content text-base-100">
+        <%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %>
+      </span>
+      Agendal
+    </a>
+    <% if (!valid) { %>
+      <h1 class="mt-6 text-2xl font-bold tracking-tight">This link doesn’t work</h1>
+      <p class="mt-2 text-sm text-muted">It may have been copied incompletely. You can turn email reminders off in Settings → Notifications.</p>
+      <a href="/settings/notifications" class="btn btn-primary mt-6 h-11 w-full rounded-full">Open notification settings</a>
+    <% } else if (done) { %>
+      <h1 class="mt-6 text-2xl font-bold tracking-tight">Email reminders are off</h1>
+      <p class="mt-2 text-sm text-muted">You won’t get reminder emails any more. Browser notifications are not affected.</p>
+      <%# A way back right here, for a mistaken click (User control and freedom). %>
+      <form method="post" action="/notifications/resubscribe/<%= token %>" class="mt-6">
+        <button type="submit" class="btn btn-primary h-11 w-full rounded-full">Turn email reminders back on</button>
+      </form>
+      <a href="/today" class="btn btn-ghost mt-2 h-11 w-full rounded-full">Open Agendal</a>
+    <% } else if (resubscribed) { %>
+      <h1 class="mt-6 text-2xl font-bold tracking-tight">Email reminders are on again</h1>
+      <p class="mt-2 text-sm text-muted">Reminders will reach you by email as before. You can change this anytime in Settings → Notifications.</p>
+      <a href="/today" class="btn btn-primary mt-6 h-11 w-full rounded-full">Open Agendal</a>
+    <% } else { %>
+      <h1 class="mt-6 text-2xl font-bold tracking-tight">Turn off email reminders?</h1>
+      <p class="mt-2 text-sm text-muted">You’ll stop getting reminder emails. Browser notifications stay as they are.</p>
+      <form method="post" action="/notifications/unsubscribe/<%= token %>" class="mt-6">
+        <button type="submit" class="btn btn-primary h-11 w-full rounded-full">Turn off email reminders</button>
+      </form>
+      <a href="/today" class="btn btn-ghost mt-2 h-11 w-full rounded-full">Keep them on</a>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

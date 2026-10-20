@@ -11,6 +11,7 @@ erDiagram
     USER |o--o{ ACTIVITY_LOG : "account (null = unknown email)"
     USER ||--o{ EVENT : owns
     PROJECT |o--o{ EVENT : "colours (optional)"
+    USER ||--o{ PUSH_SUBSCRIPTION : "browsers with push on"
     USER ||--o{ FOCUS_SESSION : owns
     TASK ||--o{ FOCUS_SESSION : "focused on in"
 
@@ -23,6 +24,7 @@ erDiagram
         String timeZone
         String role "user | admin (admins only use /admin)"
         Object preferences "theme, accentColour, weekStartsOn, calendarLayout, insightsChart, focusMinutes"
+        Object notifications "push, email (on by default), lastEmailAt, emailDay, emailsToday, dailySummary { on, time, lastSentOn }"
         String googleId UK
         Number sessionVersion "bumped to end all sessions"
         Object loginFailures "count, since"
@@ -66,8 +68,23 @@ erDiagram
         ObjectId task FK
         ObjectId owner FK
         Date remindAt
-        String type "push | email"
-        Boolean sent
+        Number offsetMinutes "preset: minutes before the start; null = chosen time"
+        String type "push | email (legacy, not used for routing)"
+        Boolean sent "every channel done"
+        Date sentAt
+        Date pushedAt "push channel claimed / done"
+        Date emailedAt "email channel claimed / done"
+        Number attempts "failed sends, max 3"
+        String lastError
+        Date createdAt
+        Date updatedAt
+    }
+    PUSH_SUBSCRIPTION {
+        ObjectId _id PK
+        ObjectId owner FK
+        String endpoint UK "push service URL, one per browser"
+        Object keys "p256dh, auth"
+        String userAgent
         Date createdAt
         Date updatedAt
     }
@@ -78,6 +95,7 @@ erDiagram
         String colour
         Object frequency "type: daily | weekdays | days | timesPerWeek, days, timesPerWeek"
         String reminderTime "HH:mm"
+        String lastRemindedOn "local day of the last reminder: one a day"
         Date archivedAt
         Date createdAt
         Date updatedAt

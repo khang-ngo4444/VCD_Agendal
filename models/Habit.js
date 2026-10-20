@@ -13,6 +13,7 @@ const habitSchema = new Schema(
       timesPerWeek: { type: Number, min: 1, max: 7 }, // 'timesPerWeek' only
     },
     reminderTime: { type: String, match: /^([01]\d|2[0-3]):[0-5]\d$/ }, // "HH:mm" in the user's time zone
+    lastRemindedOn: String, // the user's local day ("YYYY-MM-DD") of the last reminder, so each day sends at most one
     archivedAt: { type: Date, default: null }, // archived habits keep their check-ins
   },
   { timestamps: true }

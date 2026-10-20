@@ -36,6 +36,7 @@
   <p class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs <%= overdue ? 'font-semibold text-error' : 'text-muted' %>">
     <%- include('../partials/icon', { icon: overdue ? 'alert' : 'calendar', cls: 'size-3.5' }) %>
     <% if (overdue) { %>Overdue ·<% } %> <%= when %>
+    <%- include('_reminder-badge', { task, timeZone }) %>
     <% if (task.repeat?.frequency && !task.completedAt) { %>
       <span title="Repeats <%= task.repeat.frequency %>"><%- include('../partials/icon', { icon: 'repeat', cls: 'size-3.5' }) %><span class="sr-only">Repeats <%= task.repeat.frequency %></span></span>
     <% } %>

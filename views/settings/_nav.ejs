@@ -2,10 +2,11 @@
   const settingsPages = [
     { href: '/settings/profile', label: 'Profile', icon: 'user' },
     { href: '/settings/appearance', label: 'Appearance', icon: 'sun' },
+    { href: '/settings/notifications', label: 'Notifications', icon: 'bell' },
     { href: '/settings/account', label: 'Account', icon: 'lock' },
   ];
 %>
-<nav aria-label="Settings">
+<nav aria-label="Settings" class="min-w-0"><%# min-w-0: on phones the tab row scrolls instead of widening the page %>
   <ul class="flex gap-1 overflow-x-auto md:flex-col">
     <% settingsPages.forEach((page) => { %>
       <li>

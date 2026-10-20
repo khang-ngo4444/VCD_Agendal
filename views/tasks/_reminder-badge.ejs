@@ -1,0 +1,11 @@
+<%#
+  A bell with the reminder's time, where a task is listed (rows, Board cards, Calendar chips), so it is clear which
+  tasks will notify and when. Nothing for done tasks or tasks without a reminder. Locals: task, timeZone.
+  reminderFor comes from middleware/shell.js.
+%>
+<% const at = !task.completedAt && locals.reminderFor ? reminderFor(task._id) : null; %>
+<% if (at) { const day = dates.formatDay(at, timeZone); const label = `${day === 'Today' ? '' : `${day}, `}${dates.formatTime(at, timeZone)}`; %>
+  <span class="inline-flex items-center gap-0.5 whitespace-nowrap" title="Reminder: <%= label %>">
+    <%- include('../partials/icon', { icon: 'bell', cls: 'size-3.5' }) %><span class="sr-only">Reminder</span> <%= label %>
+  </span>
+<% } %>

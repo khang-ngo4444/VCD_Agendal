@@ -1,0 +1,26 @@
+<%#
+  Reminder at a chosen date and time (W30 "Custom date & time…"), in the user's time zone.
+  Used in the dialog on the task page and on /tasks/:id/reminder. Locals: task, defaults ({ date, time }), idPrefix.
+  Past days can't be picked; public/js/reminders.js also catches a past time today before the form is sent.
+  The server checks again either way.
+%>
+<form method="post" action="/tasks/<%= task._id %>/reminder" novalidate data-reminder-form data-time-zone="<%= currentUser.timeZone %>">
+  <%- include('../partials/csrf') %>
+  <input type="hidden" name="custom" value="1">
+  <div class="grid grid-cols-[1fr_auto] gap-3">
+    <div>
+      <label for="<%= idPrefix %>-date" class="mb-1.5 block text-xs font-semibold">Date</label>
+      <input id="<%= idPrefix %>-date" name="reminderDate" type="date" value="<%= defaults.date %>" min="<%= dates.toDateInput(new Date(), currentUser.timeZone) %>"
+        class="input h-11 w-full" required aria-describedby="<%= idPrefix %>-hint">
+    </div>
+    <div>
+      <label for="<%= idPrefix %>-time" class="mb-1.5 block text-xs font-semibold">Time</label>
+      <input id="<%= idPrefix %>-time" name="reminderTime" type="time" value="<%= defaults.time %>" class="input h-11 w-32" required aria-describedby="<%= idPrefix %>-hint">
+    </div>
+  </div>
+  <p id="<%= idPrefix %>-hint" class="mt-2 text-xs text-muted" data-reminder-hint aria-live="polite">In your time zone (<%= currentUser.timeZone %>). It stays at this time even if you reschedule the task.</p>
+  <div class="mt-5 flex justify-end">
+    <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Set reminder</button>
+  </div>
+</form>
+<script src="/js/reminders.js" defer></script>

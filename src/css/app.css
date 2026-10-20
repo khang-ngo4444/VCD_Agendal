@@ -105,12 +105,13 @@
 }
 
 /* Visible boundaries for form controls (WCAG 1.4.11 needs 3:1; the soft fill alone is 1.1:1).
-   Unlayered, so it wins over DaisyUI's own border colour; errors and focus keep their colours. */
+   Unlayered, so it wins over DaisyUI's own border colour; errors and focus keep their colours. Checkboxes and
+   toggles only while off: once checked, their filled colour (checkbox-primary, toggle-success…) is the boundary. */
 .input:not(.input-error),
 .select:not(.select-error),
 .textarea:not(.textarea-error),
-.checkbox,
-.toggle {
+.checkbox:not(:checked),
+.toggle:not(:checked) {
   --input-color: var(--control-border);
 }
 .input:not(.input-error):focus-within,

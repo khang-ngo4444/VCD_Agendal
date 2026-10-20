@@ -1,10 +1,7 @@
 const Task = require('../models/Task');
-const { loadSummaries } = require('../services/habits');
 const { eventsBetween } = require('../services/events');
-const { addDays, dayRange, formatDay, parseDateInput, startOfWeek, toDateInput, zonedTime } = require('../services/dates');
-
-// The instants a local day ("YYYY-MM-DD") starts and ends at in `timeZone`.
-const localDayRange = (date, timeZone) => dayRange(zonedTime({ ...parseDateInput(date), hour: 12 }, timeZone), timeZone);
+const { localDayRange, loadDay } = require('../services/daily');
+const { addDays, formatDay, parseDateInput, startOfWeek, toDateInput } = require('../services/dates');
 
 // The week strip above the list: the 7 days around `date`, with a dot on days that have tasks due or scheduled.
 async function weekStrip(mine, date, today, { timeZone, preferences }) {
@@ -38,17 +35,12 @@ exports.today = async (req, res) => {
   const { timeZone } = req.user;
   const today = toDateInput(new Date(), timeZone);
   const date = parseDateInput(req.query.date) ? req.query.date : today;
-  const { start, end } = localDayRange(date, timeZone);
   const mine = { owner: req.user._id, deletedAt: null };
 
-  const [scheduled, due, overdue, week, habits, events] = await Promise.all([
-    Task.find({ ...mine, 'schedule.start': { $gte: start, $lt: end } }).sort({ 'schedule.start': 1 }).lean(),
-    Task.find({ ...mine, 'schedule.start': null, dueDate: { $gte: start, $lt: end } }).lean(),
-    // Overdue only makes sense looking at today: a due date is the end of its day, so before today's start = late.
-    date === today ? Task.find({ ...mine, completedAt: null, dueDate: { $lt: start } }).sort({ dueDate: 1 }).lean() : [],
+  // The day's tasks, habits and events come from services/daily.js, shared with the daily summary.
+  const [{ start, scheduled, due, overdue, habits, events }, week] = await Promise.all([
+    loadDay(req.user, date, { today, projects: res.locals.sidebarProjects }),
     weekStrip(mine, date, today, req.user),
-    loadSummaries(req.user, date, { archivedAt: null }),
-    eventsBetween(req.user._id, start, end, timeZone, res.locals.sidebarProjects),
   ]);
   const dayTasks = [...scheduled, ...due];
   const firstName = (req.user.name || '').split(' ')[0];

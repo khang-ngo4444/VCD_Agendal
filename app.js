@@ -24,6 +24,7 @@ const adminRoutes = require('./routes/admin');
 const insightsRoutes = require('./routes/insights');
 const focusRoutes = require('./routes/focus');
 const welcome = require('./controllers/welcomeController');
+const notifications = require('./controllers/notificationsController');
 const sync = require('./services/sync');
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -33,6 +34,7 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.locals.dates = require('./services/dates'); // views format dates in the user's time zone
+app.locals.vapidPublicKey = require('./services/webPush').publicKey(); // empty: no Web Push, push.js isn't loaded
 // Absolute base URL for canonical links and social preview images.
 app.locals.appUrl = (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
 
@@ -67,6 +69,9 @@ app.use(
   })
 );
 app.post('/settings/avatar', avatarUpload); // multipart body must be parsed before the CSRF check
+// Before the CSRF check: mail clients send this one-click POST without a form token; the signed link is the proof.
+app.post('/notifications/unsubscribe/:token', notifications.unsubscribe);
+app.post('/notifications/resubscribe/:token', notifications.resubscribe); // its "Turn email reminders back on", same signed link
 app.use(csrf);
 app.use(showFlash);
 app.use(passport.initialize());
@@ -81,6 +86,7 @@ app.get('/', guestOnly, (req, res) =>
     canonicalPath: '/',
   })
 );
+app.get('/notifications/unsubscribe/:token', notifications.showUnsubscribe);
 app.get('/privacy', (req, res) =>
   res.render('legal/privacy', {
     title: 'Privacy · Agendal',
@@ -133,6 +139,8 @@ if (require.main === module) {
     .then(() => {
       console.log('MongoDB connected');
       app.listen(port, () => console.log(`Agendal running at http://localhost:${port}`));
+      // Reminders and other background jobs. Set JOBS_ENABLED=false when another process runs them.
+      if (process.env.JOBS_ENABLED !== 'false') require('./jobs/scheduler').startJobs();
     })
     .catch((err) => {
       console.error('MongoDB connection failed:', err.message);

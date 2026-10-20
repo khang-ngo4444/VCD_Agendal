@@ -30,6 +30,22 @@ const userSchema = new Schema(
       insightsChart: { type: String, enum: ['bar', 'line'], default: 'bar' }, // Insights › Last 30 days: bars or lines
       focusMinutes: { type: Number, enum: [25, 50], default: 25 }, // Focus mode: 25 min + 5 break, or 50 + 10
     },
+    // Where reminders go (Settings → Notifications) and the counters that keep email from turning into spam.
+    notifications: {
+      push: { type: Boolean, default: true },
+      email: { type: Boolean, default: true },
+      lastEmailAt: Date,
+      emailDay: String, // YYYY-MM-DD in the user's time zone that emailsToday counts
+      emailsToday: { type: Number, default: 0 },
+      // One message a day listing the day's plan (services/dailySummary.js), off until the user turns it on.
+      dailySummary: {
+        on: { type: Boolean, default: false },
+        time: { type: String, default: '07:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ }, // "HH:mm" in the user's time zone
+        lastSentOn: String, // the local day it last went out, so it goes once a day
+      },
+      // The last reminder or summary that went out, shown in Settings (services/deliveries.js).
+      lastDelivered: { at: Date, channels: { type: [String], default: undefined }, what: String },
+    },
     googleId: { type: String, unique: true, sparse: true },
     sessionVersion: { type: Number, default: 0 }, // bumped to end every session (see middleware/auth.js)
     loginFailures: { count: { type: Number, default: 0 }, since: Date }, // failed logins in the current window
