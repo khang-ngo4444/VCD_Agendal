@@ -1,4 +1,5 @@
 // Insights › Last 30 days (views/insights.ejs, Figma W14 v2), drawn with Chart.js (served from /js/vendor).
+// - Bars or lines: the switch redraws at once and saves the choice to the account in the background.
 // - The legend buttons show or hide a series.
 // - One tooltip per day with both numbers; the day under the pointer is shaded; ← → / Home / End read day by day.
 // Without this script (or if Chart.js didn't load) the plain server-drawn bars stay; the table is always there.
@@ -9,7 +10,10 @@
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const csrfToken = () => document.querySelector('input[name=_csrf]')?.value ?? '';
   const TICKS = new Set([0, 10, 20, 29]); // first day, two in between, today
+  const SELECTED = ['bg-base-100', 'shadow-sm'];
+  const UNSELECTED = ['text-muted', 'hover:text-base-content'];
 
   // The theme's colours (light / dark, accent) as the page draws them.
   function palette(el) {
@@ -106,12 +110,40 @@
 
   function setUp(section) {
     if (!window.Chart || !section) return;
+    const form = section.querySelector('[data-chart-type]');
     const legend = [...section.querySelectorAll('[data-series]')];
     const hidden = () => legend.map((button) => button.getAttribute('aria-pressed') === 'false');
-    const data = JSON.parse(section.querySelector('#trend-data').textContent);
-    const chart = draw(section, data.type, hidden());
+    let type = form.querySelector('[aria-pressed="true"]')?.value ?? 'bar';
+    let chart = draw(section, type, hidden());
     section.querySelector('[data-chart]').hidden = false;
     section.querySelector('[data-chart-fallback]').hidden = true;
+
+    // Bars / Lines: redraw now, save in the background. Capture phase, so app.js's double-submit guard never sees it.
+    form.addEventListener(
+      'submit',
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const next = event.submitter?.value;
+        if (!next || next === type) return;
+        type = next;
+        for (const button of form.querySelectorAll('button[name=chart]')) {
+          const on = button.value === type;
+          button.setAttribute('aria-pressed', String(on));
+          button.classList.remove(...(on ? UNSELECTED : SELECTED));
+          button.classList.add(...(on ? SELECTED : UNSELECTED));
+        }
+        chart = draw(section, type, hidden());
+        const body = new URLSearchParams({ chart: type });
+        // X-Tab-Id: this tab already shows the new chart, so the live update (services/sync.js) skips it instead of
+        // reloading the page content here; other open tabs still follow.
+        const headers = { 'X-CSRF-Token': csrfToken(), 'X-Requested-With': 'fetch', 'X-Tab-Id': window.agendal?.tabId ?? '' };
+        fetch(form.getAttribute('action'), { method: 'POST', body, headers }).catch(() => {
+          window.agendal?.toast('Couldn’t save the chart type. It will go back next time.', { type: 'error' });
+        });
+      },
+      true
+    );
 
     for (const button of legend) {
       button.addEventListener('click', () => {

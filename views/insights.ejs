@@ -1,5 +1,5 @@
 <%- include('partials/shell-top') %>
-<%# Insights (Figma W14). Locals: what services/insights.js loadInsights returns. Every chart has its numbers in a
+<%# Insights (Figma W14). Locals: what services/insights.js loadInsights returns, plus chartType. Every chart has its numbers in a
     table for screen readers; only the 30-day chart needs JavaScript. %>
 <%
   const label = (day, options) => new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
@@ -116,11 +116,20 @@
   </section>
 </div>
 
-<%# Last 30 days (card: "Productivity trend chart", Figma W14 v2): tasks completed and habit check-ins per day. public/js/insights.js draws it with Chart.js; without JavaScript the plain bars below
+<%# Last 30 days (card: "Productivity trend chart", Figma W14 v2): tasks completed and habit check-ins per day, as bars or
+    lines (saved to the account). public/js/insights.js draws it with Chart.js; without JavaScript the plain bars below
     stay, and the numbers are always in the table for screen readers. %>
 <section class="mt-5 rounded-box bg-base-100 p-6" aria-labelledby="trend-heading" data-trend>
   <div class="flex flex-wrap items-center justify-between gap-3">
     <h2 id="trend-heading" class="font-semibold">Last 30 days</h2>
+    <form method="post" action="/insights/chart" class="flex rounded-full bg-fill p-1" data-chart-type>
+      <%- include('partials/csrf') %>
+      <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+      <% [['bar', 'Bars'], ['line', 'Lines']].forEach(([key, text]) => { %>
+        <button type="submit" name="chart" value="<%= key %>" aria-pressed="<%= chartType === key %>"
+          class="inline-flex min-h-9 items-center rounded-full px-4 text-sm font-medium <%= chartType === key ? 'bg-base-100 shadow-sm' : 'text-muted hover:text-base-content' %>"><%= text %></button>
+      <% }) %>
+    </form>
   </div>
   <%# Legend: buttons that show or hide a series (they work once the chart script runs) %>
   <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Series">
@@ -137,7 +146,7 @@
       aria-label="Tasks completed and habit check-ins per day over the last 30 days. Use the left and right arrow keys to read each day."></canvas>
   </div>
   <script type="application/json" id="trend-data"><%- JSON.stringify({
-    type: 'bar',
+    type: chartType,
     labels: trend.tasks.map((d, i) => i === trend.tasks.length - 1 ? 'Today' : label(d.date, { day: 'numeric', month: 'short' })),
     days: trend.tasks.map((d) => label(d.date, { weekday: 'short', day: 'numeric', month: 'short' })),
     tasks: trend.tasks.map((d) => d.count),

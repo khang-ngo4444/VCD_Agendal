@@ -1,4 +1,7 @@
 const { loadInsights } = require('../services/insights');
+const { safeReturnTo } = require('../services/returnTo');
+
+const CHART_TYPES = ['bar', 'line'];
 
 // Insights (Figma W14): /insights?period=week|month
 exports.show = async (req, res) => {
@@ -6,5 +9,17 @@ exports.show = async (req, res) => {
     period: req.query.period,
     projects: res.locals.sidebarProjects,
   });
-  res.render('insights', { title: 'Insights · Agendal', ...insights });
+  res.render('insights', { title: 'Insights · Agendal', ...insights, chartType: req.user.preferences?.insightsChart ?? 'bar' });
+};
+
+// Bars / Lines on the 30-day chart, saved to the account so every device shows the same. public/js/insights.js posts
+// it in the background (204); without JavaScript the form submits and the page comes back with the new chart.
+exports.setChart = async (req, res) => {
+  const chart = req.body?.chart;
+  if (CHART_TYPES.includes(chart)) {
+    req.user.set('preferences.insightsChart', chart);
+    await req.user.save();
+  }
+  if (req.get('X-Requested-With') === 'fetch') return res.status(204).end();
+  res.redirect(safeReturnTo(req.body?.returnTo, '/insights'));
 };
