@@ -1,30 +1,38 @@
-// Focus mode (Figma W13): which tasks to offer, today's finished sessions, and the check a session passes before
-// it is saved. The checks are pure functions (tests/unit/focus/focus.test.js).
+// Focus mode (Figma W13): which tasks to offer, the planned session, today's finished blocks, and the check a block
+// passes before it is saved. The checks are pure functions (tests/unit/focus/focus.test.js).
 const FocusSession = require('../models/FocusSession');
 const Task = require('../models/Task');
 const { todayRange } = require('./dates');
 
-// The two lengths the Focus page offers: a focus block and the break after it, in minutes.
-const LENGTHS = [
-  { focus: 25, rest: 5 },
-  { focus: 50, rest: 10 },
-];
-const lengthFor = (focusMinutes) => LENGTHS.find((length) => length.focus === Number(focusMinutes)) ?? LENGTHS[0];
+const { RHYTHMS, TOTALS, planSession, formatMinutes } = require('../public/js/focus-plan');
+
+// The session the user planned last ({ rhythm, minutes }), so the plan dialog opens on it. One hour of Pomodoro at first.
+function savedPlan(user) {
+  const saved = user.preferences?.focusPlan;
+  const plan = planSession(saved?.minutes, saved?.rhythm);
+  return plan ? { rhythm: plan.rhythm, minutes: plan.total } : { rhythm: 'pomodoro', minutes: 60 };
+}
+
+// The length of one block the timer may save: the last block of a session takes the spare minutes, so it can be
+// longer than the rhythm's block (up to 50 + 20 + 9), and a short session is one short block.
+const MIN_BLOCK = 10;
+const MAX_BLOCK = 100;
 
 const CLOCK_SLACK_MS = 60 * 1000; // the browser's clock may be a little ahead of the server's
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // a block saved from a tab left open overnight still counts, older ones don't
 
 // A finished block as the timer page sends it ({ startedAt: ISO string, minutes }), or an error message.
-// It must be one of the offered lengths, and at least that long ago: pauses make a block take longer, never shorter.
+// It must be a whole number of minutes from 10 to 100, and at least that long ago: pauses make a block take longer,
+// never shorter.
 function checkSession({ startedAt, minutes } = {}, now = new Date()) {
-  const length = LENGTHS.find((item) => item.focus === Number(minutes));
+  const length = Number(minutes);
   const start = new Date(typeof startedAt === 'string' ? startedAt : NaN);
-  if (!length) return { error: 'Unknown focus length.' };
+  if (!Number.isInteger(length) || length < MIN_BLOCK || length > MAX_BLOCK) return { error: 'A focus block is 10 to 100 minutes.' };
   if (Number.isNaN(start.getTime())) return { error: 'Missing start time.' };
   const elapsed = now - start;
-  if (elapsed + CLOCK_SLACK_MS < length.focus * 60 * 1000) return { error: 'This block hasn’t finished yet.' };
+  if (elapsed + CLOCK_SLACK_MS < length * 60 * 1000) return { error: 'This block hasn’t finished yet.' };
   if (elapsed > MAX_AGE_MS) return { error: 'This block is too old to save.' };
-  return { session: { startedAt: start, minutes: length.focus } };
+  return { session: { startedAt: start, minutes: length } };
 }
 
 // Today's finished blocks, oldest first, with the task titles, and their total minutes.
@@ -57,4 +65,4 @@ async function focusChoices(user, now = new Date()) {
   return { today, other, maxOther: MAX_OTHER_TASKS };
 }
 
-module.exports = { LENGTHS, lengthFor, checkSession, todaysSessions, focusChoices };
+module.exports = { RHYTHMS, TOTALS, planSession, formatMinutes, savedPlan, checkSession, todaysSessions, focusChoices };

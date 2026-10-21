@@ -1,0 +1,17 @@
+<%- include('../partials/shell-top') %>
+<%# Plan a focus session on a page of its own (Figma W13e): where Start leads without JavaScript. Locals: task, project, rhythms, totals, choice. %>
+<div class="mx-auto max-w-xl">
+  <a href="/focus" class="inline-flex min-h-11 items-center gap-1 font-semibold text-primary hover:underline">
+    <%- include('../partials/icon', { icon: 'chevron-left', cls: 'size-4' }) %> Focus
+  </a>
+  <section class="mt-2 rounded-box bg-base-100 p-5 sm:p-6" aria-labelledby="focus-plan-heading">
+    <h1 id="focus-plan-heading" class="text-2xl font-bold tracking-tight">Plan your session</h1>
+    <p class="mt-1 text-sm text-muted"><%= task.title %> · <%= project?.name ?? 'Inbox' %></p>
+    <div class="mt-5">
+      <%- include('_plan-form', { action: `/focus/${task._id}/plan`, cancel: '/focus' }) %>
+    </div>
+  </section>
+</div>
+<script src="/js/focus-plan.js" defer></script>
+<script src="/js/focus.js" defer></script>
+<%- include('../partials/shell-bottom') %>
