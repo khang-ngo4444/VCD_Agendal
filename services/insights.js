@@ -1,5 +1,5 @@
 // The numbers behind Insights (Figma W14): today's progress, completion rates, tasks per project, the 30-day trend
-// and habit streaks, all in the user's time zone. The calculations are pure functions (tests/insights.test.js);
+// and habit streaks, all in the user's time zone. The calculations are pure functions (tests/unit/insights/insights.test.js);
 // loadInsights gathers the data for one user.
 const Task = require('../models/Task');
 const HabitCheckIn = require('../models/HabitCheckIn');

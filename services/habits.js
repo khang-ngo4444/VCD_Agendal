@@ -1,5 +1,5 @@
 // Habit maths on local days: "YYYY-MM-DD" strings in the user's time zone, the same strings HabitCheckIn stores.
-// Pure functions (tests/habits.test.js pins down every frequency type), plus loadSummaries for the pages.
+// Pure functions (tests/unit/habits/habits.test.js pins down every frequency type), plus loadSummaries for the pages.
 const Habit = require('../models/Habit');
 const HabitCheckIn = require('../models/HabitCheckIn');
 const { addDays, weekdayOf, startOfWeek, toDateInput } = require('./dates');

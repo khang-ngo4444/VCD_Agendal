@@ -1,5 +1,5 @@
 // Focus mode (Figma W13): which tasks to offer, today's finished sessions, and the check a session passes before
-// it is saved. The checks are pure functions (tests/focus.test.js).
+// it is saved. The checks are pure functions (tests/unit/focus/focus.test.js).
 const FocusSession = require('../models/FocusSession');
 const Task = require('../models/Task');
 const { todayRange } = require('./dates');

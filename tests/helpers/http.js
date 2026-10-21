@@ -1,4 +1,4 @@
-// Shared setup for the HTTP tests (*.http.test.js): the real app (app.js) against a throwaway in-memory MongoDB,
+// Shared setup for the integration tests (tests/integration): the real app (app.js) against a throwaway in-memory MongoDB,
 // so the tests go through routes, sessions, CSRF and the database like a browser would, without touching real data.
 // Each test file gets its own database (Jest runs files in separate module registries).
 const { MongoMemoryServer } = require('mongodb-memory-server');

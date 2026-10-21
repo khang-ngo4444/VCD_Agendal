@@ -32,7 +32,8 @@
     "css": "tailwindcss -i src/css/app.css -o public/css/style.css --minify",
     "css:watch": "tailwindcss -i src/css/app.css -o public/css/style.css --watch",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:unit": "jest --testPathIgnorePatterns \".http.test.js$\"",
+    "test:unit": "jest tests/unit",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/integration",
     "seed": "node --env-file-if-exists=.env scripts/seed.js",
     "seed:users": "node --env-file-if-exists=.env scripts/seed-users.js",
     "vapid": "web-push generate-vapid-keys"
