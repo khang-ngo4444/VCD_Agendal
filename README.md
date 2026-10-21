@@ -1,7 +1,5 @@
 # Agendal
 
-[![CI](https://github.com/khang-ngo4444/VCD_Agendal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/khang-ngo4444/VCD_Agendal/actions/workflows/ci.yml)
-
 Agendal is a personal productivity and task management web application developed as the final project for **Advanced Web Design**.
 
 The application helps users organize tasks, manage projects, schedule activities, track habits, and monitor their productivity from one centralized workspace.
@@ -401,7 +399,7 @@ tests/
 - The first integration run downloads a MongoDB binary (about 100 MB); later runs reuse it.
 - `npm test` and `npm run test:integration` run Jest with `--experimental-vm-modules`, because the MongoDB driver loads `os` with a dynamic `import()` that Jest only allows with that flag.
 
-**CI:** GitHub Actions (`.github/workflows/ci.yml`) builds the CSS and runs `npm test` on every pull request into `develop` or `main`. To make a green run required before merging, turn on branch protection for `develop` and `main` (Settings › Branches) and require the **CI / test** check.
+**On GitHub, by hand:** the tests don't run on every pull request or push (a full run takes a few minutes). To run them on GitHub, open **Actions › Tests › Run workflow**, pick the branch and which tests (all, unit or integration), and press **Run workflow** (`.github/workflows/tests.yml`). It builds the CSS first, so a broken stylesheet fails the run too.
 
 ## Project Scope
 

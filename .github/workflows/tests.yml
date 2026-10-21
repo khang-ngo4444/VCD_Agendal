@@ -1,18 +1,22 @@
-# Runs on every pull request into develop or main, and on pushes to them: the CSS must build and every test must pass.
-# The HTTP tests start their own throwaway MongoDB (mongodb-memory-server), so no database service is needed here.
-name: CI
+# Runs only when started by hand (GitHub › Actions › Tests › Run workflow, then pick a branch and which tests),
+# not on every pull request or push: a full run takes a few minutes. It builds the CSS, then runs the chosen tests.
+# The integration tests start their own throwaway MongoDB (mongodb-memory-server), so no database service is needed.
+name: Tests
 
 on:
-  pull_request:
-    branches: [develop, main]
-  push:
-    branches: [develop, main]
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Which tests to run
+        type: choice
+        options: [all, unit, integration]
+        default: all
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -31,6 +35,7 @@ jobs:
           node-version: 22
 
       - name: Cache the MongoDB binary used by the tests
+        if: inputs.suite != 'unit'
         uses: actions/cache@v4
         with:
           path: .cache/mongodb-binaries
@@ -44,5 +49,12 @@ jobs:
       - name: Build the CSS
         run: npm run css
 
-      - name: Run the tests
-        run: npm test -- --ci
+      - name: Run the tests (${{ inputs.suite }})
+        env:
+          SUITE: ${{ inputs.suite }}
+        run: |
+          case "$SUITE" in
+            unit) npm run test:unit -- --ci ;;
+            integration) npm run test:integration -- --ci ;;
+            *) npm test -- --ci ;;
+          esac
