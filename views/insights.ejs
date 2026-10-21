@@ -81,32 +81,54 @@
 </ul>
 
 <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-  <%# Today: the same counts as the Daily List (card: "Statistics page: today's overview") %>
-  <section class="rounded-box bg-base-100 p-6" aria-labelledby="today-heading">
+  <%# Today: the same counts as the Daily List (card: "Statistics page: today's overview"). Three tiles that fill the card
+      (it is as tall as Tasks by project beside it), then the day as a whole: tasks and habits done out of all of them. %>
+  <%
+    const overall = { done: todayProgress.tasks.done + todayProgress.habits.done, total: todayProgress.tasks.total + todayProgress.habits.total };
+    const overallPct = pct(overall.done, overall.total);
+    const tileClass = 'flex h-full flex-col items-center justify-between gap-3 rounded-box p-4 text-center transition-colors';
+  %>
+  <section class="flex flex-col rounded-box bg-base-100 p-6" aria-labelledby="today-heading">
     <div class="flex items-baseline justify-between gap-2">
       <h2 id="today-heading" class="font-semibold">Today</h2>
       <a href="/today" class="text-sm font-medium text-primary hover:underline">Open Daily List</a>
     </div>
-    <ul class="mt-5 grid grid-cols-3 gap-4">
+    <ul class="mt-4 grid grow grid-cols-3 gap-2 sm:gap-3">
       <% rings.forEach((ring) => { const p = pct(ring.done, ring.total); %>
         <li>
-          <a href="<%= ring.href %>" class="flex flex-col items-center gap-2 rounded-box p-2 text-center hover:bg-base-200">
-            <span class="grid size-20 place-items-center rounded-full" style="background: conic-gradient(<%= ring.tone %> <%= p %>%, var(--color-base-300) 0)"
-              role="progressbar" aria-valuenow="<%= p %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= ring.label %>: <%= ring.done %> of <%= ring.total %> done">
-              <span class="grid size-16 place-items-center rounded-full bg-base-100 text-lg font-bold tabular-nums"><%= ring.done %>/<%= ring.total %></span>
+          <a href="<%= ring.href %>" class="<%= tileClass %> bg-fill hover:bg-base-300/70">
+            <span class="text-sm font-semibold"><%= ring.label %></span>
+            <%# The ring as SVG: a grey track and the done share on top, so it works on any tile colour %>
+            <span class="relative grid size-20 place-items-center sm:size-24" role="progressbar" aria-valuenow="<%= p %>" aria-valuemin="0" aria-valuemax="100"
+              aria-label="<%= ring.label %>: <%= ring.done %> of <%= ring.total %> done">
+              <svg viewBox="0 0 36 36" class="absolute inset-0 size-full -rotate-90" aria-hidden="true">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke-width="3.5" class="stroke-base-300"></circle>
+                <% if (p) { %><circle cx="18" cy="18" r="15.5" fill="none" stroke-width="3.5" stroke-linecap="round" pathLength="100" stroke-dasharray="<%= p %> 100" style="stroke: <%= ring.tone %>"></circle><% } %>
+              </svg>
+              <span class="text-lg font-bold tabular-nums sm:text-xl"><%= ring.done %><span class="text-muted">/<%= ring.total %></span></span>
             </span>
-            <span class="text-sm font-medium"><%= ring.label %></span>
+            <span class="text-xs text-muted"><%= !ring.total ? 'Nothing planned' : ring.done === ring.total ? 'All done' : `${ring.total - ring.done} to go` %></span>
           </a>
         </li>
       <% }) %>
       <li>
-        <a href="/today" class="flex flex-col items-center gap-2 rounded-box p-2 text-center hover:bg-base-200">
-          <span class="grid size-20 place-items-center rounded-full border-4 <%= todayProgress.overdue ? 'border-error text-error' : 'border-base-300' %> text-2xl font-bold tabular-nums"
+        <a href="/today" class="<%= tileClass %> <%= todayProgress.overdue ? 'bg-error/10 hover:bg-error/15' : 'bg-fill hover:bg-base-300/70' %>">
+          <span class="text-sm font-semibold">Overdue</span>
+          <span class="grid size-20 place-items-center rounded-full border-[5px] sm:size-24 sm:border-[6px] <%= todayProgress.overdue ? 'border-error text-error' : 'border-base-300' %> text-2xl font-bold tabular-nums sm:text-3xl"
             aria-label="<%= todayProgress.overdue %> overdue"><%= todayProgress.overdue %></span>
-          <span class="text-sm font-medium">Overdue</span>
+          <span class="text-xs <%= todayProgress.overdue ? 'font-medium text-error' : 'text-muted' %>"><%= todayProgress.overdue ? 'Past their due date' : 'Nothing late' %></span>
         </a>
       </li>
     </ul>
+    <div class="mt-4">
+      <div class="flex items-baseline justify-between gap-2 text-xs">
+        <span class="font-medium">Today overall</span>
+        <span class="text-muted tabular-nums"><%= overall.total ? `${overall.done} of ${overall.total} done · ${overallPct}%` : 'Nothing planned for today' %></span>
+      </div>
+      <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-base-300" role="progressbar" aria-valuenow="<%= overallPct %>" aria-valuemin="0" aria-valuemax="100" aria-label="Today overall: <%= overall.done %> of <%= overall.total %> done">
+        <div class="h-full rounded-full bg-success" style="width: <%= overallPct %>%"></div>
+      </div>
+    </div>
   </section>
 
   <%# Open and done tasks per project, in the project colours; matches the sidebar counts %>
