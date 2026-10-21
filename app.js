@@ -128,6 +128,7 @@ if (process.env.NODE_ENV !== 'production') app.use(require('./routes/components'
 
 // No route matched: the same page for every unknown address (and for /admin when you are not an admin).
 app.use((req, res) => res.status(404).render('errors/404', { title: 'Page not found · Agendal' }));
+app.use(require('./middleware/errors'));
 
 module.exports = app;
 
