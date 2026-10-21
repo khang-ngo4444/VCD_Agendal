@@ -196,7 +196,69 @@ async function run() {
       const response = await member.post(`/projects/${project._id}/rename`, { name: '' }); status(response, 422); contains(response, 'aria-invalid="true"'); assert.equal((await Project.findById(project._id)).name, 'Renamed project');
     });
     await check('PROJECT colour', 'Valid colour is saved; crafted CSS value is rejected', async () => {
-      await member.post(`/projects/${project._id}/colour`, { colour: '#2f6fde' }); await member.post(`/projects/${project._id}/colour`, { colour: 'red; background:url(evil)' }); assert.equal((await Project.findById(project._id)).colour, '#2f6fde');
+      await member.post(`/projects/${project._id}/colour`, { colour: '#19a7b2' }); status(await member.post(`/projects/${project._id}/colour`, { colour: 'red; background:url(evil)' }), 422); assert.equal((await Project.findById(project._id)).colour, '#19a7b2');
+    });
+    let customProject;
+    await check('PROJECT custom create', 'User-defined name, arbitrary hex colour and emoji persist; new/edit pages render', async () => {
+      const form = await member.get('/projects/new'); status(form, 200); semantics(form.html);
+      const response = await member.post('/projects', { name: 'Learning 日本語', colour: '#19a7b2', icon: '👩🏽‍💻' }); status(response, 302);
+      customProject = await Project.findOne({ owner: owner._id, name: 'Learning 日本語' }); assert.equal(customProject.icon, '👩🏽‍💻'); assert.equal(customProject.colour, '#19a7b2');
+      const edit = await member.get(`/projects/${customProject._id}/edit`); status(edit, 200); semantics(edit.html); contains(edit, 'Learning 日本語');
+      contains(await member.get('/today'), '👩🏽‍💻');
+    });
+    await check('PROJECT custom validation', 'Errors retain all fields without saving; markup and invalid icons/colours are rejected', async () => {
+      const response = await member.post(`/projects/${customProject._id}`, { name: 'Keep this draft', colour: 'bad', icon: 'two' }); status(response, 422); semantics(response.html);
+      contains(response, 'Keep this draft'); contains(response, 'value="bad"'); contains(response, 'Use one emoji');
+      assert.equal((await Project.findById(customProject._id)).name, 'Learning 日本語');
+      status(await member.post(`/projects/${customProject._id}`, { name: 'Keep', colour: '#123456', icon: '<svg onload=alert(1)>' }), 422);
+    });
+    await check('PROJECT custom update', 'Editing or clearing the icon preserves tasks and updates all item metadata', async () => {
+      await member.post(`/projects/${customProject._id}`, { name: 'Language practice', colour: '#a23456', icon: '📚' });
+      const saved = await Project.findById(customProject._id); assert.equal(saved.icon, '📚'); assert.equal(saved.colour, '#a23456'); contains(await member.get('/projects'), 'Language practice');
+      status(await member.post(`/projects/${customProject._id}`, { name: saved.name, colour: saved.colour, icon: '' }), 302); assert.equal((await Project.findById(saved._id)).icon, '');
+    });
+    await check('PROJECT legacy metadata', 'Existing items without icon/order stay in place when customized, with no reset or migration', async () => {
+      const createdAt = new Date('2026-01-01T00:00:00Z');
+      const old = await Project.collection.insertMany([
+        { owner: owner._id, name: 'Legacy first', colour: '#3b82f6', createdAt },
+        { owner: owner._id, name: 'Legacy second', colour: '#22c55e', createdAt },
+      ]);
+      const order = async () => (await Project.find({ owner: owner._id }).sort(require('../services/projects').PROJECT_SORT).lean()).map((item) => String(item._id));
+      const before = await order();
+      status(await member.post(`/projects/${old.insertedIds[0]}`, { name: 'Legacy first edited', colour: '#3b82f6', icon: '🎯' }), 302);
+      assert.deepEqual(await order(), before);
+      assert.equal((await Project.findById(old.insertedIds[0])).icon, '🎯');
+      await Project.deleteMany({ _id: { $in: Object.values(old.insertedIds) }, owner: owner._id });
+    });
+    await check('PROJECT reorder', 'Move up/down persists one shared order in sidebar/overview and keeps boundary moves stable', async () => {
+      const sort = require('../services/projects').PROJECT_SORT;
+      const ids = async () => (await Project.find({ owner: owner._id }).sort(sort).lean()).map((item) => String(item._id));
+      const original = await ids();
+      const startIndex = original.indexOf(String(customProject._id));
+      status(await member.post(`/projects/${customProject._id}/move`, { direction: 'up', returnTo: '/projects' }), 302);
+      assert.equal((await ids())[startIndex - 1], String(customProject._id));
+      const response = await member.get('/projects');
+      const dom = new JSDOM(response.html);
+      try {
+        const overview = [...dom.window.document.querySelectorAll('main [data-project-item]>div>a')].map((a) => a.getAttribute('href'));
+        const sidebar = [...dom.window.document.querySelectorAll('nav[aria-label="Main"] [data-project-item]>a')].map((a) => a.getAttribute('href'));
+        assert.deepEqual(overview, sidebar); assert.equal(sidebar[startIndex - 1], `/projects/${customProject._id}`);
+      } finally { dom.window.close(); }
+      for (let n = 0; n < startIndex + 1; n += 1) await member.post(`/projects/${customProject._id}/move`, { direction: 'up' });
+      assert.equal((await ids())[0], String(customProject._id));
+      for (let n = 0; n < startIndex; n += 1) await member.post(`/projects/${customProject._id}/move`, { direction: 'down' });
+      assert.deepEqual(await ids(), original);
+    });
+    await check('PROJECT custom isolation', 'Other accounts cannot view, customize or reorder this item; invalid directions never mutate', async () => {
+      const peerOrder = JSON.stringify(await Project.find({ owner: peerUser._id }).select('_id order').sort({ _id: 1 }).lean());
+      for (const suffix of ['edit']) status(await peer.get(`/projects/${customProject._id}/${suffix}`), 404);
+      status(await peer.post(`/projects/${customProject._id}`, { name: 'Stolen', colour: '#123456', icon: '🎨' }), 404);
+      status(await peer.post(`/projects/${customProject._id}/move`, { direction: 'up' }), 404);
+      status(await member.post(`/projects/${customProject._id}/move`, { direction: 'sideways' }), 422);
+      status(await member.post(`/projects/${customProject._id}`, { name: 'No CSRF', colour: '#123456' }, { csrf: false }), 403);
+      const response = await member.post(`/projects/${customProject._id}/move`, { direction: 'up', returnTo: 'https://example.com' }); assert.equal(response.location, '/projects');
+      assert.equal((await Project.findById(customProject._id)).name, 'Language practice');
+      assert.equal(JSON.stringify(await Project.find({ owner: peerUser._id }).select('_id order').sort({ _id: 1 }).lean()), peerOrder);
     });
     await check('TASK empty', 'Quick-add shows inline errors and retains chosen project', async () => {
       const response = await member.post('/tasks', { title: '', project: String(project._id), returnTo: '/board' }); status(response, 422); contains(response, 'Type a title'); contains(response, `value="${project._id}" selected`);
