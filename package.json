@@ -32,6 +32,7 @@
     "css": "tailwindcss -i src/css/app.css -o public/css/style.css --minify",
     "css:watch": "tailwindcss -i src/css/app.css -o public/css/style.css --watch",
     "test": "jest",
+    "test:flows": "node --env-file-if-exists=.env scripts/test-flows.js",
     "seed": "node --env-file-if-exists=.env scripts/seed.js",
     "seed:users": "node --env-file-if-exists=.env scripts/seed-users.js",
     "vapid": "web-push generate-vapid-keys"
@@ -48,6 +49,7 @@
   },
   "homepage": "https://github.com/khang-ngo4444/Thay_Dinh_Dep_Trai#readme",
   "devDependencies": {
-    "jest": "^30.5.2"
+    "jest": "^30.5.2",
+    "jsdom": "^26.1.0"
   }
 }

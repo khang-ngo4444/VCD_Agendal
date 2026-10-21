@@ -1,5 +1,10 @@
 # Agendal
 
+Local QA: `npm test -- --runInBand`, `npm run test:flows`, then `npm run css`.
+The flow suite needs local MongoDB (27017) and Mailpit (SMTP 1025, API 8025);
+it creates and removes its own test database. See [test plan](docs/flow-test-plan.md)
+and [executed results and limitations](docs/flow-test-results.md).
+
 Agendal is a personal productivity and task management web application developed as the final project for **Advanced Web Design**.
 
 The application helps users organize tasks, manage projects, schedule activities, track habits, and monitor their productivity from one centralized workspace.
