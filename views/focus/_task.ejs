@@ -29,7 +29,7 @@
       <% if (meta.length) { %><span aria-hidden="true">·</span><%= meta.join(' · ') %><% } %>
     </p>
   </div>
-  <a href="/focus/<%= task._id %>" class="btn btn-primary h-10 shrink-0 gap-1.5 rounded-full px-4 pointer-coarse:h-11" aria-label="Start focusing on “<%= task.title %>”">
+  <a href="/focus/<%= task._id %>/plan" data-focus-plan="<%= task.title %> · <%= project?.name ?? 'Inbox' %>" class="btn btn-primary h-10 shrink-0 gap-1.5 rounded-full px-4 pointer-coarse:h-11" aria-label="Start focusing on “<%= task.title %>”">
     <%- include('../partials/icon', { icon: 'play', cls: 'size-3.5 fill-current' }) %> Start
   </a>
 </li>

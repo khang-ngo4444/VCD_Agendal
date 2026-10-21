@@ -1,25 +1,29 @@
 <%- include('../partials/header') %>
 <%#
-  Focus timer (Figma W13b–d, M47b): full screen, no sidebar, the same layout on phones and desktops.
-  Locals: task, project (sidebar entry), length { focus, rest }, sessionsToday. public/js/focus.js runs the timer;
-  without it the page still offers Complete and Exit. data-phase on the root (focus / break / ready) colours the page.
+  Focus timer (Figma W13b–d, W13f, M47b, M47d): full screen, no sidebar, the same layout on phones and desktops.
+  Locals: task, project (sidebar entry), plan (public/js/focus-plan.js), rhythm, sessionsToday.
+  public/js/focus.js runs the session: each block, then its break, then the next block, by themselves, and the
+  Session complete screen at the end. Without it the page still offers Complete and Exit.
+  data-phase on the root (focus / break / complete) colours the page.
 %>
 <%# [&~#toast-region]: toasts sit above the keyboard hint at the bottom %>
 <div class="group relative isolate flex min-h-dvh [&~#toast-region]:mb-10 flex-col overflow-hidden bg-base-200 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8"
-  data-focus-timer data-phase="focus" data-task-id="<%= task._id %>" data-focus-minutes="<%= length.focus %>" data-rest-minutes="<%= length.rest %>"
-  data-sessions-today="<%= sessionsToday %>">
-  <div aria-hidden="true" class="pointer-events-none absolute top-[44%] left-1/2 -z-10 size-[min(150vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-primary)_28%,transparent),transparent)] transition-opacity duration-700 group-data-[phase=break]:opacity-0"></div>
-  <div aria-hidden="true" class="pointer-events-none absolute top-[44%] left-1/2 -z-10 size-[min(150vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-success)_26%,transparent),transparent)] opacity-0 transition-opacity duration-700 group-data-[phase=break]:opacity-100"></div>
+  data-focus-timer data-phase="focus" data-task-id="<%= task._id %>" data-plan="<%= JSON.stringify(plan.steps) %>"
+  data-plan-key="<%= plan.rhythm %>-<%= plan.total %>" data-block-minutes="<%= rhythm.focus %>" data-sessions-today="<%= sessionsToday %>">
+  <div aria-hidden="true" class="pointer-events-none absolute top-[44%] left-1/2 -z-10 size-[min(150vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-primary)_28%,transparent),transparent)] transition-opacity duration-700 group-data-[phase=break]:opacity-0 group-data-[phase=complete]:opacity-0"></div>
+  <div aria-hidden="true" class="pointer-events-none absolute top-[44%] left-1/2 -z-10 size-[min(150vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-success)_26%,transparent),transparent)] opacity-0 transition-opacity duration-700 group-data-[phase=break]:opacity-100 group-data-[phase=complete]:opacity-100"></div>
 
   <header class="mx-auto grid w-full max-w-[1360px] grid-cols-[1fr_auto_1fr] items-center gap-2">
     <a href="/focus" class="inline-flex min-h-11 items-center gap-1 justify-self-start font-semibold text-primary hover:underline" data-focus-exit>
       <%- include('../partials/icon', { icon: 'chevron-left', cls: 'size-4' }) %><span class="sm:hidden">Exit</span><span class="hidden sm:inline">Exit focus</span>
     </a>
-    <p class="text-center text-sm text-muted" data-session-label>Session <%= sessionsToday + 1 %> today</p>
-    <p class="invisible justify-self-end text-sm text-muted sm:visible">Focus <%= length.focus %> · Break <%= length.rest %></p>
+    <p class="text-center text-sm text-muted" data-session-label>Block 1 of <%= plan.blocks %></p>
+    <p class="invisible justify-self-end text-sm text-muted sm:visible"><%= rhythm.name %> · <%= formatMinutes(plan.total) %></p>
   </header>
+  <%# The session's blocks and breaks, drawn by public/js/focus.js: done, now, still to come %>
+  <div class="mx-auto mt-2 flex h-1.5 w-full max-w-[1360px] gap-1" aria-hidden="true" data-plan-bar></div>
 
-  <main id="main" class="flex grow flex-col items-center justify-center py-6 text-center">
+  <main id="main" class="flex grow flex-col items-center justify-center py-6 text-center" data-running>
     <span class="inline-flex max-w-full items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium">
       <span class="size-2 shrink-0 rounded-full <%= project?.colour ? '' : 'bg-base-300' %>" <% if (project?.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span>
       <span class="truncate"><%= project?.name ?? 'Inbox' %></span>
@@ -33,8 +37,8 @@
           class="stroke-primary transition-[stroke-dashoffset] duration-300 ease-linear group-data-[phase=break]:stroke-success motion-reduce:transition-none" data-ring></circle>
       </svg>
       <div class="absolute inset-0 grid place-content-center">
-        <p class="text-[clamp(3.5rem,17vw,5.5rem)] leading-none font-semibold tracking-tight tabular-nums" data-time><%= String(length.focus).padStart(2, '0') %>:00</p>
-        <p class="mt-3 px-6 text-sm text-muted sm:text-base" data-status>Focus · <%= length.focus %> min</p>
+        <p class="text-[clamp(3.5rem,17vw,5.5rem)] leading-none font-semibold tracking-tight tabular-nums" data-time><%= String(plan.steps[0].minutes).padStart(2, '0') %>:00</p>
+        <p class="mt-3 px-6 text-sm text-muted sm:text-base" data-status>Focus · <%= plan.steps[0].minutes %> min</p>
       </div>
     </div>
     <%# Announced once per change of state, not every second %>
@@ -48,7 +52,7 @@
         <span data-icon-pause><%- include('../partials/icon', { icon: 'pause', cls: 'size-7 fill-current' }) %></span>
         <span data-icon-play hidden><%- include('../partials/icon', { icon: 'play', cls: 'ml-1 size-7 fill-current' }) %></span>
       </button>
-      <button type="button" class="btn h-12 min-w-12 rounded-full border-0 bg-base-content/10 px-0 text-primary shadow-none group-data-[phase=break]:px-4" aria-label="Skip to the break" data-skip>
+      <button type="button" class="btn h-12 min-w-12 rounded-full border-0 bg-base-content/10 px-0 text-primary shadow-none group-data-[phase=break]:px-4" aria-label="Skip this block" data-skip>
         <span class="group-data-[phase=break]:hidden" aria-hidden="true"><%- include('../partials/icon', { icon: 'chevron-right', cls: 'size-5' }) %></span>
         <span class="hidden font-semibold group-data-[phase=break]:inline">Skip break</span>
       </button>
@@ -65,9 +69,32 @@
     <noscript><p class="mt-4 text-sm text-muted">The timer needs JavaScript. You can still complete the task.</p></noscript>
   </main>
 
+  <%# The end of the session (W13f / M47d) %>
+  <main class="flex grow flex-col items-center justify-center py-6 text-center" data-complete hidden>
+    <span class="grid size-20 place-items-center rounded-full bg-success text-success-content"><%- include('../partials/icon', { icon: 'check', cls: 'size-9' }) %></span>
+    <h1 class="mt-5 text-3xl font-bold tracking-tight sm:text-4xl" tabindex="-1" data-complete-heading>Session complete</h1>
+    <p class="mt-2 max-w-2xl font-semibold text-balance text-muted"><%= task.title %></p>
+    <p class="mt-1 text-sm text-muted" data-complete-summary></p>
+    <div class="mt-8 grid w-full max-w-sm gap-2.5">
+      <form method="post" action="/tasks/<%= task._id %>/complete" data-focus-complete>
+        <%- include('../partials/csrf') %>
+        <input type="hidden" name="done" value="1">
+        <input type="hidden" name="returnTo" value="/focus">
+        <button type="submit" class="btn btn-primary h-12 w-full gap-2 rounded-full text-base">
+          <%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %> Mark task done
+        </button>
+      </form>
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" class="btn h-11 rounded-full" data-more>+ One more block</button>
+        <a href="/focus" class="btn h-11 rounded-full" data-focus-back>Back to Focus</a>
+      </div>
+    </div>
+  </main>
+
   <footer class="text-center text-xs text-muted">
     <p class="pointer-coarse:hidden"><kbd class="kbd kbd-sm">Space</kbd> pause / resume · <kbd class="kbd kbd-sm">Esc</kbd> leave focus</p>
     <p class="pointer-fine:hidden" data-wake-note hidden>The screen stays on while you focus</p>
+    <button type="button" class="mt-1 min-h-9 font-semibold text-primary hover:underline" data-notify hidden>Notify me when a break starts or ends</button>
   </footer>
 </div>
 
@@ -82,5 +109,6 @@
     </form>
   </div>
 </dialog>
+<script src="/js/focus-plan.js" defer></script>
 <script src="/js/focus.js" defer></script>
 <%- include('../partials/footer') %>

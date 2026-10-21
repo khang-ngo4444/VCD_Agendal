@@ -1,12 +1,10 @@
-// No database: the checks behind Focus mode.
-const { LENGTHS, lengthFor, checkSession } = require('../../../services/focus');
+// No database: the saved plan and the check a finished block passes before it is saved.
+const { savedPlan, checkSession } = require('../../../services/focus');
 
-test('lengthFor: the offered lengths, 25 / 5 for anything else', () => {
-  expect(LENGTHS).toEqual([{ focus: 25, rest: 5 }, { focus: 50, rest: 10 }]);
-  expect(lengthFor(50)).toEqual({ focus: 50, rest: 10 });
-  expect(lengthFor('50')).toEqual({ focus: 50, rest: 10 });
-  expect(lengthFor(undefined)).toEqual({ focus: 25, rest: 5 });
-  expect(lengthFor(90)).toEqual({ focus: 25, rest: 5 });
+test('savedPlan: the last plan, one hour of Pomodoro at first or when it no longer fits', () => {
+  expect(savedPlan({ preferences: { focusPlan: { rhythm: 'deep', minutes: 90 } } })).toEqual({ rhythm: 'deep', minutes: 90 });
+  expect(savedPlan({ preferences: {} })).toEqual({ rhythm: 'pomodoro', minutes: 60 });
+  expect(savedPlan({ preferences: { focusPlan: { rhythm: 'deep', minutes: 5 } } })).toEqual({ rhythm: 'pomodoro', minutes: 60 });
 });
 
 describe('checkSession', () => {
@@ -15,6 +13,7 @@ describe('checkSession', () => {
 
   test('a block that ran its full length is saved with that length', () => {
     expect(checkSession({ startedAt: ago(25), minutes: '25' }, now)).toEqual({ session: { startedAt: new Date(ago(25)), minutes: 25 } });
+    expect(checkSession({ startedAt: ago(30), minutes: '30' }, now).session.minutes).toBe(30); // a last block with spare minutes
   });
 
   test('pauses make a block take longer, which is fine; a little clock drift is allowed', () => {
@@ -27,12 +26,15 @@ describe('checkSession', () => {
     expect(checkSession({ startedAt: ago(30), minutes: '50' }, now).error).toBeDefined();
   });
 
-  test('only offered lengths, a real start time, and not older than a day', () => {
-    expect(checkSession({ startedAt: ago(90), minutes: '90' }, now)).toEqual({ error: 'Unknown focus length.' });
+  test('10 to 100 whole minutes, a real start time, and not older than a day', () => {
+    const tooLong = { error: 'A focus block is 10 to 100 minutes.' };
+    expect(checkSession({ startedAt: ago(200), minutes: '101' }, now)).toEqual(tooLong);
+    expect(checkSession({ startedAt: ago(200), minutes: '9' }, now)).toEqual(tooLong);
+    expect(checkSession({ startedAt: ago(200), minutes: '25.5' }, now)).toEqual(tooLong);
     expect(checkSession({ startedAt: 'yesterday', minutes: '25' }, now)).toEqual({ error: 'Missing start time.' });
     expect(checkSession({ startedAt: ['x'], minutes: '25' }, now)).toEqual({ error: 'Missing start time.' });
     expect(checkSession({ minutes: '25' }, now)).toEqual({ error: 'Missing start time.' });
-    expect(checkSession(undefined, now)).toEqual({ error: 'Unknown focus length.' });
+    expect(checkSession(undefined, now)).toEqual(tooLong);
     expect(checkSession({ startedAt: ago(25 * 60), minutes: '25' }, now)).toEqual({ error: 'This block is too old to save.' });
   });
 });

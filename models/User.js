@@ -28,7 +28,11 @@ const userSchema = new Schema(
       weekStartsOn: { type: Number, enum: [0, 1], default: 1 }, // 0 = Sunday, 1 = Monday
       calendarLayout: { type: String, enum: ['day', 'week', 'month'], default: 'day' }, // which layout the Calendar opens on
       insightsChart: { type: String, enum: ['bar', 'line'], default: 'bar' }, // Insights › Last 30 days: bars or lines
-      focusMinutes: { type: Number, enum: [25, 50], default: 25 }, // Focus mode: 25 min + 5 break, or 50 + 10
+      // Focus mode: the last planned session, a rhythm and a total length in minutes (public/js/focus-plan.js)
+      focusPlan: {
+        rhythm: { type: String, enum: ['pomodoro', 'deep'], default: 'pomodoro' },
+        minutes: { type: Number, min: 10, max: 240, default: 60 },
+      },
     },
     // Where reminders go (Settings → Notifications) and the counters that keep email from turning into spam.
     notifications: {
