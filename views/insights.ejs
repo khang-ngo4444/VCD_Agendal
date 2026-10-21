@@ -226,14 +226,14 @@
 <%#
   Semester activity (card: "Semester activity heatmap", Figma W14): tasks done per day for the last 20 weeks, one column
   per week. Shades are classes written out in full so Tailwind keeps them. The grid is decorative for screen readers;
-  the weekly totals are in a table instead.
+  the weekly totals are in a table instead. Beside it, one rule-based suggestion (card: "Insights suggestions").
 %>
 <%
   const SHADES = ['bg-base-300', 'bg-primary/30', 'bg-primary/55', 'bg-primary/80', 'bg-primary'];
   const dayName = (day) => label(day, { weekday: 'short', day: 'numeric', month: 'short' });
   const monthAt = new Map(semester.months.map(({ month, column }) => [column, label(`${month}-01`, { month: 'short' })]));
 %>
-<div class="mt-5">
+<div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
   <section class="min-w-0 rounded-box bg-base-100 p-6" aria-labelledby="semester-heading">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <h2 id="semester-heading" class="font-semibold">Semester activity</h2>
@@ -276,6 +276,36 @@
       </tbody>
     </table></div>
   </section>
+
+  <%# One suggestion at a time, worked out from the user's own data with fixed rules (services/suggestions.js) %>
+  <% if (suggestion) { %>
+    <section class="flex flex-col rounded-box border-[1.5px] border-dashed border-primary bg-base-100 p-6" aria-labelledby="suggestion-heading">
+      <p class="text-sm font-semibold text-primary"><span aria-hidden="true">✦ </span>Pattern spotted · Suggestion</p>
+      <h2 id="suggestion-heading" class="mt-2 text-xl leading-snug font-semibold"><%= suggestion.title %></h2>
+      <p class="mt-2 text-sm text-muted"><%= suggestion.body %></p>
+      <div class="mt-auto flex flex-wrap items-center gap-2 pt-5">
+        <% if (suggestion.action.form) { %>
+          <form method="post" action="<%= suggestion.action.form.action %>" data-fetch>
+            <%- include('partials/csrf') %>
+            <% Object.entries(suggestion.action.form.fields).forEach(([name, value]) => { %><input type="hidden" name="<%= name %>" value="<%= value %>"><% }) %>
+            <button type="submit" class="btn btn-primary h-11 rounded-full px-5"><%= suggestion.action.label %></button>
+          </form>
+        <% } else { %>
+          <a href="<%= suggestion.action.href %>" class="btn btn-primary h-11 rounded-full px-5"><%= suggestion.action.label %></a>
+        <% } %>
+        <form method="post" action="/insights/suggestions/<%= suggestion.key %>/dismiss" data-fetch>
+          <%- include('partials/csrf') %>
+          <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+          <button type="submit" class="btn btn-ghost h-11 rounded-full px-4 text-muted" aria-label="Dismiss this suggestion for 7 days">Dismiss</button>
+        </form>
+      </div>
+    </section>
+  <% } else { %>
+    <section class="rounded-box border border-dashed border-base-300 p-6 text-sm text-muted" aria-labelledby="suggestion-heading">
+      <h2 id="suggestion-heading" class="font-semibold text-base-content">No suggestion right now</h2>
+      <p class="mt-2">Suggestions appear when your own data shows a clear pattern, for example once you have finished 10 tasks in a month.</p>
+    </section>
+  <% } %>
 </div>
 
 <%# Habit streaks (card: "Habit streaks overview"): the same numbers as each habit's page, sortable by column %>

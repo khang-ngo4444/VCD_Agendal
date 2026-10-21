@@ -6,6 +6,7 @@ const HabitCheckIn = require('../models/HabitCheckIn');
 const FocusSession = require('../models/FocusSession');
 const { loadSummaries, completion } = require('./habits');
 const { taskCounts } = require('./projects');
+const { pickSuggestion } = require('./suggestions');
 const { addDays, dayRange, parseDateInput, startOfWeek, toDateInput, zonedTime } = require('./dates');
 
 const TREND_DAYS = 30;
@@ -124,7 +125,7 @@ async function loadInsights(user, { period = 'week', sort = 'current', projects 
     Task.find({ ...mine, 'schedule.start': { $gte: todayStart, $lt: tomorrowStart } }, { completedAt: 1 }).lean(),
     Task.find({ ...mine, 'schedule.start': null, dueDate: { $gte: todayStart, $lt: tomorrowStart } }, { completedAt: 1 }).lean(),
     Task.find({ ...mine, completedAt: null, dueDate: { $lt: todayStart } }, { dueDate: 1, schedule: 1 }).lean(),
-    // Everything finished in the last 20 weeks: the heatmap, the 30-day trend read from it.
+    // Everything finished in the last 20 weeks: the heatmap, the 30-day trend and the suggestions all read from it.
     Task.find({ ...mine, completedAt: { $gte: dayStart(semester.from, timeZone) } }, { completedAt: 1 }).lean(),
     HabitCheckIn.find({ owner: user._id, date: { $gte: trendDays[0], $lte: today } }, { date: 1 }).lean(),
     loadSummaries(user, today, { archivedAt: null }),
@@ -179,6 +180,7 @@ async function loadInsights(user, { period = 'week', sort = 'current', projects 
     semester: semesterGrid(today, weekStartsOn, completedCounts),
     habits: sortHabits(habitRows, sort),
     sort: sortKey(sort),
+    suggestion: pickSuggestion({ completedAt: completed.map((task) => task.completedAt), overdueTasks, summaries, today, now, timeZone, dismissed: user.suggestionsDismissed }),
   };
 }
 

@@ -1,6 +1,8 @@
-// Insights through the real routes: the Semester period, the semester heatmap, and Focus time.
+// Insights through the real routes: the Semester period, the semester heatmap, Focus time, and a suggestion that
+// stays hidden after Dismiss.
 const Task = require('../../models/Task');
 const FocusSession = require('../../models/FocusSession');
+const User = require('../../models/User');
 const { startApp, stopApp, resetData, post, signUp } = require('../helpers/http');
 
 beforeAll(startApp, 120000);
@@ -43,4 +45,24 @@ test('Focus time adds up the finished focus blocks of the period', async () => {
   ]);
   res = await agent.get('/insights');
   expect(res.text).toMatch(/Focus time<\/p>\s*<p[^>]*>1\.3 <span[^>]*>h<\/span>/);
+});
+
+test('a suggestion appears with enough data, and Dismiss hides it on later visits', async () => {
+  const { agent, user } = await signUp();
+  await finishedTasks(user, 10);
+  let res = await agent.get('/insights');
+  expect(res.text).toContain('You finish most tasks between 9 and 11 in the morning.');
+  await post(agent, '/insights/suggestions/peak-9/dismiss', { returnTo: '/insights' }, '/insights');
+  res = await agent.get('/insights');
+  expect(res.text).not.toContain('You finish most tasks between 9 and 11');
+  expect(res.text).toContain('No suggestion right now');
+  const saved = await User.findById(user._id);
+  expect(saved.suggestionsDismissed.get('peak-9').getTime()).toBeGreaterThan(Date.now() + 6 * DAY);
+});
+
+test('a malformed suggestion key changes nothing', async () => {
+  const { agent, user } = await signUp();
+  const res = await post(agent, '/insights/suggestions/..%2Fx/dismiss', {}, '/insights');
+  expect(res.status).toBe(302);
+  expect((await User.findById(user._id)).suggestionsDismissed).toBeUndefined();
 });
