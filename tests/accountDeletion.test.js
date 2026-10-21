@@ -70,4 +70,12 @@ describe('deleteAccount', () => {
     await deleteAccount(req, { ...user, avatar: undefined });
     expect(fs.rm).not.toHaveBeenCalled();
   });
+
+  test('a locked avatar leaves account and data intact so the user can retry deletion', async () => {
+    fs.rm.mockRejectedValueOnce(Object.assign(new Error('Photo is locked'), { code: 'EBUSY' }));
+    await expect(deleteAccount(req, user)).rejects.toThrow('Photo is locked');
+    expect(User.deleteOne).not.toHaveBeenCalled();
+    for (const Model of OWNED) expect(Model.deleteMany).not.toHaveBeenCalled();
+    expect(ActivityLog.create).not.toHaveBeenCalled();
+  });
 });

@@ -142,6 +142,11 @@ exports.checkIn = async (req, res) => {
   const today = localToday(req.user);
   const returnTo = safeReturnTo(req.body?.returnTo, '/habits');
 
+  if (!['0', '1'].includes(req.body?.done)) {
+    flash(req, 'error', 'Choose Check in or Undo. Your check-in history was not changed.');
+    return res.redirect(returnTo);
+  }
+
   if (!parseDateInput(date) || date > today || date <= addDays(today, -BACKFILL_DAYS)) {
     flash(req, 'error', 'You can check in for today and the 6 days before, not other days.');
     return res.redirect(returnTo);

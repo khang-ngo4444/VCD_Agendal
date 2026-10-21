@@ -15,12 +15,14 @@
     <%# The Inbox is built in, so only real projects can be renamed, recoloured or deleted. %>
     <% const taskCount = openTasks.length + doneTasks.length; %>
     <div class="mt-4 flex flex-wrap items-start gap-2">
-      <details class="dropdown" data-dismissable>
+      <details class="dropdown" data-dismissable <%= locals.renameError ? 'open' : '' %>>
         <summary class="btn h-11 list-none rounded-full border border-base-300 bg-base-100 px-4 text-primary">Rename</summary>
-        <form method="post" action="/projects/<%= project._id %>/rename" class="dropdown-content z-30 mt-2 flex w-72 gap-2 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
+        <form method="post" action="/projects/<%= project._id %>/rename" class="dropdown-content z-30 mt-2 flex w-72 items-end gap-2 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
           <%- include('../partials/csrf') %>
-          <label for="rename-project" class="sr-only">Project name</label>
-          <input id="rename-project" name="name" type="text" maxlength="60" value="<%= project.name %>" class="input h-11 grow" required>
+          <div class="min-w-0 grow"><label for="rename-project" class="mb-1.5 block text-xs font-semibold">Project name</label>
+          <input id="rename-project" name="name" type="text" maxlength="60" value="<%= locals.renameValue ?? project.name %>" class="input h-11 w-full <%= locals.renameError ? 'input-error' : '' %>" required
+            <% if (locals.renameError) { %>aria-invalid="true" aria-describedby="rename-project-error" autofocus<% } %>>
+          <% if (locals.renameError) { %><p id="rename-project-error" class="mt-1.5 text-sm text-error"><%= renameError %></p><% } %></div>
           <button type="submit" class="btn btn-primary h-11 rounded-full">Save</button>
         </form>
       </details>
@@ -41,7 +43,7 @@
 
       <form method="post" action="/projects/<%= project._id %>/delete" class="ml-auto"
         data-confirm="Delete “<%= project.name %>”?"
-        data-confirm-detail="<%= taskCount ? `Its ${taskCount} task${taskCount === 1 ? '' : 's'} will move to the Inbox.` : 'It has no tasks.' %>"
+        data-confirm-detail="<%= taskCount ? `Its ${taskCount} task${taskCount === 1 ? '' : 's'} will move to the Inbox.` : 'It has no tasks.' %> Any calendar events keep their dates with no project."
         data-confirm-button="Delete project">
         <%- include('../partials/csrf') %>
         <button type="submit" class="btn btn-ghost h-11 rounded-full text-error">
@@ -54,13 +56,13 @@
 
 <section class="mt-6" aria-labelledby="open-heading">
   <h2 id="open-heading" class="mb-2 font-semibold">Open · <%= openTasks.length %></h2>
+  <label for="project-quick-add" class="mb-1.5 block text-xs font-semibold">Add a task to <%= project ? project.name : 'the Inbox' %></label>
   <form method="post" action="/tasks" class="mb-3 flex gap-2" novalidate>
     <%- include('../partials/csrf') %>
     <input type="hidden" name="project" value="<%= project ? project._id : '' %>">
     <input type="hidden" name="returnTo" value="<%= currentPath %>">
-    <label for="project-quick-add" class="sr-only">Add a task to <%= project ? project.name : 'the Inbox' %></label>
     <input id="project-quick-add" name="title" type="text" maxlength="200" required
-      placeholder="Add a task to <%= project ? project.name : 'the Inbox' %> and press Enter" class="input h-11 grow bg-base-100">
+      placeholder="What needs doing?" class="input h-11 min-w-0 grow bg-base-100">
     <button type="submit" class="btn btn-primary h-11 rounded-full px-4" aria-label="Add task">
       <%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %><span class="hidden sm:inline">Add</span>
     </button>

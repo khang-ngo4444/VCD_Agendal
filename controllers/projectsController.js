@@ -1,5 +1,6 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
+const Event = require('../models/Event');
 const { findOwned } = require('../services/ownership');
 const { flash } = require('../middleware/flash');
 const { PROJECT_COLOURS, isPresetColour, taskCounts } = require('../services/projects');
@@ -46,13 +47,15 @@ exports.create = async (req, res) => {
 
 
 // Shared by /projects/:id and /inbox (project = null).
-async function renderTaskList(req, res, project) {
+async function renderTaskList(req, res, project, { renameValue, renameError } = {}) {
   const tasks = await Task.find({ owner: req.user._id, project: project?._id ?? null, deletedAt: null }).lean();
   const byDueDate = (a, b) => (a.dueDate ?? Infinity) - (b.dueDate ?? Infinity) || a.createdAt - b.createdAt;
-  res.render('projects/show', {
+  res.status(renameError ? 422 : 200).render('projects/show', {
     title: `${project ? project.name : 'Inbox'} · Agendal`,
     project,
     projectColours: PROJECT_COLOURS,
+    renameValue,
+    renameError,
     openTasks: tasks.filter((task) => !task.completedAt).sort(byDueDate),
     doneTasks: tasks.filter((task) => task.completedAt).sort((a, b) => b.completedAt - a.completedAt),
   });
@@ -66,7 +69,7 @@ exports.rename = async (req, res) => {
   const project = await findOwned(Project, req.params.id, req.user._id);
   const name = text(req.body?.name).trim();
   const error = validateName(name);
-  if (error) flash(req, 'error', error);
+  if (error) return renderTaskList(req, res, project, { renameValue: name, renameError: error });
   else {
     project.name = name;
     await project.save();
@@ -89,7 +92,8 @@ exports.setColour = async (req, res) => {
 exports.remove = async (req, res) => {
   const project = await findOwned(Project, req.params.id, req.user._id);
   await Task.updateMany({ owner: req.user._id, project: project._id }, { $set: { project: null } });
+  const events = await Event.updateMany({ owner: req.user._id, project: project._id }, { $set: { project: null } });
   await project.deleteOne();
-  flash(req, 'success', `“${project.name}” deleted. Its tasks are in the Inbox.`);
+  flash(req, 'success', `“${project.name}” deleted. Its tasks are in the Inbox.${events.modifiedCount ? ' Its calendar events kept their dates with no project.' : ''}`);
   res.redirect('/projects');
 };

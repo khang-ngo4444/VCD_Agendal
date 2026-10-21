@@ -1,10 +1,10 @@
 <%- include('../partials/shell-top') %>
 <div class="flex flex-wrap items-end justify-between gap-4">
-  <h1 class="text-3xl font-bold tracking-tight">Projects</h1>
-  <form method="post" action="/projects" class="flex w-full max-w-sm items-start gap-2 sm:w-auto" novalidate>
+  <div><h1 class="text-3xl font-bold tracking-tight">Projects</h1><p class="mt-2 text-sm text-muted">Group related tasks by goal. Tasks without a project stay in Inbox.</p></div>
+  <form method="post" action="/projects" class="flex w-full max-w-sm items-end gap-2" novalidate>
     <%- include('../partials/csrf') %>
-    <div class="grow">
-      <label for="project-name" class="sr-only">New project name</label>
+    <div class="min-w-0 grow">
+      <label for="project-name" class="mb-1.5 block text-xs font-semibold">Project name (required)</label>
       <input id="project-name" name="name" type="text" maxlength="<%= maxNameLength %>" placeholder="New project name"
         value="<%= values.name %>" class="input h-11 w-full <%= errors.name ? 'input-error' : '' %>"
         <% if (errors.name) { %>aria-invalid="true" aria-describedby="project-name-error" autofocus<% } %>>

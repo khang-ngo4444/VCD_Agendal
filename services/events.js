@@ -8,10 +8,12 @@ const { occurrences } = require('./recurrence');
 async function eventsBetween(owner, from, to, timeZone, projects) {
   const events = await Event.find({
     owner,
-    start: { $lt: to },
     $or: [
-      { 'repeat.frequency': null, end: { $gt: from } },
-      { 'repeat.frequency': { $ne: null }, $or: [{ 'repeat.until': null }, { 'repeat.until': { $gte: from } }] },
+      { start: { $lt: to }, $or: [
+        { 'repeat.frequency': null, end: { $gt: from } },
+        { 'repeat.frequency': { $ne: null }, $or: [{ 'repeat.until': null }, { 'repeat.until': { $gte: from } }] },
+      ] },
+      { exceptions: { $elemMatch: { cancelled: { $ne: true }, start: { $lt: to }, end: { $gt: from } } } },
     ],
   }).lean();
 

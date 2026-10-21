@@ -1,14 +1,15 @@
 jest.mock('../models/Task', () => ({ create: jest.fn() }));
+jest.mock('../models/Project', () => ({ findOne: jest.fn().mockResolvedValue({ _id: '507f1f77bcf86cd799439011' }) }));
 const Task = require('../models/Task');
 const tasks = require('../controllers/tasksController');
 
 test('an invalid quick-add preserves the draft and project instead of redirecting away from the error', async () => {
-  const req = { user: { _id: 'owner', timeZone: 'Asia/Ho_Chi_Minh' }, body: { title: '  ', project: 'saved-project', returnTo: '/board?project=inbox' } };
+  const req = { user: { _id: 'owner', timeZone: 'Asia/Ho_Chi_Minh' }, body: { title: '  ', project: '507f1f77bcf86cd799439011', returnTo: '/board?project=inbox' } };
   const res = { status: jest.fn().mockReturnThis(), render: jest.fn() };
   await tasks.create(req, res);
   expect(res.status).toHaveBeenCalledWith(422);
   expect(res.render).toHaveBeenCalledWith('tasks/new', expect.objectContaining({
-    values: expect.objectContaining({ title: '  ', project: 'saved-project', returnTo: '/board?project=inbox' }),
+    values: expect.objectContaining({ title: '  ', project: '507f1f77bcf86cd799439011', returnTo: '/board?project=inbox' }),
     errors: { title: 'Type a title for the task.' },
   }));
   expect(Task.create).not.toHaveBeenCalled();

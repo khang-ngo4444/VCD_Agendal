@@ -22,21 +22,28 @@ function addInterval(date, frequency, count, timeZone) {
 // Every occurrence of `event` that overlaps [from, to), with its exceptions applied, as { original, start, end, title }.
 // `original` is the start the occurrence has in the series; it is how an exception finds its occurrence. Each one is
 // counted from the series start (not from the previous one), so the 31st never drifts to the 28th for good.
-// ponytail: an exception moved earlier than its original start is missed when only the moved time is in range.
 function occurrences(event, from, to, timeZone) {
   const frequency = event.repeat?.frequency;
   const length = event.end - event.start;
   const list = [];
+  const visited = new Set();
   for (let k = 0; k < (frequency ? MAX_OCCURRENCES : 1); k += 1) {
     const original = frequency ? addInterval(event.start, frequency, k, timeZone) : event.start;
     if (original >= to || (event.repeat?.until && original > event.repeat.until)) break;
+    visited.add(original.getTime());
     const change = event.exceptions?.find((exception) => exception.original.getTime() === original.getTime());
     if (change?.cancelled) continue;
     const start = change?.start ?? original;
     const end = change?.end ?? new Date(original.getTime() + length);
     if (start < to && end > from) list.push({ original, start, end, title: change?.title ?? event.title });
   }
-  return list;
+  // Moved occurrences can overlap the window even when their nominal date is outside it.
+  for (const change of event.exceptions ?? []) {
+    if (visited.has(change.original.getTime()) || change.cancelled || !change.start || !change.end) continue;
+    if (change.original < event.start || (event.repeat?.until && change.original > event.repeat.until)) continue;
+    if (change.start < to && change.end > from) list.push({ original: change.original, start: change.start, end: change.end, title: change.title ?? event.title });
+  }
+  return list.sort((a, b) => a.start - b.start);
 }
 
 const SCOPES = ['this', 'following', 'all'];
