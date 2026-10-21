@@ -54,7 +54,10 @@ exports.saveSession = async (req, res) => {
   const { session, error } = checkSession(req.body);
   if (error) return res.status(422).json({ error });
   const block = { owner: req.user._id, task: task._id, startedAt: session.startedAt };
-  const created = await FocusSession.updateOne(block, { $setOnInsert: { ...block, minutes: session.minutes } }, { upsert: true });
+  const created = await FocusSession.updateOne(block, { $setOnInsert: { ...block, minutes: session.minutes } }, { upsert: true }).catch((error) => {
+    if (error.code === 11000) return { upsertedCount: 0 }; // simultaneous retries share the same unique block
+    throw error;
+  });
   const today = await todaysSessions(req.user);
   res.status(created.upsertedCount ? 201 : 200).json({ minutes: session.minutes, sessionsToday: today.sessions.length, minutesToday: today.minutes });
 };
