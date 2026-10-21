@@ -2,18 +2,32 @@
   Title-only task form used by the New task dialog and /tasks/new. Locals: projects (sidebarProjects), returnTo,
   idPrefix (keeps ids unique when both copies are on one page), autofocus?. The task lands in the Inbox unless a project is picked, and always starts in Backlog.
 %>
+<% const taskValues = locals.values ?? {}; const taskErrors = locals.errors ?? {}; %>
 <form method="post" action="/tasks" novalidate>
   <%- include('../partials/csrf') %>
   <input type="hidden" name="returnTo" value="<%= returnTo %>">
-  <label for="<%= idPrefix %>-title" class="sr-only">Task title</label>
+  <label for="<%= idPrefix %>-title" class="mb-1.5 block text-xs font-semibold">Task title (required)</label>
   <input id="<%= idPrefix %>-title" name="title" type="text" maxlength="200" placeholder="What needs doing?"
-    class="input h-12 w-full text-base" required <%= locals.autofocus ? 'autofocus' : '' %>>
+    value="<%= taskValues.title || '' %>" class="input h-12 w-full text-base <%= taskErrors.title ? 'input-error' : '' %>" required
+    <% if (taskErrors.title) { %>aria-invalid="true" aria-describedby="<%= idPrefix %>-title-error"<% } %> <%= locals.autofocus ? 'autofocus' : '' %>>
+  <% if (taskErrors.title) { %><p id="<%= idPrefix %>-title-error" class="mt-1.5 text-sm text-error"><%= taskErrors.title %></p><% } %>
   <label for="<%= idPrefix %>-project" class="mt-4 mb-1.5 block text-xs font-semibold">Project</label>
   <select id="<%= idPrefix %>-project" name="project" class="select h-11 w-full">
     <% projects.forEach((project) => { %>
-      <option value="<%= project.id || '' %>"><%= project.name %></option>
+      <option value="<%= project.id || '' %>" <%= (project.id || '') === (taskValues.project || '') ? 'selected' : '' %>><%= project.name %></option>
     <% }) %>
   </select>
+  <% if (taskValues.scheduleDate || taskValues.scheduleStart || taskValues.scheduleEnd || taskErrors.schedule) { %>
+    <fieldset class="mt-4" aria-describedby="<%= idPrefix %>-schedule-error">
+      <legend class="text-xs font-semibold">Schedule</legend>
+      <% [['scheduleDate', 'Date', 'date'], ['scheduleStart', 'Start time', 'time'], ['scheduleEnd', 'End time', 'time']].forEach(([field, label, type]) => { %>
+        <label for="<%= idPrefix %>-<%= field %>" class="mt-3 mb-1.5 block text-sm"><%= label %></label>
+        <input id="<%= idPrefix %>-<%= field %>" name="<%= field %>" type="<%= type %>" value="<%= taskValues[field] || '' %>" class="input h-11 w-full"
+          <% if (taskErrors.schedule) { %>aria-invalid="true" aria-describedby="<%= idPrefix %>-schedule-error"<% } %>>
+      <% }) %>
+      <p id="<%= idPrefix %>-schedule-error" class="mt-1.5 text-sm text-error"><%= taskErrors.schedule || '' %></p>
+    </fieldset>
+  <% } %>
   <p class="mt-3 text-xs text-muted">Only the title is required · Enter to save · Esc to close</p>
   <div class="mt-4 flex justify-end">
     <button type="submit" class="btn btn-primary h-11 rounded-full px-5">

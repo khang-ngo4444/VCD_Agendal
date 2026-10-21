@@ -17,7 +17,7 @@ const text = (value) => (typeof value === 'string' ? value : '');
 
 const findOwnedTask = (req) => findOwned(Task, req.params.id, req.user._id, { deletedAt: null });
 
-exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal' });
+exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal', values: {}, errors: {} });
 
 const MAX_RESULTS = 50;
 
@@ -54,8 +54,14 @@ exports.create = async (req, res) => {
   const title = text(body.title).trim();
   const { error, schedule } = parseSchedule({ scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) }, req.user.timeZone);
   if (!title || title.length > MAX_TITLE_LENGTH || error) {
-    flash(req, 'error', error ?? (title ? `Keep the title under ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.'));
-    return res.redirect(returnTo);
+    const errors = {};
+    if (!title || title.length > MAX_TITLE_LENGTH) errors.title = title ? `Use at most ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.';
+    if (error) errors.schedule = error;
+    return res.status(422).render('tasks/new', {
+      title: 'New task · Agendal',
+      values: { title: text(body.title), project: text(body.project), returnTo, scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) },
+      errors,
+    });
   }
 
   const project = body.project ? await findOwned(Project, body.project, req.user._id) : null;
