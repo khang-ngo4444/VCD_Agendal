@@ -1,5 +1,5 @@
 // No database: the pure calculations behind Insights.
-const { periods, completionRate, change, fillDays, countByDay, sortHabits } = require('../../../services/insights');
+const { periods, completionRate, change, fillDays, countByDay, semesterGrid, sortHabits, SEMESTER_WEEKS } = require('../../../services/insights');
 
 describe('periods', () => {
   test('this week and last week, starting on the user’s first day of the week', () => {
@@ -12,6 +12,51 @@ describe('periods', () => {
     expect(periods('month', '2026-10-21')).toEqual({ current: { from: '2026-10-01', to: '2026-11-01' }, previous: { from: '2026-09-01', to: '2026-10-01' } });
     expect(periods('month', '2027-01-31')).toEqual({ current: { from: '2027-01-01', to: '2027-02-01' }, previous: { from: '2026-12-01', to: '2027-01-01' } });
     expect(periods('month', '2027-02-14').current).toEqual({ from: '2027-02-01', to: '2027-03-01' });
+  });
+
+  test('semester: the last 20 weeks up to the end of this week, and the 20 weeks before', () => {
+    // 2026-10-21 is a Wednesday; with Monday weeks this week ends on Sunday 25 Oct
+    expect(periods('semester', '2026-10-21', 1)).toEqual({
+      current: { from: '2026-06-08', to: '2026-10-26' },
+      previous: { from: '2026-01-19', to: '2026-06-08' },
+    });
+  });
+});
+
+describe('semesterGrid', () => {
+  const counts = new Map([['2026-10-19', 8], ['2026-10-20', 2], ['2026-10-21', 1], ['2026-06-08', 4], ['2026-10-22', 5]]);
+  const grid = semesterGrid('2026-10-21', 1, counts);
+
+  test('20 columns of 7 days, oldest first, starting on the first day of the week', () => {
+    expect(grid.weeks).toHaveLength(SEMESTER_WEEKS);
+    expect(grid.weeks.every((week) => week.length === 7)).toBe(true);
+    expect(grid.weeks[0][0].date).toBe('2026-06-08');
+    expect(grid.weeks.at(-1).at(-1).date).toBe('2026-10-25');
+  });
+
+  test('shades are quarters of the busiest day; nothing done is level 0', () => {
+    const day = (date) => grid.weeks.flat().find((d) => d.date === date);
+    expect(day('2026-10-19')).toMatchObject({ count: 8, level: 4 });
+    expect(day('2026-06-08')).toMatchObject({ count: 4, level: 2 });
+    expect(day('2026-10-20')).toMatchObject({ count: 2, level: 1 });
+    expect(day('2026-10-10')).toMatchObject({ count: 0, level: 0 });
+  });
+
+  test('days after today are marked future and never counted, even if the data has them', () => {
+    const tomorrow = grid.weeks.flat().find((d) => d.date === '2026-10-22');
+    expect(tomorrow).toMatchObject({ future: true, count: 0, level: 0 });
+    expect(grid.total).toBe(15);
+    expect(grid.busiest).toEqual({ date: '2026-10-19', count: 8 });
+  });
+
+  test('a month label goes on the first week that starts in it', () => {
+    expect(grid.months.map((m) => m.month)).toEqual(['2026-06', '2026-07', '2026-08', '2026-09', '2026-10']);
+    expect(grid.months[0].column).toBe(0);
+    expect(grid.weeks[grid.months[1].column][0].date.slice(0, 7)).toBe('2026-07');
+  });
+
+  test('an empty semester has no busiest day', () => {
+    expect(semesterGrid('2026-10-21', 1, new Map())).toMatchObject({ total: 0, busiest: null });
   });
 });
 

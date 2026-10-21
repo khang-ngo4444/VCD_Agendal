@@ -5,7 +5,7 @@ const { safeReturnTo } = require('../services/returnTo');
 
 const CHART_TYPES = ['bar', 'line'];
 
-// Insights (Figma W14): /insights?period=week|month&sort=current|longest|rate
+// Insights (Figma W14): /insights?period=week|month|semester&sort=current|longest|rate
 exports.show = async (req, res) => {
   const insights = await loadInsights(req.user, {
     period: req.query.period,
