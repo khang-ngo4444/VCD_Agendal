@@ -1,12 +1,12 @@
 const Project = require('../models/Project');
 const Reminder = require('../models/Reminder');
-const { taskCounts } = require('../services/projects');
+const { taskCounts, PROJECT_SORT } = require('../services/projects');
 
 // Data every page inside the app shell needs: the current path and the sidebar's projects with done / total counts.
 async function loadShell(req, res, next) {
   const owner = req.user._id;
   const [projects, countsFor, reminders] = await Promise.all([
-    Project.find({ owner }).sort({ createdAt: 1 }).lean(),
+    Project.find({ owner }).sort(PROJECT_SORT).lean(),
     taskCounts(owner),
     // Unsent reminders, so task rows, cards and calendar chips can show a bell (views/tasks/_reminder-badge.ejs).
     req.method === 'GET' ? Reminder.find({ owner, sent: false }, { task: 1, remindAt: 1 }).sort({ remindAt: 1 }).lean() : [],
@@ -24,6 +24,7 @@ async function loadShell(req, res, next) {
       href: `/projects/${project._id}`,
       name: project.name,
       colour: project.colour,
+      icon: project.icon || '',
       ...countsFor(project._id),
     })),
   ];
