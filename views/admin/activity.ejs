@@ -42,7 +42,7 @@
       text: search || chip ? 'Try another filter or search.' : 'Sign-ups, logins and admin actions will appear here.',
     }) %>
   <% } else { %>
-    <div class="overflow-x-auto">
+    <div class="relative overflow-x-auto" tabindex="0" role="region" aria-label="Activity table, scroll horizontally for more columns">
       <table class="w-full min-w-[760px] text-sm">
         <thead class="bg-base-200/60 text-left text-xs font-semibold tracking-wide text-muted uppercase">
           <tr>

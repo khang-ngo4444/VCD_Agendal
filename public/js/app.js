@@ -18,8 +18,10 @@ document.addEventListener('keydown', (event) => {
   }
 
   if (event.key === 'Escape') {
+    const menu = event.target.closest('details[data-dismissable][open]');
     closeOpenMenus();
-    if (drawer?.checked) {
+    menu?.querySelector('summary')?.focus();
+    if (drawer?.checked && !document.querySelector('dialog[open]')) {
       drawer.checked = false;
       drawer.dispatchEvent(new Event('change'));
     }
@@ -31,13 +33,36 @@ document.addEventListener('click', (event) => {
   closeOpenMenus(event.target.closest('a') ? null : event.target.closest('details'));
 });
 
-// Keyboard users land inside the drawer when it opens, and back on the menu button when it closes.
+// On mobile the open navigation blocks background interaction and contains keyboard focus.
+const desktopLayout = window.matchMedia('(min-width: 64rem)');
+function syncDrawer() {
+  if (!drawer) return;
+  const open = drawer.checked && !desktopLayout.matches;
+  document.querySelector('.drawer-content').inert = open;
+  document.querySelector('.drawer-side').inert = !desktopLayout.matches && !open;
+  document.querySelector('[data-drawer-open]')?.setAttribute('aria-expanded', String(open));
+}
 drawer?.addEventListener('change', () => {
-  if (drawer.checked) setTimeout(() => document.querySelector('.drawer-side nav a')?.focus(), DRAWER_SHOW_DELAY_MS);
+  syncDrawer();
+  if (drawer.checked) setTimeout(() => {
+    if (drawer.checked && !desktopLayout.matches) document.querySelector('.drawer-side nav a')?.focus();
+  }, DRAWER_SHOW_DELAY_MS);
   else document.querySelector('[data-drawer-open]')?.focus();
 });
+desktopLayout.addEventListener('change', syncDrawer);
+syncDrawer();
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab' || !drawer?.checked || desktopLayout.matches || document.querySelector('dialog[open]')) return;
+  const controls = [...document.querySelectorAll('.drawer-side a, .drawer-side button, .drawer-side summary')]
+    .filter((control) => !control.disabled && control.getClientRects().length && getComputedStyle(control).visibility !== 'hidden'
+      && (!control.closest('details:not([open])') || control.matches('summary')));
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+});
 
-// Toasts (views/partials/toast.ejs). Undo actions need the full 5 seconds, so hover or focus pauses the timer.
+// Informational toasts pause on hover/focus; errors and recovery actions remain until dismissed.
 const TOAST_DURATION_MS = 5000;
 
 // Pages that animate toasts out (the admin console, src/css/app.css) get [data-leaving] and a moment to play it;
@@ -50,8 +75,11 @@ function removeToast(toastElement) {
 }
 
 function dismissLater(toastElement) {
+  toastElement.querySelector('[data-toast-dismiss]')?.removeAttribute('hidden');
+  // Recovery actions and errors remain available until explicitly dismissed.
+  if (toastElement.querySelector('form, [data-toast-action]:not([hidden])') || toastElement.getAttribute('role') === 'alert') return;
   let timer;
-  const start = () => (timer = setTimeout(() => removeToast(toastElement), TOAST_DURATION_MS));
+  const start = () => { clearTimeout(timer); timer = setTimeout(() => removeToast(toastElement), TOAST_DURATION_MS); };
   const pause = () => clearTimeout(timer);
   toastElement.addEventListener('mouseenter', pause);
   toastElement.addEventListener('mouseleave', start);
@@ -81,6 +109,10 @@ function toast(message, { type = 'success', actionLabel, onAction } = {}) {
 }
 
 document.querySelectorAll('#toast-region [data-toast]').forEach(dismissLater); // flash messages from the server
+document.addEventListener('click', (event) => {
+  const dismiss = event.target.closest('[data-toast-dismiss]');
+  if (dismiss) removeToast(dismiss.closest('[data-toast]'));
+});
 
 window.agendal = { toast };
 
@@ -88,8 +120,11 @@ window.agendal = { toast };
 document.addEventListener('click', (event) => {
   const opener = event.target.closest('[data-open-modal]');
   if (!opener) return;
+  const dialog = document.getElementById(opener.dataset.openModal);
+  if (!dialog) return;
   event.preventDefault(); // an opener can be a link to a no-JS fallback page
-  document.getElementById(opener.dataset.openModal)?.showModal();
+  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true });
+  dialog.showModal();
 });
 
 // Confirm destructive actions (views/partials/confirm-dialog.ejs). Without JS the form submits directly.
@@ -136,10 +171,22 @@ document.addEventListener('click', (event) => {
 
 // Forms marked data-fetch post in the background. The server still answers with its usual redirect, and the page it
 // redirects to replaces the main content, sidebar and toasts here: the list updates without a reload or a jump to the top.
-// Without JavaScript, or if the request fails, the form posts as normal.
+// Without JavaScript the form posts normally. An uncertain POST is never replayed automatically.
+const dirtyForms = new Set();
+let pendingPosts = 0;
+function hasUnsavedInput() {
+  for (const form of dirtyForms) if (!form.isConnected) dirtyForms.delete(form);
+  return dirtyForms.size > 0;
+}
+['input', 'change'].forEach((type) => document.addEventListener(type, (event) => {
+  const form = event.target.form;
+  if (form?.method === 'post') dirtyForms.add(form);
+}));
+
 function swapPage(html) {
   const page = new DOMParser().parseFromString(html, 'text/html');
   ['#main', '.drawer-side nav'].forEach((selector) => {
+    if (selector === '#main' && hasUnsavedInput()) { stale = true; return; }
     const fresh = page.querySelector(selector);
     if (fresh) document.querySelector(selector)?.replaceWith(fresh);
   });
@@ -155,13 +202,20 @@ const tabId = Math.random().toString(36).slice(2);
 
 // POSTs `fields` the way a form would (adding the page's CSRF token) and swaps in the page the server redirects to.
 // Used by data-fetch forms and by scripts like the Board's drag and drop (window.agendal.post).
-async function postAndSwap(url, fields) {
+async function postAndSwap(url, fields, submittedForm) {
   const body = new URLSearchParams(fields);
   if (!body.has('_csrf')) body.set('_csrf', document.querySelector('input[name=_csrf]')?.value ?? '');
-  const response = await fetch(url, { method: 'post', body, headers: { 'X-Tab-Id': tabId } });
-  // Sent somewhere else, e.g. to the login page because the session ended: go there for real.
-  if (!response.ok || new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
-  swapPage(await response.text());
+  pendingPosts += 1;
+  try {
+    const response = await fetch(url, { method: 'post', body, headers: { 'X-Tab-Id': tabId } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
+    const html = await response.text();
+    dirtyForms.delete(submittedForm);
+    swapPage(html);
+  } finally {
+    pendingPosts -= 1;
+  }
 }
 window.agendal.post = postAndSwap;
 window.agendal.tabId = tabId; // for scripts that post with their own fetch (public/js/insights.js)
@@ -177,11 +231,17 @@ document.addEventListener('submit', async (event) => {
   if (buttons.some((button) => button.disabled)) return; // a double click: the first one is still on its way
   const key = form.contains(document.activeElement) ? fetchKey(form) : null;
   buttons.forEach((button) => (button.disabled = true));
+  form.setAttribute('aria-busy', 'true');
   try {
-    await postAndSwap(form.action, new FormData(form));
+    const fields = new FormData(form);
+    if (event.submitter?.name) fields.append(event.submitter.name, event.submitter.value);
+    await postAndSwap(form.action, fields, form);
     if (key) [...document.querySelectorAll('form[data-fetch]')].find((other) => fetchKey(other) === key)?.querySelector('button')?.focus();
   } catch {
-    form.submit();
+    toast('The result couldn’t be confirmed. Your input is kept. Check the current state before trying again.', { type: 'error' });
+  } finally {
+    buttons.forEach((button) => (button.disabled = false));
+    form.removeAttribute('aria-busy');
   }
 });
 
@@ -233,16 +293,24 @@ let pointerDown = false;
 
 const busy = () =>
   document.hidden ||
+  pendingPosts > 0 ||
+  hasUnsavedInput() ||
   pointerDown ||
   document.querySelector('dialog[open], #main details[open]') ||
   document.activeElement?.matches('input:not([type=checkbox], [type=radio]), textarea, select');
 
+let refreshVersion = 0;
 async function refresh() {
+  const version = ++refreshVersion;
   stale = true;
   if (busy()) return;
   stale = false;
   const response = await fetch(location.href, { headers: { 'X-Live-Refresh': '1' } }).catch(() => null);
-  if (response?.ok && new URL(response.url).pathname === location.pathname) swapPage(await response.text());
+  if (!response?.ok || new URL(response.url).pathname !== location.pathname) { stale = true; return; }
+  const html = await response.text();
+  if (version !== refreshVersion) return;
+  if (busy()) { stale = true; return; }
+  swapPage(html);
 }
 
 if (document.querySelector('.drawer-side nav') && window.EventSource) {

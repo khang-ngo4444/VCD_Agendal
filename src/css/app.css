@@ -7,6 +7,7 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-checkmark: #1d1d1f; /* At least 3:1 against every approved habit fill, in either theme. */
 }
 
 /* Figma tokens DaisyUI has no slot for; each theme below sets the values */
@@ -35,10 +36,10 @@
   --color-neutral-content: #ffffff;
   --color-error: #d70015; /* Figma's #ff3b30 is only 3.5:1 on white; this is 5.4:1 and passes AA for small text */
   --color-error-content: #ffffff;
-  --color-success: #34c759;
+  --color-success: #1f7a4f; /* Status text and controls contrast with both light surfaces. */
   --color-success-content: #ffffff;
-  --color-warning: #ff9f0a;
-  --color-warning-content: #1d1d1f;
+  --color-warning: #9a4c00;
+  --color-warning-content: #ffffff;
   --radius-field: 0.625rem;
   --radius-box: 1rem;
   --radius-selector: 0.375rem;
@@ -66,7 +67,7 @@
   --color-neutral: #f5f5f7;
   --color-neutral-content: #1d1d1f;
   --color-error: #ff453a;
-  --color-error-content: #ffffff;
+  --color-error-content: #1d1d1f;
   --color-success: #30d158;
   --color-success-content: #1d1d1f;
   --color-warning: #ff9f0a;
@@ -138,15 +139,26 @@
   outline-offset: 2px;
 }
 
-/* Search boxes: no DaisyUI outline ring when focused, just a slightly stronger fill; the caret shows where you type. */
+/* Search boxes retain a visible group focus indicator for keyboard users. */
 .admin-console .input:is(:focus, :focus-within) {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   box-shadow: none;
   background-color: color-mix(in oklab, var(--color-base-content) 14%, transparent);
 }
 .admin-console .input input:focus-visible {
   outline: none;
 }
+
+:is(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Flex inputs must shrink alongside password and navigation controls at 320px. */
+.input input { min-width: 0; }
+.drawer-content { min-width: 0; }
+#main { overflow-wrap: anywhere; scroll-margin-top: 5rem; }
 
 /* Grey buttons (Review users, Lock, paging, Load older events) tint blue on hover, like the other buttons. */
 .admin-console .btn.bg-fill:not(:disabled):hover {

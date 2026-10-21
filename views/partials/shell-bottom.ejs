@@ -1,6 +1,6 @@
     </main>
   </div>
-  <div class="drawer-side z-40">
+  <div id="app-navigation" class="drawer-side z-40">
     <label for="app-drawer" aria-label="Close navigation" class="drawer-overlay"></label>
     <%- include('sidebar') %>
   </div>
@@ -8,7 +8,7 @@
 <%- include('modal', {
   id: 'new-task-dialog',
   heading: 'New task',
-  body: include('../tasks/_quick-add-form', { projects: sidebarProjects, returnTo: currentPath, idPrefix: 'dialog-task', autofocus: true }),
+  body: include('../tasks/_quick-add-form', { projects: sidebarProjects, returnTo: currentUrl, idPrefix: 'dialog-task', autofocus: true, values: {}, errors: {} }),
 }) %>
 <%# Web Push (public/js/push.js), only when the server has VAPID keys. %>
 <% if (vapidPublicKey) { %>

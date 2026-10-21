@@ -5,8 +5,8 @@
 %>
 <%
   const { habit, due, doneOnDate, streak, week, frequencyLabel } = summary;
-  const circle = `grid size-6 place-items-center rounded-full border-2 text-white ${due || doneOnDate ? '' : 'opacity-50'}`;
-  const fill = `border-color: ${habit.colour};${doneOnDate ? ` background-color: ${habit.colour}` : ''}`;
+  const circle = 'grid size-6 place-items-center rounded-full border-2 text-checkmark';
+  const fill = `border-color: var(--control-border);${doneOnDate ? ` background-color: ${habit.colour}` : ''}`;
 %>
 <li class="relative flex items-center gap-3 px-4 py-3 hover:bg-base-200/60 <%= due ? '' : 'text-muted' %>">
   <% if (locals.editable === false) { %>

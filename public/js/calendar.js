@@ -49,6 +49,7 @@ document.addEventListener('pointerdown', (event) => {
     drag = { block, grid, taskId: block.dataset.taskId, grab: event.clientY - block.getBoundingClientRect().top, minutes: Number(block.dataset.minutes) };
   } else return;
   Object.assign(drag, { x: event.clientX, y: event.clientY, moved: false });
+  if (block) drag.original = { parent: block.parentElement, next: block.nextSibling, style: block.getAttribute('style'), time: block.querySelector('[data-time]')?.textContent };
 });
 
 // The placeholder for a task coming from the Unscheduled panel, styled like the task blocks.
@@ -65,6 +66,17 @@ function placeholderFor(listed) {
   block.append(title, time);
   listed.classList.add('opacity-40');
   return block;
+}
+
+function restoreDrag({ listed, block, original }) {
+  if (listed) block?.remove();
+  listed?.classList.remove('opacity-40');
+  if (!original) return;
+  original.parent.insertBefore(block, original.next);
+  if (original.style === null) block.removeAttribute('style');
+  else block.setAttribute('style', original.style);
+  const time = block.querySelector('[data-time]');
+  if (time) time.textContent = original.time;
 }
 
 document.addEventListener('pointermove', (event) => {
@@ -84,22 +96,26 @@ document.addEventListener('pointermove', (event) => {
   drag.target = { date: day.dataset.day, start };
 });
 
-document.addEventListener('pointerup', () => {
+document.addEventListener('pointerup', async () => {
   if (!drag) return;
-  const { listed, block, moved, target, minutes, taskId } = drag;
+  const { listed, block, moved, target, minutes, taskId, original } = drag;
   drag = null;
   if (moved) justDragged = true; // the click that follows the drop must not open the task
   if (!target) {
-    if (listed) block?.remove(); // dropped outside the calendar: the task stays unscheduled
-    listed?.classList.remove('opacity-40');
+    restoreDrag({ listed, block, original });
     return;
   }
-  window.agendal.post(`/tasks/${taskId}/schedule`, {
-    scheduleDate: target.date,
-    scheduleStart: clock(target.start),
-    scheduleEnd: clock(target.start + minutes),
-    returnTo: location.pathname + location.search,
-  });
+  try {
+    await window.agendal.post(`/tasks/${taskId}/schedule`, {
+      scheduleDate: target.date,
+      scheduleStart: clock(target.start),
+      scheduleEnd: clock(target.start + minutes),
+      returnTo: location.pathname + location.search,
+    });
+  } catch {
+    restoreDrag({ listed, block, original });
+    window.agendal.toast('The schedule couldn’t be confirmed. Reload to check the saved time before trying again.', { type: 'error' });
+  }
 });
 
 document.addEventListener(
@@ -115,7 +131,6 @@ document.addEventListener(
 
 // A touch that turns into scrolling cancels the drag.
 document.addEventListener('pointercancel', () => {
-  if (drag?.listed) drag.block?.remove();
-  drag?.listed?.classList.remove('opacity-40');
+  if (drag) restoreDrag(drag);
   drag = null;
 });

@@ -20,7 +20,7 @@
     <input type="hidden" name="returnTo" value="<%= currentUrl %>">
     <button type="submit" class="group grid size-11 place-items-center rounded-full"
       aria-label="<%= task.completedAt ? `Reopen “${task.title}”` : `Mark “${task.title}” as done` %>">
-      <span class="grid size-5 place-items-center rounded-full border-2 <%= task.completedAt ? 'border-success bg-success text-success-content' : 'border-base-300 group-hover:border-primary' %>">
+      <span class="grid size-5 place-items-center rounded-full border-2 <%= task.completedAt ? 'border-success bg-success text-success-content' : 'border-[var(--control-border)] group-hover:border-primary' %>">
         <% if (task.completedAt) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-3' }) %><% } %>
       </span>
     </button>
