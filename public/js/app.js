@@ -200,6 +200,37 @@ function swapPage(html) {
 // Names this tab in its background posts, so the live update they cause (below) isn't applied here a second time.
 const tabId = Math.random().toString(36).slice(2);
 
+function showFormErrors(form, html) {
+  const page = new DOMParser().parseFromString(html, 'text/html');
+  for (const error of form.querySelectorAll('[data-fetch-error]')) {
+    for (const field of form.querySelectorAll('[aria-describedby]')) {
+      const ids = field.getAttribute('aria-describedby').split(/\s+/).filter((id) => id !== error.id);
+      if (ids.length) field.setAttribute('aria-describedby', ids.join(' '));
+      else { field.removeAttribute('aria-describedby'); field.removeAttribute('aria-invalid'); }
+    }
+    error.remove();
+  }
+  let first;
+  for (const invalid of page.querySelectorAll('[name][aria-invalid="true"]')) {
+    const field = form.elements.namedItem(invalid.name);
+    if (!(field instanceof HTMLElement) || !field.id) continue;
+    const message = (invalid.getAttribute('aria-describedby') || '').split(/\s+/).map((id) => page.getElementById(id)?.textContent.trim()).filter(Boolean).join(' ');
+    if (!message) continue;
+    const id = `${field.id}-fetch-error`;
+    let error = document.getElementById(id);
+    if (!error) {
+      error = document.createElement('p'); error.id = id; error.dataset.fetchError = '';
+      error.className = 'mt-1.5 text-sm text-error'; error.setAttribute('role', 'alert'); field.after(error);
+    }
+    error.textContent = message;
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', [...new Set([...(field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean), id])].join(' '));
+    first ??= field;
+  }
+  first?.focus();
+  return Boolean(first);
+}
+
 // POSTs `fields` the way a form would (adding the page's CSRF token) and swaps in the page the server redirects to.
 // Used by data-fetch forms and by scripts like the Board's drag and drop (window.agendal.post).
 async function postAndSwap(url, fields, submittedForm) {
@@ -208,6 +239,7 @@ async function postAndSwap(url, fields, submittedForm) {
   pendingPosts += 1;
   try {
     const response = await fetch(url, { method: 'post', body, headers: { 'X-Tab-Id': tabId } });
+    if (response.status === 422 && submittedForm && showFormErrors(submittedForm, await response.text())) return false;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     if (new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
     const html = await response.text();
@@ -235,8 +267,8 @@ document.addEventListener('submit', async (event) => {
   try {
     const fields = new FormData(form);
     if (event.submitter?.name) fields.append(event.submitter.name, event.submitter.value);
-    await postAndSwap(form.action, fields, form);
-    if (key) [...document.querySelectorAll('form[data-fetch]')].find((other) => fetchKey(other) === key)?.querySelector('button')?.focus();
+    const updated = await postAndSwap(form.action, fields, form);
+    if (key && updated !== false) [...document.querySelectorAll('form[data-fetch]')].find((other) => fetchKey(other) === key)?.querySelector('button')?.focus();
   } catch {
     toast('The result couldn’t be confirmed. Your input is kept. Check the current state before trying again.', { type: 'error' });
   } finally {
@@ -264,6 +296,9 @@ async function liveSearch() {
     const page = new DOMParser().parseFromString(await response.text(), 'text/html');
     document.querySelectorAll('[data-live]').forEach((part) => part.replaceWith(page.querySelector(`[data-live="${part.dataset.live}"]`)));
     history.replaceState(null, '', url);
+    const reset = document.querySelector('[data-search-reset]');
+    const freshReset = page.querySelector('[data-search-reset]');
+    if (reset && freshReset) reset.setAttribute('href', freshReset.getAttribute('href'));
     // Screen readers hear the count or the empty-state heading.
     const summary = document.querySelector('[data-live="results"] [data-summary], [data-live="results"] h2');
     document.querySelector('[data-search-status]').textContent = summary?.textContent.trim() ?? '';
@@ -281,6 +316,9 @@ if (searchForm && location.pathname === '/search') {
   searchForm.addEventListener('submit', (event) => {
     event.preventDefault();
     clearTimeout(searchTimer);
+    const filterMenu = event.submitter?.closest('details');
+    closeOpenMenus();
+    filterMenu?.querySelector('summary')?.focus();
     liveSearch();
   });
 }

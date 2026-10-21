@@ -53,7 +53,8 @@
     const past = Boolean(date && time) && `${date}T${time}` <= nowIn(form.dataset.timeZone);
     for (const input of [form.elements.reminderDate, form.elements.reminderTime]) {
       input.classList.toggle('input-error', past);
-      input.toggleAttribute('aria-invalid', past);
+      if (past) input.setAttribute('aria-invalid', 'true');
+      else input.removeAttribute('aria-invalid');
     }
     hint.classList.toggle('text-error', past);
     hint.classList.toggle('text-muted', !past);

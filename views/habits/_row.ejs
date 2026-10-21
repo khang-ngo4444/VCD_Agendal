@@ -20,7 +20,7 @@
       <input type="hidden" name="date" value="<%= date %>">
       <input type="hidden" name="done" value="<%= doneOnDate ? '0' : '1' %>">
       <input type="hidden" name="returnTo" value="<%= currentUrl %>">
-      <button type="submit" class="grid size-11 place-items-center rounded-full" aria-pressed="<%= doneOnDate %>" aria-label="Done: <%= habit.name %>">
+      <button type="submit" class="grid size-11 place-items-center rounded-full" aria-pressed="<%= doneOnDate %>" aria-label="<%= doneOnDate ? 'Undo check-in for' : 'Check in for' %> <%= habit.name %> on <%= date %>">
         <span class="<%= circle %>" style="<%= fill %>"><% if (doneOnDate) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-3.5' }) %><% } %></span>
       </button>
     </form>

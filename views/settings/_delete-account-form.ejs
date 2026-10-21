@@ -5,7 +5,7 @@
 <form method="post" action="/settings/account/delete" novalidate>
   <%- include('../partials/csrf') %>
   <p class="mb-4 text-sm text-muted">
-    This permanently deletes your account and all its projects, tasks, reminders, habits and check-ins,
+    This permanently deletes your account, projects, tasks, reminders, habits, check-ins, calendar events, focus history and browser subscriptions,
     and signs you out on every device. It can’t be undone.
   </p>
   <% if (hasPassword) { %>

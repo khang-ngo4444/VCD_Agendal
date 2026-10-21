@@ -19,6 +19,7 @@
         </p>
 
         <div class="border-b border-base-300">
+          <% if (!vapidPublicKey) { %><p class="mt-3 rounded-field bg-base-200 p-3 text-sm text-muted">Browser delivery is not configured on this server. The switch saves your account preference; email reminders can still be used.</p><% } %>
           <label class="flex cursor-pointer items-center gap-4 py-3">
             <%- include('../partials/icon', { icon: 'bell', cls: 'size-5 shrink-0 text-muted' }) %>
             <span class="flex-1">

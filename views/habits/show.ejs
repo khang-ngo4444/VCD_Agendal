@@ -63,7 +63,7 @@
                 <input type="hidden" name="done" value="<%= day.state === 'done' ? '0' : '1' %>">
                 <input type="hidden" name="returnTo" value="<%= currentUrl %>">
                 <button type="submit" class="<%= circle %> cursor-pointer hover:ring-2 hover:ring-primary" <%- fill %>
-                  aria-pressed="<%= day.state === 'done' %>" aria-label="<%= day.label %>: done"><%= day.number %></button>
+                  aria-pressed="<%= day.state === 'done' %>" aria-label="<%= day.state === 'done' ? 'Undo check-in for' : 'Check in for' %> <%= day.label %>"><%= day.number %></button>
               </form>
             <% } else { %>
               <span class="<%= circle %>" <%- fill %>>

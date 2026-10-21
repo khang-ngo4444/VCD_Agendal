@@ -5,6 +5,42 @@
 //   localStorage so a reload carries on. A block that runs to the end is saved (POST /focus/:id/sessions).
 
 (() => {
+  const PENDING_KEY = 'agendal.focus.pending';
+  const pendingBlocks = () => {
+    try { const value = JSON.parse(localStorage.getItem(PENDING_KEY)); return Array.isArray(value) ? value : []; }
+    catch { return []; }
+  };
+  function queueBlocks(taskId, blocks) {
+    try {
+      const queue = pendingBlocks();
+      for (const block of blocks) if (!queue.some((item) => item.taskId === taskId && item.startedAt === block.startedAt)) queue.push({ taskId, ...block });
+      localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+      return true;
+    } catch { return false; }
+  }
+  function removeQueued(taskId, block) {
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify(pendingBlocks().filter((item) => item.taskId !== taskId || item.startedAt !== block.startedAt))); }
+    catch { /* A repeated save is safe: the server deduplicates by task and start time. */ }
+  }
+  async function retryQueued(exceptTask) {
+    for (const block of pendingBlocks().filter((item) => item.taskId !== exceptTask)) {
+      try {
+        const response = await fetch(`/focus/${block.taskId}/sessions`, { method: 'POST', body: new URLSearchParams({ startedAt: block.startedAt, minutes: block.minutes }), headers: { 'X-CSRF-Token': document.querySelector('input[name=_csrf]')?.value ?? '' } });
+        if (response.status === 422) {
+          removeQueued(block.taskId, block);
+          window.agendal?.toast('A completed focus block is too old or no longer valid to save.', { type: 'error' });
+          continue;
+        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        await response.json();
+        removeQueued(block.taskId, block);
+        window.agendal?.toast('Your completed focus block has been saved.');
+      } catch {
+        window.agendal?.toast('A completed focus block is still waiting to save. It will retry when you return to Focus.', { type: 'error' });
+        return;
+      }
+    }
+  }
   // ---- Focus page: filter "Other open tasks". Set up again whenever the page content is swapped in (app.js). ----
   function setUpFilter() {
     const filter = document.querySelector('[data-focus-filter]');
@@ -31,12 +67,13 @@
 
   // ---- Timer page ----
   const root = document.querySelector('[data-focus-timer]');
-  if (!root) return;
+  if (!root) { retryQueued(); return; }
 
   const KEY = 'agendal.focus';
   const MINUTE = 60 * 1000;
   const RETRY_MS = 30 * 1000;
   const taskId = root.dataset.taskId;
+  retryQueued(taskId);
   const focusMs = Number(root.dataset.focusMinutes) * MINUTE;
   const restMs = Number(root.dataset.restMinutes) * MINUTE;
   const $ = (selector) => root.querySelector(selector);
@@ -68,9 +105,17 @@
   // Ends focus mode for this task. A finished block that is still waiting to be saved goes out first; keepalive lets
   // the request finish while the page navigates away.
   const forget = () => {
+    if (state.pending.length && !queueBlocks(taskId, state.pending)) {
+      // Keep the task-local draft when the separate retry queue is unavailable.
+      Object.assign(state, { phase: 'ready', endsAt: null, remaining: focusMs });
+      write();
+      return;
+    }
     for (const block of state.pending) {
       const body = new URLSearchParams(block);
-      fetch(`/focus/${taskId}/sessions`, { method: 'POST', body, keepalive: true, headers: { 'X-CSRF-Token': csrfToken(), 'X-Requested-With': 'fetch' } }).catch(() => {});
+      fetch(`/focus/${taskId}/sessions`, { method: 'POST', body, keepalive: true, headers: { 'X-CSRF-Token': csrfToken(), 'X-Requested-With': 'fetch' } })
+        .then(async (response) => { if (response.ok) { await response.json(); removeQueued(taskId, block); } })
+        .catch(() => { /* Retained in the retry queue until the server confirms a save. */ });
     }
     state.pending = [];
     try {
@@ -81,6 +126,7 @@
   const fresh = (now) => ({ taskId, focusMs, phase: 'focus', endsAt: now + focusMs, remaining: focusMs, startedAt: new Date(now).toISOString(), sessions: Number(root.dataset.sessionsToday), pending: [] });
   const stored = read();
   let state = stored?.taskId === taskId && stored.focusMs === focusMs ? stored : fresh(Date.now());
+  if (state.pending.length) queueBlocks(taskId, state.pending);
   state.sessions = Math.max(state.sessions, Number(root.dataset.sessionsToday));
 
   const running = () => state.endsAt != null;
@@ -146,11 +192,14 @@
       });
       if (response.status === 422) {
         state.pending.shift(); // the server won't take it (e.g. too old): don't keep trying
+        removeQueued(taskId, block);
+        window.agendal?.toast('This completed block could not be saved because it is no longer valid.', { type: 'error' });
       } else if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       } else {
         const result = await response.json();
         state.pending.shift();
+        removeQueued(taskId, block);
         state.sessions = result.sessionsToday;
         window.agendal?.toast(`${result.minutes} min saved on this task. Take a break.`);
       }
@@ -178,6 +227,7 @@
       const ended = state.endsAt;
       if (state.phase === 'focus') {
         state.pending.push({ startedAt: state.startedAt, minutes: focusMs / MINUTE });
+        queueBlocks(taskId, state.pending);
         state.sessions += 1;
         Object.assign(state, { phase: 'break', endsAt: ended + restMs, remaining: restMs });
         announce(`Focus block done. Break until ${at(state.endsAt)}.`);
@@ -261,13 +311,15 @@
           ? 'Paused'
           : state.phase === 'focus'
             ? `Focusing · break at ${at(state.endsAt)}`
-            : `Break · next focus at ${at(state.endsAt)}`;
+            : `Break · ready at ${at(state.endsAt)}`;
     $('[data-session-label]').textContent =
       state.phase === 'break' ? `Break after session ${state.sessions}` : `Session ${state.sessions + 1} today`;
     toggleButton.setAttribute('aria-label', isRunning ? 'Pause' : state.phase === 'ready' ? 'Start the next block' : 'Resume');
+    toggleButton.title = toggleButton.getAttribute('aria-label');
     $('[data-icon-pause]').hidden = !isRunning;
     $('[data-icon-play]').hidden = isRunning;
     skipButton.setAttribute('aria-label', state.phase === 'focus' ? 'Skip to the break' : state.phase === 'break' ? 'Skip break' : 'Start the next block');
+    skipButton.title = state.phase === 'focus' ? 'Skip to the break. This unfinished block will not count.' : skipButton.getAttribute('aria-label');
     skipButton.hidden = state.phase === 'ready';
     const label = { focus: 'Focus', break: 'Break', ready: 'Ready' }[state.phase];
     document.title = `${isRunning ? clock(remaining) : state.phase === 'ready' ? 'Ready' : 'Paused'} · ${label} — Agendal`;

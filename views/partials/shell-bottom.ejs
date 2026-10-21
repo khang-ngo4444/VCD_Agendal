@@ -8,7 +8,7 @@
 <%- include('modal', {
   id: 'new-task-dialog',
   heading: 'New task',
-  body: include('../tasks/_quick-add-form', { projects: sidebarProjects, returnTo: currentUrl, idPrefix: 'dialog-task', autofocus: true, values: {}, errors: {} }),
+  body: include('../tasks/_quick-add-form', { projects: sidebarProjects, returnTo: currentUrl, idPrefix: 'dialog-task', autofocus: true, values: {}, errors: {}, inDialog: true }),
 }) %>
 <%# Web Push (public/js/push.js), only when the server has VAPID keys. %>
 <% if (vapidPublicKey) { %>
