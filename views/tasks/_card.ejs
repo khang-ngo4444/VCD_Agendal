@@ -28,7 +28,7 @@
   </details>
   <% if (project) { %>
     <span class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-fill px-2 py-0.5 text-xs text-muted">
-      <span class="size-1.5 shrink-0 rounded-full <%= project.colour ? '' : 'bg-base-300' %>" <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span>
+      <%- include('../projects/_symbol', { projectIcon: project.icon, projectColour: project.colour }) %>
       <span class="truncate"><%= project.name %></span>
     </span>
   <% } %>

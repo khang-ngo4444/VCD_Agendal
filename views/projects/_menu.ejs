@@ -1,0 +1,17 @@
+<details class="relative z-20 shrink-0" data-dismissable data-project-menu>
+  <summary class="grid size-11 cursor-pointer list-none place-items-center rounded-field text-muted hover:bg-base-200" aria-label="Options for <%= item.name %>">
+    <%- include('../partials/icon', { icon: 'more', cls: 'size-4' }) %>
+  </summary>
+  <div class="absolute right-0 z-50 w-48 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg" data-project-menu-panel>
+    <a href="/projects/<%= item.id %>/edit" class="flex min-h-11 items-center rounded-field px-3 text-sm hover:bg-base-200">Customize item</a>
+    <% ['up', 'down'].forEach((direction) => { %>
+      <form method="post" action="/projects/<%= item.id %>/move">
+        <%- include('../partials/csrf') %>
+        <input type="hidden" name="direction" value="<%= direction %>">
+        <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+        <button type="submit" class="flex min-h-11 w-full items-center rounded-field px-3 text-sm hover:bg-base-200">Move <%= direction %></button>
+      </form>
+    <% }) %>
+    <a href="/projects/<%= item.id %>/edit#delete-project" class="flex min-h-11 items-center rounded-field px-3 text-sm text-error hover:bg-base-200">Delete item…</a>
+  </div>
+</details>

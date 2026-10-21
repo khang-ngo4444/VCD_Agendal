@@ -21,7 +21,7 @@ document.addEventListener('keydown', (event) => {
     const menu = event.target.closest('details[data-dismissable][open]');
     closeOpenMenus();
     menu?.querySelector('summary')?.focus();
-    if (drawer?.checked && !document.querySelector('dialog[open]')) {
+    if (drawer?.checked && !menu && !document.querySelector('dialog[open]')) {
       drawer.checked = false;
       drawer.dispatchEvent(new Event('change'));
     }
@@ -334,7 +334,7 @@ const busy = () =>
   pendingPosts > 0 ||
   hasUnsavedInput() ||
   pointerDown ||
-  document.querySelector('dialog[open], #main details[open]') ||
+  document.querySelector('dialog[open], #main details[open], [data-project-menu][open]') ||
   document.activeElement?.matches('input:not([type=checkbox], [type=radio]), textarea, select');
 
 let refreshVersion = 0;

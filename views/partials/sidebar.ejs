@@ -33,25 +33,25 @@
     <% }) %>
   </ul>
 
-  <h2 class="mt-6 mb-1 px-2.5 text-xs font-semibold text-muted">Projects</h2>
+  <h2 class="mt-6 mb-1 px-2.5 text-xs font-semibold text-muted"><a href="/projects" class="inline-flex min-h-11 items-center hover:text-primary" <% if (currentPath === '/projects') { %>aria-current="page"<% } %>>Projects</a></h2>
   <ul class="space-y-0.5">
     <% sidebarProjects.forEach((project) => { %>
-      <li>
-        <a href="<%= project.href %>" class="flex h-9 pointer-coarse:h-11 items-center gap-3 rounded-field px-2.5 text-sm <%= itemClass(project.href) %>"
+      <li class="flex items-center" <%= project.id ? 'data-project-item' : '' %>>
+        <a href="<%= project.href %>" class="flex h-11 min-w-0 grow items-center gap-3 rounded-field px-2.5 text-sm <%= itemClass(project.href) %>"
           <% if (currentPath === project.href) { %>aria-current="page"<% } %>>
-          <span class="size-2.5 shrink-0 rounded-full <%= project.colour ? '' : 'bg-base-300' %>"
-            <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span>
+          <%- include('../projects/_symbol', { projectIcon: project.icon, projectColour: project.colour }) %>
           <span class="grow truncate"><%= project.name %></span>
           <% if (project.total) { %>
             <span class="text-xs text-muted tabular-nums"><%= project.done %>/<%= project.total %><span class="sr-only"> tasks done</span></span>
           <% } %>
         </a>
+        <% if (project.id) { %><%- include('../projects/_menu', { item: project }) %><% } %>
       </li>
     <% }) %>
     <li>
-      <a href="/projects" class="flex h-9 pointer-coarse:h-11 items-center gap-3 rounded-field px-2.5 text-sm text-primary hover:bg-base-200">
+      <a href="/projects/new" class="flex h-11 items-center gap-3 rounded-field px-2.5 text-sm text-primary hover:bg-base-200">
         <%- include('icon', { icon: 'plus', cls: 'size-4 shrink-0' }) %>
-        New project
+        New item
       </a>
     </li>
   </ul>

@@ -6,7 +6,7 @@
 <%
   const chips = [
     { key: null, href: '/board', name: 'All projects', colour: null },
-    ...sidebarProjects.map((project) => ({ key: project.id ?? 'inbox', href: `/board?project=${project.id ?? 'inbox'}`, name: project.name, colour: project.colour ?? 'var(--color-base-300)' })),
+    ...sidebarProjects.map((project) => ({ key: project.id ?? 'inbox', href: `/board?project=${project.id ?? 'inbox'}`, name: project.name, icon: project.icon, colour: project.colour ?? 'var(--color-base-300)' })),
   ];
 %>
 <h1 class="text-3xl font-bold tracking-tight">Board</h1>
@@ -14,10 +14,10 @@
 
 <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filter by project">
   <% chips.forEach((chip) => { %>
-    <a href="<%= chip.href %>" class="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium <%= filter === chip.key ? 'bg-primary/10 text-primary' : 'bg-base-300/40 hover:bg-base-300/70' %>"
+    <a href="<%= chip.href %>" class="inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full px-4 text-sm font-medium <%= filter === chip.key ? 'bg-primary/10 text-primary' : 'bg-base-300/40 hover:bg-base-300/70' %>"
       <% if (filter === chip.key) { %>aria-current="page"<% } %>>
-      <% if (chip.colour) { %><span class="size-2 rounded-full" style="background-color: <%= chip.colour %>" aria-hidden="true"></span><% } %>
-      <%= chip.name %>
+      <% if (chip.colour) { %><%- include('projects/_symbol', { projectIcon: chip.icon, projectColour: chip.colour }) %><% } %>
+      <span class="truncate"><%= chip.name %></span>
     </a>
   <% }) %>
 </nav>
