@@ -4,8 +4,11 @@
 <%
   const label = (day, options) => new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
   const lastDay = dates.addDays(range.to, -1);
-  const rangeText = period === 'month' ? label(range.from, { month: 'long', year: 'numeric' }) : `${label(range.from, { day: 'numeric', month: 'short' })} – ${label(lastDay, { day: 'numeric', month: 'short' })}`;
-  const versus = period === 'month' ? 'last month' : 'last week';
+  const rangeText = period === 'month' ? label(range.from, { month: 'long', year: 'numeric' })
+    : `${label(range.from, { day: 'numeric', month: 'short' })} – ${label(lastDay, { day: 'numeric', month: 'short', ...(period === 'semester' ? { year: 'numeric' } : {}) })}`;
+  const versus = { week: 'last week', month: 'last month', semester: 'the 20 weeks before' }[period];
+  // Focus time: minutes under an hour, then hours with one decimal ("9.5 h", "2 h").
+  const focusAmount = (minutes) => (minutes < 60 ? { value: minutes, unit: 'min' } : { value: String(Math.round(minutes / 6) / 10), unit: 'h' });
   const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
   // "↑ 3 vs last week" in words as well as colour (WCAG 1.4.1); unit is '' for counts or ' points' for percentages.
   const delta = (value, unit = '') => value == null ? { text: `Nothing to compare with ${versus}`, tone: 'text-muted' }
@@ -29,9 +32,9 @@
     <p class="mt-1 text-sm text-muted">Compared with <%= versus %> · times in your time zone (<%= currentUser.timeZone %>)</p>
   </div>
   <div class="flex flex-wrap items-center gap-2">
-    <%# Week / Month: plain links, so the choice is in the address and Back works %>
+    <%# Week / Month / Semester: plain links, so the choice is in the address and Back works %>
     <nav class="flex rounded-full bg-fill p-1" aria-label="Period">
-      <% [['week', 'Week'], ['month', 'Month']].forEach(([key, text]) => { %>
+      <% [['week', 'Week'], ['month', 'Month'], ['semester', 'Semester']].forEach(([key, text]) => { %>
         <a href="?period=<%= key %>&sort=<%= sort %>" class="inline-flex min-h-9 items-center rounded-full px-4 text-sm font-medium <%= period === key ? 'bg-base-100 shadow-sm' : 'text-muted hover:text-base-content' %>"
           <% if (period === key) { %>aria-current="page"<% } %>><%= text %></a>
       <% }) %>
@@ -68,45 +71,66 @@
     <p class="mt-1 text-4xl font-bold tabular-nums"><%= rates.current.onTime ?? '–' %><span class="text-base font-normal text-muted"><%= rates.current.onTime == null ? '' : ' %' %></span></p>
     <p class="mt-1 text-xs text-muted">Of the tasks done, finished by their due date</p>
   </li>
+  <%# Focus time: finished focus blocks only, so it is time really spent on tasks %>
+  <% const focusNow = focusAmount(focus.current); const focusDelta = focus.change ? focusAmount(Math.abs(focus.change)) : null; %>
   <li class="rounded-box bg-base-100 p-5">
-    <p class="text-sm text-muted">Best habit streak</p>
-    <% if (bestStreak) { %>
-      <p class="mt-1 text-4xl font-bold tabular-nums"><%= bestStreak.current %> <span class="text-base font-normal text-muted"><%= bestStreak.unit %><%= bestStreak.current === 1 ? '' : 's' %></span></p>
-      <p class="mt-1 truncate text-xs text-muted"><a href="/habits/<%= bestStreak.id %>" class="hover:underline"><%= bestStreak.name %></a></p>
-    <% } else { %>
-      <p class="mt-1 text-4xl font-bold">–</p>
-      <p class="mt-1 text-xs text-muted">Check in a habit to start a streak</p>
-    <% } %>
+    <p class="text-sm text-muted">Focus time</p>
+    <p class="mt-1 text-4xl font-bold tabular-nums"><%= focusNow.value %> <span class="text-base font-normal text-muted"><%= focusNow.unit %></span></p>
+    <p class="mt-1 text-xs font-medium <%= !focus.change ? 'text-muted' : focus.change > 0 ? 'text-success' : 'text-error' %>">
+      <% if (focus.change == null) { %><a href="/focus" class="hover:underline">Start a focus block</a> to see it here<% } else if (!focus.change) { %>Same as <%= versus %><% } else { %><%= focus.change > 0 ? '↑' : '↓' %> <%= focusDelta.value %> <%= focusDelta.unit %> vs <%= versus %><% } %>
+    </p>
   </li>
 </ul>
 
 <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-  <%# Today: the same counts as the Daily List (card: "Statistics page: today's overview") %>
-  <section class="rounded-box bg-base-100 p-6" aria-labelledby="today-heading">
+  <%# Today: the same counts as the Daily List (card: "Statistics page: today's overview"). Three tiles that fill the card
+      (it is as tall as Tasks by project beside it), then the day as a whole: tasks and habits done out of all of them. %>
+  <%
+    const overall = { done: todayProgress.tasks.done + todayProgress.habits.done, total: todayProgress.tasks.total + todayProgress.habits.total };
+    const overallPct = pct(overall.done, overall.total);
+    const tileClass = 'flex h-full flex-col items-center justify-between gap-3 rounded-box p-4 text-center transition-colors';
+  %>
+  <section class="flex flex-col rounded-box bg-base-100 p-6" aria-labelledby="today-heading">
     <div class="flex items-baseline justify-between gap-2">
       <h2 id="today-heading" class="font-semibold">Today</h2>
       <a href="/today" class="text-sm font-medium text-primary hover:underline">Open Daily List</a>
     </div>
-    <ul class="mt-5 grid grid-cols-3 gap-4">
+    <ul class="mt-4 grid grow grid-cols-3 gap-2 sm:gap-3">
       <% rings.forEach((ring) => { const p = pct(ring.done, ring.total); %>
         <li>
-          <a href="<%= ring.href %>" class="flex flex-col items-center gap-2 rounded-box p-2 text-center hover:bg-base-200">
-            <span class="grid size-20 place-items-center rounded-full" style="background: conic-gradient(<%= ring.tone %> <%= p %>%, var(--color-base-300) 0)"
-              role="progressbar" aria-valuenow="<%= p %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= ring.label %>: <%= ring.done %> of <%= ring.total %> done">
-              <span class="grid size-16 place-items-center rounded-full bg-base-100 text-lg font-bold tabular-nums"><%= ring.done %>/<%= ring.total %></span>
+          <a href="<%= ring.href %>" class="<%= tileClass %> bg-fill hover:bg-base-300/70">
+            <span class="text-sm font-semibold"><%= ring.label %></span>
+            <%# The ring as SVG: a grey track and the done share on top, so it works on any tile colour %>
+            <span class="relative grid size-20 place-items-center sm:size-24" role="progressbar" aria-valuenow="<%= p %>" aria-valuemin="0" aria-valuemax="100"
+              aria-label="<%= ring.label %>: <%= ring.done %> of <%= ring.total %> done">
+              <svg viewBox="0 0 36 36" class="absolute inset-0 size-full -rotate-90" aria-hidden="true">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke-width="3.5" class="stroke-base-300"></circle>
+                <% if (p) { %><circle cx="18" cy="18" r="15.5" fill="none" stroke-width="3.5" stroke-linecap="round" pathLength="100" stroke-dasharray="<%= p %> 100" style="stroke: <%= ring.tone %>"></circle><% } %>
+              </svg>
+              <span class="text-lg font-bold tabular-nums sm:text-xl"><%= ring.done %><span class="text-muted">/<%= ring.total %></span></span>
             </span>
-            <span class="text-sm font-medium"><%= ring.label %></span>
+            <span class="text-xs text-muted"><%= !ring.total ? 'Nothing planned' : ring.done === ring.total ? 'All done' : `${ring.total - ring.done} to go` %></span>
           </a>
         </li>
       <% }) %>
       <li>
-        <a href="/today" class="flex flex-col items-center gap-2 rounded-box p-2 text-center hover:bg-base-200">
-          <span class="grid size-20 place-items-center rounded-full border-4 <%= todayProgress.overdue ? 'border-error text-error' : 'border-base-300' %> text-2xl font-bold tabular-nums"
+        <a href="/today" class="<%= tileClass %> <%= todayProgress.overdue ? 'bg-error/10 hover:bg-error/15' : 'bg-fill hover:bg-base-300/70' %>">
+          <span class="text-sm font-semibold">Overdue</span>
+          <span class="grid size-20 place-items-center rounded-full border-[5px] sm:size-24 sm:border-[6px] <%= todayProgress.overdue ? 'border-error text-error' : 'border-base-300' %> text-2xl font-bold tabular-nums sm:text-3xl"
             aria-label="<%= todayProgress.overdue %> overdue"><%= todayProgress.overdue %></span>
-          <span class="text-sm font-medium">Overdue</span>
+          <span class="text-xs <%= todayProgress.overdue ? 'font-medium text-error' : 'text-muted' %>"><%= todayProgress.overdue ? 'Past their due date' : 'Nothing late' %></span>
         </a>
       </li>
     </ul>
+    <div class="mt-4">
+      <div class="flex items-baseline justify-between gap-2 text-xs">
+        <span class="font-medium">Today overall</span>
+        <span class="text-muted tabular-nums"><%= overall.total ? `${overall.done} of ${overall.total} done · ${overallPct}%` : 'Nothing planned for today' %></span>
+      </div>
+      <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-base-300" role="progressbar" aria-valuenow="<%= overallPct %>" aria-valuemin="0" aria-valuemax="100" aria-label="Today overall: <%= overall.done %> of <%= overall.total %> done">
+        <div class="h-full rounded-full bg-success" style="width: <%= overallPct %>%"></div>
+      </div>
+    </div>
   </section>
 
   <%# Open and done tasks per project, in the project colours; matches the sidebar counts %>
@@ -198,6 +222,91 @@
     </table>
   </div>
 </section>
+
+<%#
+  Semester activity (card: "Semester activity heatmap", Figma W14): tasks done per day for the last 20 weeks, one column
+  per week. Shades are classes written out in full so Tailwind keeps them. The grid is decorative for screen readers;
+  the weekly totals are in a table instead. Beside it, one rule-based suggestion (card: "Insights suggestions").
+%>
+<%
+  const SHADES = ['bg-base-300', 'bg-primary/30', 'bg-primary/55', 'bg-primary/80', 'bg-primary'];
+  const dayName = (day) => label(day, { weekday: 'short', day: 'numeric', month: 'short' });
+  const monthAt = new Map(semester.months.map(({ month, column }) => [column, label(`${month}-01`, { month: 'short' })]));
+%>
+<div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+  <section class="min-w-0 rounded-box bg-base-100 p-6" aria-labelledby="semester-heading">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <h2 id="semester-heading" class="font-semibold">Semester activity</h2>
+      <p class="text-sm text-muted"><%= plural(semester.total, 'task') %> done since <%= label(semester.from, { day: 'numeric', month: 'short' }) %></p>
+    </div>
+    <%# rtl on the scroller only: on narrow screens it opens scrolled to the latest weeks %>
+    <div class="mt-4 overflow-x-auto pb-1 [direction:rtl]" aria-hidden="true">
+      <div class="grid w-max grid-cols-[1.5rem_repeat(20,0.75rem)] gap-[3px] [direction:ltr] text-[11px] text-muted sm:w-full sm:grid-cols-[2rem_repeat(20,minmax(0,1fr))] sm:gap-1">
+        <span></span>
+        <% semester.weeks.forEach((week, w) => { %><span class="whitespace-nowrap"><%= monthAt.get(w) ?? '' %></span><% }) %>
+        <% for (let d = 0; d < 7; d++) { %>
+          <span class="self-center leading-3"><%= d % 2 === 0 && d < 6 ? label(semester.weeks[0][d].date, { weekday: 'short' }) : '' %></span>
+          <% semester.weeks.forEach((week) => { const day = week[d]; %>
+            <%# data-heat-*: the instant tooltip (public/js/insights.js); title is the fallback without JavaScript %>
+            <span class="aspect-square rounded-[3px] sm:rounded <%= day.future ? 'border border-dashed border-base-300' : `${SHADES[day.level]} hover:outline-2 hover:outline-offset-1 hover:outline-base-content/70` %>"
+              <% if (!day.future) { %>data-heat-count="<%= plural(day.count, 'task') %>" data-heat-day="<%= label(day.date, { weekday: 'long', day: 'numeric', month: 'long' }) %>"
+              title="<%= dayName(day.date) %>: <%= plural(day.count, 'task') %>"<% } %>></span>
+          <% }) %>
+        <% } %>
+      </div>
+    </div>
+    <div class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-field bg-neutral px-3 py-2 text-sm whitespace-nowrap text-neutral-content shadow-lg" role="tooltip" data-heat-tip hidden>
+      <span data-heat-tip-text></span>
+      <span class="absolute top-full left-1/2 -translate-x-1/2 border-x-[6px] border-t-[6px] border-x-transparent border-t-neutral" aria-hidden="true"></span>
+    </div>
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+      <span class="inline-flex items-center gap-1" aria-hidden="true">Less
+        <% SHADES.forEach((shade) => { %><span class="size-3 rounded-[3px] <%= shade %>"></span><% }) %> More</span>
+      <span><%= semester.busiest ? `Busiest day: ${dayName(semester.busiest.date)} · ${plural(semester.busiest.count, 'task')}` : 'No tasks finished yet this semester' %></span>
+    </div>
+    <%# sr-only on a wrapper, not on the table: a table won't shrink to 1 px, and a 500 px invisible table made the page
+        longer than its content (the jump at the bottom) and let the caption show %>
+    <div class="sr-only"><table>
+      <caption>Tasks done per week, last 20 weeks</caption>
+      <thead><tr><th scope="col">Week of</th><th scope="col">Tasks done</th></tr></thead>
+      <tbody>
+        <% semester.weeks.forEach((week) => { %>
+          <tr><td><%= label(week[0].date, { day: 'numeric', month: 'long' }) %></td><td><%= week.reduce((sum, day) => sum + day.count, 0) %></td></tr>
+        <% }) %>
+      </tbody>
+    </table></div>
+  </section>
+
+  <%# One suggestion at a time, worked out from the user's own data with fixed rules (services/suggestions.js) %>
+  <% if (suggestion) { %>
+    <section class="flex flex-col rounded-box border-[1.5px] border-dashed border-primary bg-base-100 p-6" aria-labelledby="suggestion-heading">
+      <p class="text-sm font-semibold text-primary"><span aria-hidden="true">✦ </span>Pattern spotted · Suggestion</p>
+      <h2 id="suggestion-heading" class="mt-2 text-xl leading-snug font-semibold"><%= suggestion.title %></h2>
+      <p class="mt-2 text-sm text-muted"><%= suggestion.body %></p>
+      <div class="mt-auto flex flex-wrap items-center gap-2 pt-5">
+        <% if (suggestion.action.form) { %>
+          <form method="post" action="<%= suggestion.action.form.action %>" data-fetch>
+            <%- include('partials/csrf') %>
+            <% Object.entries(suggestion.action.form.fields).forEach(([name, value]) => { %><input type="hidden" name="<%= name %>" value="<%= value %>"><% }) %>
+            <button type="submit" class="btn btn-primary h-11 rounded-full px-5"><%= suggestion.action.label %></button>
+          </form>
+        <% } else { %>
+          <a href="<%= suggestion.action.href %>" class="btn btn-primary h-11 rounded-full px-5"><%= suggestion.action.label %></a>
+        <% } %>
+        <form method="post" action="/insights/suggestions/<%= suggestion.key %>/dismiss" data-fetch>
+          <%- include('partials/csrf') %>
+          <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+          <button type="submit" class="btn btn-ghost h-11 rounded-full px-4 text-muted" aria-label="Dismiss this suggestion for 7 days">Dismiss</button>
+        </form>
+      </div>
+    </section>
+  <% } else { %>
+    <section class="rounded-box border border-dashed border-base-300 p-6 text-sm text-muted" aria-labelledby="suggestion-heading">
+      <h2 id="suggestion-heading" class="font-semibold text-base-content">No suggestion right now</h2>
+      <p class="mt-2">Suggestions appear when your own data shows a clear pattern, for example once you have finished 10 tasks in a month.</p>
+    </section>
+  <% } %>
+</div>
 
 <%# Habit streaks (card: "Habit streaks overview"): the same numbers as each habit's page, sortable by column %>
 <section class="mt-5 rounded-box bg-base-100 p-6" aria-labelledby="habits-heading">

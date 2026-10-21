@@ -114,9 +114,10 @@
     const legend = [...section.querySelectorAll('[data-series]')];
     const hidden = () => legend.map((button) => button.getAttribute('aria-pressed') === 'false');
     let type = form.querySelector('[aria-pressed="true"]')?.value ?? 'bar';
-    let chart = draw(section, type, hidden());
+    // Show the chart box before drawing: Chart.js sizes the canvas from it, and a hidden box measures 0 px wide.
     section.querySelector('[data-chart]').hidden = false;
     section.querySelector('[data-chart-fallback]').hidden = true;
+    let chart = draw(section, type, hidden());
 
     // Bars / Lines: redraw now, save in the background. Capture phase, so app.js's double-submit guard never sees it.
     form.addEventListener(
@@ -173,7 +174,40 @@
     });
   }
 
-  const init = () => setUp(document.querySelector('[data-trend]'));
+  // Semester activity: an instant tooltip like GitHub's ("2 tasks on Sunday, 18 October") above the day under the
+  // pointer, instead of the browser's slow, small title tooltip (the titles stay in the HTML for no-JS visitors).
+  function setUpHeatmap() {
+    const tip = document.querySelector('[data-heat-tip]');
+    if (!tip) return;
+    const text = tip.querySelector('[data-heat-tip-text]');
+    const cells = document.querySelectorAll('[data-heat-count]');
+    cells.forEach((cell) => cell.removeAttribute('title'));
+    const hide = () => (tip.hidden = true);
+    const show = (cell) => {
+      text.replaceChildren(Object.assign(document.createElement('strong'), { textContent: cell.dataset.heatCount }), ` on ${cell.dataset.heatDay}`);
+      const box = cell.getBoundingClientRect();
+      tip.hidden = false;
+      // Centred above the day, kept inside the window.
+      const half = tip.offsetWidth / 2;
+      tip.style.left = `${Math.min(Math.max(box.left + box.width / 2, half + 8), innerWidth - half - 8)}px`;
+      tip.style.top = `${box.top - 8}px`;
+    };
+    const grid = cells[0]?.parentElement;
+    if (!grid) return;
+    grid.addEventListener('pointerover', (event) => {
+      const cell = event.target.closest('[data-heat-count]');
+      if (cell) show(cell);
+      else hide();
+    });
+    grid.addEventListener('pointerleave', hide);
+  }
+  // The tooltip is placed in the window, so it would float off its day while the page scrolls: hide it then.
+  addEventListener('scroll', () => document.querySelector('[data-heat-tip]')?.setAttribute('hidden', ''), { passive: true, capture: true });
+
+  const init = () => {
+    setUp(document.querySelector('[data-trend]'));
+    setUpHeatmap();
+  };
   init();
   document.addEventListener('agendal:render', init); // live updates swap the page content in (public/js/app.js)
 })();

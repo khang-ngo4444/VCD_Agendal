@@ -2,10 +2,11 @@ const { loadInsights } = require('../services/insights');
 const { tasksCsv, checkInsCsv } = require('../services/csvExport');
 const { toDateInput } = require('../services/dates');
 const { safeReturnTo } = require('../services/returnTo');
+const { dismissUntil } = require('../services/suggestions');
 
 const CHART_TYPES = ['bar', 'line'];
 
-// Insights (Figma W14): /insights?period=week|month&sort=current|longest|rate
+// Insights (Figma W14): /insights?period=week|month|semester&sort=current|longest|rate
 exports.show = async (req, res) => {
   const insights = await loadInsights(req.user, {
     period: req.query.period,
@@ -38,3 +39,16 @@ function sendCsv(res, name, csv, timeZone) {
 
 exports.exportTasks = async (req, res) => sendCsv(res, 'tasks', await tasksCsv(req.user, res.locals.sidebarProjects), req.user.timeZone);
 exports.exportCheckIns = async (req, res) => sendCsv(res, 'habit-checkins', await checkInsCsv(req.user), req.user.timeZone);
+
+// "Dismiss" on a suggestion: hidden for 7 days (DISMISS_DAYS) on every device. Expired entries are dropped on the way.
+const SUGGESTION_KEY = /^[a-z0-9-]{1,60}$/;
+exports.dismissSuggestion = async (req, res) => {
+  const { key } = req.params;
+  if (SUGGESTION_KEY.test(key)) {
+    const now = new Date();
+    const kept = [...(req.user.suggestionsDismissed ?? new Map())].filter(([, until]) => until > now);
+    req.user.suggestionsDismissed = new Map([...kept, [key, dismissUntil(now)]]);
+    await req.user.save();
+  }
+  res.redirect(safeReturnTo(req.body?.returnTo, '/insights'));
+};

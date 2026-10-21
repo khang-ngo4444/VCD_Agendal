@@ -58,6 +58,8 @@ const userSchema = new Schema(
       default: undefined,
     },
     onboardedAt: { type: Date, default: null }, // set when the Welcome screen is finished or skipped
+    // Insights suggestions the user dismissed: suggestion key → hidden until (services/suggestions.js).
+    suggestionsDismissed: { type: Map, of: Date, default: undefined },
     passwordReset: { tokenHash: String, expiresAt: Date, requestedAt: Date }, // only the hash is stored, see createPasswordResetToken
   },
   { timestamps: true }

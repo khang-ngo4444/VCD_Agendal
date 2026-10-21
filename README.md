@@ -1,5 +1,7 @@
 # Agendal
 
+[![CI](https://github.com/khang-ngo4444/VCD_Agendal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/khang-ngo4444/VCD_Agendal/actions/workflows/ci.yml)
+
 Agendal is a personal productivity and task management web application developed as the final project for **Advanced Web Design**.
 
 The application helps users organize tasks, manage projects, schedule activities, track habits, and monitor their productivity from one centralized workspace.
@@ -369,6 +371,37 @@ MAIL_PASSWORD=
 ```
 
 Do not commit the `.env` file to the repository.
+
+## Running the Tests
+
+```bash
+npm test                   # every test
+npm run test:unit          # tests/unit only: fast, no database
+npm run test:integration   # tests/integration only: real requests and a database
+```
+
+```text
+tests/
+├── helpers/http.js        shared setup for the integration tests
+├── unit/                  no database: calculations, validators, services with fakes
+│   ├── account/           sign-up rules, sessions, account deletion
+│   ├── admin/             admin console data, users, activity log
+│   ├── calendar/          calendar layout, events, repeating dates
+│   ├── focus/             focus sessions
+│   ├── habits/            frequencies, streaks, the habit form
+│   ├── insights/          statistics, CSV export
+│   ├── reminders/         task and habit reminders, daily summary, email and push
+│   ├── shared/            dates and time zones
+│   └── tasks/             the task form, Board columns, search
+└── integration/           the whole app through HTTP
+```
+
+- **Unit tests** check one module at a time, with no database. Put a new one in the folder of its feature.
+- **Integration tests** send real requests to the app (Supertest) against a throwaway in-memory MongoDB (`mongodb-memory-server`), so your own database is never touched. They cover sign-up, login and lockout, the main task flows, habit check-ins and streaks, data isolation between accounts and the admin-only routes.
+- The first integration run downloads a MongoDB binary (about 100 MB); later runs reuse it.
+- `npm test` and `npm run test:integration` run Jest with `--experimental-vm-modules`, because the MongoDB driver loads `os` with a dynamic `import()` that Jest only allows with that flag.
+
+**CI:** GitHub Actions (`.github/workflows/ci.yml`) builds the CSS and runs `npm test` on every pull request into `develop` or `main`. To make a green run required before merging, turn on branch protection for `develop` and `main` (Settings › Branches) and require the **CI / test** check.
 
 ## Project Scope
 
