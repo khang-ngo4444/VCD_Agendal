@@ -6,6 +6,8 @@
   const contentMax = Math.max(1, ...content.map((item) => item.count));
   const updated = `${dates.formatTime(now, timeZone)}, ${new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'short', day: 'numeric', month: 'long' }).format(now)}`;
   const shortDate = (date) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' }).format(new Date(`${date}T00:00:00Z`));
+  const longDate = (date) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${date}T00:00:00Z`));
+  const checkInsLabel = (count) => `${n(count)} check-in${count === 1 ? '' : 's'}`;
 %>
 <%# On large screens the overview fills the screen; .admin-fit (src/css/app.css) keeps the gap below equal to the gap beside it. %>
 <div class="admin-fit lg:flex lg:flex-col">
@@ -49,19 +51,22 @@
       <h2 id="checkins-heading" class="font-semibold">Habit check-ins per day</h2>
       <p class="text-xs text-muted">Last <%= checkIns.length %> days · <%= n(checkInTotal) %> total</p>
     </div>
-    <div class="mt-6 flex h-48 items-end gap-1 lg:h-auto lg:min-h-40 lg:flex-1" aria-hidden="true">
+    <div class="mt-6 flex h-48 items-end gap-1 lg:h-auto lg:min-h-40 lg:flex-1" aria-hidden="true" data-bar-chart>
       <% checkIns.forEach((day, i) => { const today = i === checkIns.length - 1; %>
-        <%# .bar / .bar-tip (src/css/app.css): the bar lights up and its number shows while the pointer is on it %>
-        <div class="bar group flex h-full flex-1 items-end">
+        <%# .bar (src/css/app.css): the day under the pointer lights up and gets an outline, like a day on the Insights heatmap.
+            data-tip-*: the tooltip below (public/js/admin.js); title is the fallback without JavaScript. %>
+        <div class="bar group flex h-full flex-1 items-end" data-tip-count="<%= checkInsLabel(day.count) %>" data-tip-day="<%= longDate(day.date) %>"
+          title="<%= shortDate(day.date) %>: <%= checkInsLabel(day.count) %>">
           <%# grow-up + --i: the bars rise one after another, left to right (src/css/app.css) %>
-          <div class="grow-up relative w-full rounded-t-sm <%= today ? 'bg-primary' : 'bg-primary/20 group-hover:bg-primary/60' %>"
-            style="--i: <%= i %>; height: <%= checkInMax ? Math.max(2, Math.round((day.count / checkInMax) * 100)) : 2 %>%">
-            <span class="bar-tip absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 rounded-field bg-neutral px-2 py-1 text-xs whitespace-nowrap text-neutral-content shadow">
-              <%= shortDate(day.date) %> · <%= n(day.count) %> check-ins
-            </span>
-          </div>
+          <div class="grow-up w-full rounded-t-sm group-hover:outline-2 group-hover:outline-offset-1 group-hover:outline-base-content/70 <%= today ? 'bg-primary' : 'bg-primary/20 group-hover:bg-primary/60' %>"
+            style="--i: <%= i %>; height: <%= checkInMax ? Math.max(2, Math.round((day.count / checkInMax) * 100)) : 2 %>%"></div>
         </div>
       <% }) %>
+    </div>
+    <%# The same tooltip as Semester activity on Insights: shown at once, kept inside the window %>
+    <div class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-field bg-neutral px-3 py-2 text-sm whitespace-nowrap text-neutral-content shadow-lg" role="tooltip" data-bar-tip hidden>
+      <span data-bar-tip-text></span>
+      <span class="absolute top-full -translate-x-1/2 border-x-[6px] border-t-[6px] border-x-transparent border-t-neutral" aria-hidden="true" data-bar-tip-arrow></span>
     </div>
     <div class="mt-2 flex justify-between text-xs text-muted" aria-hidden="true">
       <% [0, 9, 19].forEach((i) => { %><span><%= shortDate(checkIns[i].date) %></span><% }) %>

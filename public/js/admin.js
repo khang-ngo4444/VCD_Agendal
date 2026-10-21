@@ -205,3 +205,34 @@ document.addEventListener('submit', (event) => {
   if (event.defaultPrevented || event.target.method === 'dialog') return;
   startProgress();
 });
+
+// Overview › Habit check-ins per day: the day under the pointer, at once, like Semester activity on Insights
+// (public/js/insights.js). Centred above the bar and kept inside the window; the arrow stays on the bar.
+const barChart = document.querySelector('[data-bar-chart]');
+const barTip = document.querySelector('[data-bar-tip]');
+if (barChart && barTip) {
+  const tipText = barTip.querySelector('[data-bar-tip-text]');
+  const tipArrow = barTip.querySelector('[data-bar-tip-arrow]');
+  const bars = barChart.querySelectorAll('[data-tip-count]');
+  bars.forEach((bar) => bar.removeAttribute('title'));
+  const hideTip = () => (barTip.hidden = true);
+  const showTip = (bar) => {
+    tipText.replaceChildren(Object.assign(document.createElement('strong'), { textContent: bar.dataset.tipCount }), ` on ${bar.dataset.tipDay}`);
+    const box = bar.firstElementChild.getBoundingClientRect();
+    const centre = box.left + box.width / 2;
+    barTip.hidden = false;
+    const half = barTip.offsetWidth / 2;
+    const left = Math.min(Math.max(centre, half + 8), innerWidth - half - 8);
+    barTip.style.left = `${left}px`;
+    barTip.style.top = `${box.top - 8}px`;
+    tipArrow.style.left = `${half + centre - left}px`;
+  };
+  barChart.addEventListener('pointerover', (event) => {
+    const bar = event.target.closest('[data-tip-count]');
+    if (bar) showTip(bar);
+    else hideTip();
+  });
+  barChart.addEventListener('pointerleave', hideTip);
+  // Placed in the window, so it would float off its bar while the page scrolls: hide it then.
+  addEventListener('scroll', hideTip, { passive: true, capture: true });
+}
