@@ -114,9 +114,10 @@
     const legend = [...section.querySelectorAll('[data-series]')];
     const hidden = () => legend.map((button) => button.getAttribute('aria-pressed') === 'false');
     let type = form.querySelector('[aria-pressed="true"]')?.value ?? 'bar';
-    let chart = draw(section, type, hidden());
+    // Show the chart box before drawing: Chart.js sizes the canvas from it, and a hidden box measures 0 px wide.
     section.querySelector('[data-chart]').hidden = false;
     section.querySelector('[data-chart-fallback]').hidden = true;
+    let chart = draw(section, type, hidden());
 
     // Bars / Lines: redraw now, save in the background. Capture phase, so app.js's double-submit guard never sees it.
     form.addEventListener(
