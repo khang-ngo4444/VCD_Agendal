@@ -224,20 +224,10 @@
   }
 }
 
-/* Chart tooltip: shown while the pointer is on a bar. */
-.admin-console .bar-tip {
-  opacity: 0;
-  pointer-events: none;
-}
-.admin-console .bar:hover .bar-tip {
-  opacity: 1;
-}
-
 @media (prefers-reduced-motion: no-preference) {
   /* Table rows and buttons ease into their hover and pressed states. */
   .admin-console tbody tr,
-  .admin-console .bar > div,
-  .admin-console .bar-tip {
+  .admin-console .bar > div {
     transition:
       background-color 150ms ease-out,
       opacity 150ms ease-out;
