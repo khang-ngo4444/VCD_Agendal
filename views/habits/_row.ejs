@@ -5,8 +5,8 @@
 %>
 <%
   const { habit, due, doneOnDate, streak, week, frequencyLabel } = summary;
-  const circle = `grid size-6 place-items-center rounded-full border-2 text-white ${due || doneOnDate ? '' : 'opacity-50'}`;
-  const fill = `border-color: ${habit.colour};${doneOnDate ? ` background-color: ${habit.colour}` : ''}`;
+  const circle = 'grid size-6 place-items-center rounded-full border-2 text-checkmark';
+  const fill = `border-color: var(--control-border);${doneOnDate ? ` background-color: ${habit.colour}` : ''}`;
 %>
 <li class="relative flex items-center gap-3 px-4 py-3 hover:bg-base-200/60 <%= due ? '' : 'text-muted' %>">
   <% if (locals.editable === false) { %>
@@ -20,7 +20,7 @@
       <input type="hidden" name="date" value="<%= date %>">
       <input type="hidden" name="done" value="<%= doneOnDate ? '0' : '1' %>">
       <input type="hidden" name="returnTo" value="<%= currentUrl %>">
-      <button type="submit" class="grid size-11 place-items-center rounded-full" aria-pressed="<%= doneOnDate %>" aria-label="Done: <%= habit.name %>">
+      <button type="submit" class="grid size-11 place-items-center rounded-full" aria-pressed="<%= doneOnDate %>" aria-label="<%= doneOnDate ? 'Undo check-in for' : 'Check in for' %> <%= habit.name %> on <%= date %>">
         <span class="<%= circle %>" style="<%= fill %>"><% if (doneOnDate) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-3.5' }) %><% } %></span>
       </button>
     </form>
@@ -32,8 +32,9 @@
   <div class="shrink-0 text-right text-xs tabular-nums">
     <p class="inline-flex items-center gap-1 font-semibold <%= streak.current ? '' : 'text-muted' %>">
       <%- include('../partials/icon', { icon: 'flame', cls: `size-3.5 ${streak.current ? 'text-warning' : ''}` }) %>
-      <%= streak.current %><span class="sr-only"> <%= streak.unit %><%= streak.current === 1 ? '' : 's' %> in a row</span><span aria-hidden="true"><%= streak.unit === 'week' ? 'w' : 'd' %></span>
+      <%= streak.current %><span class="sr-only"> <%= streak.unit %><%= streak.current === 1 ? '' : 's' %> in a row</span><span aria-hidden="true"><%= streak.unit === 'week' ? 'w' : streak.unit === 'day' ? 'd' : ' scheduled' %></span>
     </p>
+    <% if (habit.frequency.type !== 'daily') { %><p class="text-muted">Daily: <%= summary.dailyStreak.current %> <%= summary.dailyStreak.current === 1 ? 'day' : 'days' %></p><% } %>
     <p class="text-muted"><%= week.done %>/<%= week.target %> this week</p>
   </div>
 </li>

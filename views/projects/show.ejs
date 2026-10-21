@@ -1,66 +1,36 @@
 <%- include('../partials/shell-top') %>
 <%# A project's tasks (Figma W22, cut to the card's scope). project is null for the Inbox. %>
-<header>
+<header <%= project ? 'data-project-item' : '' %>>
   <p class="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted uppercase">
     <% if (project) { %>
-      <span class="size-2.5 rounded-full" style="background-color: <%= project.colour %>" aria-hidden="true"></span> Project
+      <%- include('_symbol', { projectIcon: project.icon, projectColour: project.colour }) %> Project item
     <% } else { %>
       <%- include('../partials/icon', { icon: 'inbox', cls: 'size-4' }) %> Tasks without a project
     <% } %>
   </p>
-  <h1 class="mt-1 text-3xl font-bold tracking-tight"><%= project ? project.name : 'Inbox' %></h1>
+  <h1 class="mt-1 text-3xl font-bold tracking-tight [overflow-wrap:anywhere]"><%= project ? project.name : 'Inbox' %></h1>
   <p class="mt-1 text-sm text-muted"><%= openTasks.length + doneTasks.length ? `${doneTasks.length} of ${openTasks.length + doneTasks.length} done` : 'No tasks yet' %></p>
 
   <% if (project) { %>
     <%# The Inbox is built in, so only real projects can be renamed, recoloured or deleted. %>
-    <% const taskCount = openTasks.length + doneTasks.length; %>
     <div class="mt-4 flex flex-wrap items-start gap-2">
-      <details class="dropdown" data-dismissable>
-        <summary class="btn h-11 list-none rounded-full border border-base-300 bg-base-100 px-4 text-primary">Rename</summary>
-        <form method="post" action="/projects/<%= project._id %>/rename" class="dropdown-content z-30 mt-2 flex w-72 gap-2 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
-          <%- include('../partials/csrf') %>
-          <label for="rename-project" class="sr-only">Project name</label>
-          <input id="rename-project" name="name" type="text" maxlength="60" value="<%= project.name %>" class="input h-11 grow" required>
-          <button type="submit" class="btn btn-primary h-11 rounded-full">Save</button>
-        </form>
-      </details>
-
-      <form method="post" action="/projects/<%= project._id %>/colour" class="flex items-center gap-1.5 rounded-full border border-base-300 bg-base-100 px-3 py-1.5">
-        <%- include('../partials/csrf') %>
-        <span class="mr-1 text-sm text-muted">Colour</span>
-        <% projectColours.forEach((colour) => { %>
-          <label class="cursor-pointer">
-            <input type="radio" name="colour" value="<%= colour.hex %>" class="peer sr-only" aria-label="<%= colour.name %>"
-              <%= project.colour === colour.hex ? 'checked' : '' %> data-autosubmit>
-            <span class="block size-6 rounded-full border-2 border-base-100 ring-2 ring-transparent peer-checked:ring-base-content peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
-              style="background-color: <%= colour.hex %>" aria-hidden="true"></span>
-          </label>
-        <% }) %>
-        <noscript><button type="submit" class="btn btn-xs ml-1">Save</button></noscript>
-      </form>
-
-      <form method="post" action="/projects/<%= project._id %>/delete" class="ml-auto"
-        data-confirm="Delete “<%= project.name %>”?"
-        data-confirm-detail="<%= taskCount ? `Its ${taskCount} task${taskCount === 1 ? '' : 's'} will move to the Inbox.` : 'It has no tasks.' %>"
-        data-confirm-button="Delete project">
-        <%- include('../partials/csrf') %>
-        <button type="submit" class="btn btn-ghost h-11 rounded-full text-error">
-          <%- include('../partials/icon', { icon: 'trash', cls: 'size-4' }) %> Delete project
-        </button>
-      </form>
+      <a href="/projects/<%= project._id %>/edit" class="btn h-11 rounded-full border border-base-300 bg-base-100 px-4 text-primary">
+        <span class="size-3 shrink-0 rounded-full" style="background-color: <%= project.colour %>" aria-hidden="true"></span>Customize item
+      </a>
+      <%- include('_menu', { item: { id: String(project._id), name: project.name } }) %>
     </div>
   <% } %>
 </header>
 
 <section class="mt-6" aria-labelledby="open-heading">
   <h2 id="open-heading" class="mb-2 font-semibold">Open · <%= openTasks.length %></h2>
+  <label for="project-quick-add" class="mb-1.5 block text-xs font-semibold [overflow-wrap:anywhere]">Add a task to <%= project ? project.name : 'the Inbox' %></label>
   <form method="post" action="/tasks" class="mb-3 flex gap-2" novalidate>
     <%- include('../partials/csrf') %>
     <input type="hidden" name="project" value="<%= project ? project._id : '' %>">
     <input type="hidden" name="returnTo" value="<%= currentPath %>">
-    <label for="project-quick-add" class="sr-only">Add a task to <%= project ? project.name : 'the Inbox' %></label>
     <input id="project-quick-add" name="title" type="text" maxlength="200" required
-      placeholder="Add a task to <%= project ? project.name : 'the Inbox' %> and press Enter" class="input h-11 grow bg-base-100">
+      placeholder="What needs doing?" class="input h-11 min-w-0 grow bg-base-100">
     <button type="submit" class="btn btn-primary h-11 rounded-full px-4" aria-label="Add task">
       <%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %><span class="hidden sm:inline">Add</span>
     </button>

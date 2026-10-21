@@ -18,8 +18,10 @@ document.addEventListener('keydown', (event) => {
   }
 
   if (event.key === 'Escape') {
+    const menu = event.target.closest('details[data-dismissable][open]');
     closeOpenMenus();
-    if (drawer?.checked) {
+    menu?.querySelector('summary')?.focus();
+    if (drawer?.checked && !menu && !document.querySelector('dialog[open]')) {
       drawer.checked = false;
       drawer.dispatchEvent(new Event('change'));
     }
@@ -31,13 +33,36 @@ document.addEventListener('click', (event) => {
   closeOpenMenus(event.target.closest('a') ? null : event.target.closest('details'));
 });
 
-// Keyboard users land inside the drawer when it opens, and back on the menu button when it closes.
+// On mobile the open navigation blocks background interaction and contains keyboard focus.
+const desktopLayout = window.matchMedia('(min-width: 64rem)');
+function syncDrawer() {
+  if (!drawer) return;
+  const open = drawer.checked && !desktopLayout.matches;
+  document.querySelector('.drawer-content').inert = open;
+  document.querySelector('.drawer-side').inert = !desktopLayout.matches && !open;
+  document.querySelector('[data-drawer-open]')?.setAttribute('aria-expanded', String(open));
+}
 drawer?.addEventListener('change', () => {
-  if (drawer.checked) setTimeout(() => document.querySelector('.drawer-side nav a')?.focus(), DRAWER_SHOW_DELAY_MS);
+  syncDrawer();
+  if (drawer.checked) setTimeout(() => {
+    if (drawer.checked && !desktopLayout.matches) document.querySelector('.drawer-side nav a')?.focus();
+  }, DRAWER_SHOW_DELAY_MS);
   else document.querySelector('[data-drawer-open]')?.focus();
 });
+desktopLayout.addEventListener('change', syncDrawer);
+syncDrawer();
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab' || !drawer?.checked || desktopLayout.matches || document.querySelector('dialog[open]')) return;
+  const controls = [...document.querySelectorAll('.drawer-side a, .drawer-side button, .drawer-side summary')]
+    .filter((control) => !control.disabled && control.getClientRects().length && getComputedStyle(control).visibility !== 'hidden'
+      && (!control.closest('details:not([open])') || control.matches('summary')));
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+});
 
-// Toasts (views/partials/toast.ejs). Undo actions need the full 5 seconds, so hover or focus pauses the timer.
+// Informational toasts pause on hover/focus; errors and recovery actions remain until dismissed.
 const TOAST_DURATION_MS = 5000;
 
 // Pages that animate toasts out (the admin console, src/css/app.css) get [data-leaving] and a moment to play it;
@@ -50,8 +75,11 @@ function removeToast(toastElement) {
 }
 
 function dismissLater(toastElement) {
+  toastElement.querySelector('[data-toast-dismiss]')?.removeAttribute('hidden');
+  // Recovery actions and errors remain available until explicitly dismissed.
+  if (toastElement.querySelector('form, [data-toast-action]:not([hidden])') || toastElement.getAttribute('role') === 'alert') return;
   let timer;
-  const start = () => (timer = setTimeout(() => removeToast(toastElement), TOAST_DURATION_MS));
+  const start = () => { clearTimeout(timer); timer = setTimeout(() => removeToast(toastElement), TOAST_DURATION_MS); };
   const pause = () => clearTimeout(timer);
   toastElement.addEventListener('mouseenter', pause);
   toastElement.addEventListener('mouseleave', start);
@@ -81,6 +109,10 @@ function toast(message, { type = 'success', actionLabel, onAction } = {}) {
 }
 
 document.querySelectorAll('#toast-region [data-toast]').forEach(dismissLater); // flash messages from the server
+document.addEventListener('click', (event) => {
+  const dismiss = event.target.closest('[data-toast-dismiss]');
+  if (dismiss) removeToast(dismiss.closest('[data-toast]'));
+});
 
 window.agendal = { toast };
 
@@ -88,8 +120,11 @@ window.agendal = { toast };
 document.addEventListener('click', (event) => {
   const opener = event.target.closest('[data-open-modal]');
   if (!opener) return;
+  const dialog = document.getElementById(opener.dataset.openModal);
+  if (!dialog) return;
   event.preventDefault(); // an opener can be a link to a no-JS fallback page
-  document.getElementById(opener.dataset.openModal)?.showModal();
+  dialog.addEventListener('close', () => opener.isConnected && opener.focus(), { once: true });
+  dialog.showModal();
 });
 
 // Confirm destructive actions (views/partials/confirm-dialog.ejs). Without JS the form submits directly.
@@ -136,10 +171,22 @@ document.addEventListener('click', (event) => {
 
 // Forms marked data-fetch post in the background. The server still answers with its usual redirect, and the page it
 // redirects to replaces the main content, sidebar and toasts here: the list updates without a reload or a jump to the top.
-// Without JavaScript, or if the request fails, the form posts as normal.
+// Without JavaScript the form posts normally. An uncertain POST is never replayed automatically.
+const dirtyForms = new Set();
+let pendingPosts = 0;
+function hasUnsavedInput() {
+  for (const form of dirtyForms) if (!form.isConnected) dirtyForms.delete(form);
+  return dirtyForms.size > 0;
+}
+['input', 'change'].forEach((type) => document.addEventListener(type, (event) => {
+  const form = event.target.form;
+  if (form?.method === 'post') dirtyForms.add(form);
+}));
+
 function swapPage(html) {
   const page = new DOMParser().parseFromString(html, 'text/html');
   ['#main', '.drawer-side nav'].forEach((selector) => {
+    if (selector === '#main' && hasUnsavedInput()) { stale = true; return; }
     const fresh = page.querySelector(selector);
     if (fresh) document.querySelector(selector)?.replaceWith(fresh);
   });
@@ -153,15 +200,54 @@ function swapPage(html) {
 // Names this tab in its background posts, so the live update they cause (below) isn't applied here a second time.
 const tabId = Math.random().toString(36).slice(2);
 
+function showFormErrors(form, html) {
+  const page = new DOMParser().parseFromString(html, 'text/html');
+  for (const error of form.querySelectorAll('[data-fetch-error]')) {
+    for (const field of form.querySelectorAll('[aria-describedby]')) {
+      const ids = field.getAttribute('aria-describedby').split(/\s+/).filter((id) => id !== error.id);
+      if (ids.length) field.setAttribute('aria-describedby', ids.join(' '));
+      else { field.removeAttribute('aria-describedby'); field.removeAttribute('aria-invalid'); }
+    }
+    error.remove();
+  }
+  let first;
+  for (const invalid of page.querySelectorAll('[name][aria-invalid="true"]')) {
+    const field = form.elements.namedItem(invalid.name);
+    if (!(field instanceof HTMLElement) || !field.id) continue;
+    const message = (invalid.getAttribute('aria-describedby') || '').split(/\s+/).map((id) => page.getElementById(id)?.textContent.trim()).filter(Boolean).join(' ');
+    if (!message) continue;
+    const id = `${field.id}-fetch-error`;
+    let error = document.getElementById(id);
+    if (!error) {
+      error = document.createElement('p'); error.id = id; error.dataset.fetchError = '';
+      error.className = 'mt-1.5 text-sm text-error'; error.setAttribute('role', 'alert'); field.after(error);
+    }
+    error.textContent = message;
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', [...new Set([...(field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean), id])].join(' '));
+    first ??= field;
+  }
+  first?.focus();
+  return Boolean(first);
+}
+
 // POSTs `fields` the way a form would (adding the page's CSRF token) and swaps in the page the server redirects to.
 // Used by data-fetch forms and by scripts like the Board's drag and drop (window.agendal.post).
-async function postAndSwap(url, fields) {
+async function postAndSwap(url, fields, submittedForm) {
   const body = new URLSearchParams(fields);
   if (!body.has('_csrf')) body.set('_csrf', document.querySelector('input[name=_csrf]')?.value ?? '');
-  const response = await fetch(url, { method: 'post', body, headers: { 'X-Tab-Id': tabId } });
-  // Sent somewhere else, e.g. to the login page because the session ended: go there for real.
-  if (!response.ok || new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
-  swapPage(await response.text());
+  pendingPosts += 1;
+  try {
+    const response = await fetch(url, { method: 'post', body, headers: { 'X-Tab-Id': tabId } });
+    if (response.status === 422 && submittedForm && showFormErrors(submittedForm, await response.text())) return false;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (new URL(response.url).pathname !== location.pathname) return location.assign(response.url);
+    const html = await response.text();
+    dirtyForms.delete(submittedForm);
+    swapPage(html);
+  } finally {
+    pendingPosts -= 1;
+  }
 }
 window.agendal.post = postAndSwap;
 window.agendal.tabId = tabId; // for scripts that post with their own fetch (public/js/insights.js)
@@ -177,11 +263,17 @@ document.addEventListener('submit', async (event) => {
   if (buttons.some((button) => button.disabled)) return; // a double click: the first one is still on its way
   const key = form.contains(document.activeElement) ? fetchKey(form) : null;
   buttons.forEach((button) => (button.disabled = true));
+  form.setAttribute('aria-busy', 'true');
   try {
-    await postAndSwap(form.action, new FormData(form));
-    if (key) [...document.querySelectorAll('form[data-fetch]')].find((other) => fetchKey(other) === key)?.querySelector('button')?.focus();
+    const fields = new FormData(form);
+    if (event.submitter?.name) fields.append(event.submitter.name, event.submitter.value);
+    const updated = await postAndSwap(form.action, fields, form);
+    if (key && updated !== false) [...document.querySelectorAll('form[data-fetch]')].find((other) => fetchKey(other) === key)?.querySelector('button')?.focus();
   } catch {
-    form.submit();
+    toast('The result couldn’t be confirmed. Your input is kept. Check the current state before trying again.', { type: 'error' });
+  } finally {
+    buttons.forEach((button) => (button.disabled = false));
+    form.removeAttribute('aria-busy');
   }
 });
 
@@ -204,6 +296,9 @@ async function liveSearch() {
     const page = new DOMParser().parseFromString(await response.text(), 'text/html');
     document.querySelectorAll('[data-live]').forEach((part) => part.replaceWith(page.querySelector(`[data-live="${part.dataset.live}"]`)));
     history.replaceState(null, '', url);
+    const reset = document.querySelector('[data-search-reset]');
+    const freshReset = page.querySelector('[data-search-reset]');
+    if (reset && freshReset) reset.setAttribute('href', freshReset.getAttribute('href'));
     // Screen readers hear the count or the empty-state heading.
     const summary = document.querySelector('[data-live="results"] [data-summary], [data-live="results"] h2');
     document.querySelector('[data-search-status]').textContent = summary?.textContent.trim() ?? '';
@@ -221,6 +316,9 @@ if (searchForm && location.pathname === '/search') {
   searchForm.addEventListener('submit', (event) => {
     event.preventDefault();
     clearTimeout(searchTimer);
+    const filterMenu = event.submitter?.closest('details');
+    closeOpenMenus();
+    filterMenu?.querySelector('summary')?.focus();
     liveSearch();
   });
 }
@@ -233,16 +331,24 @@ let pointerDown = false;
 
 const busy = () =>
   document.hidden ||
+  pendingPosts > 0 ||
+  hasUnsavedInput() ||
   pointerDown ||
-  document.querySelector('dialog[open], #main details[open]') ||
+  document.querySelector('dialog[open], #main details[open], [data-project-menu][open]') ||
   document.activeElement?.matches('input:not([type=checkbox], [type=radio]), textarea, select');
 
+let refreshVersion = 0;
 async function refresh() {
+  const version = ++refreshVersion;
   stale = true;
   if (busy()) return;
   stale = false;
   const response = await fetch(location.href, { headers: { 'X-Live-Refresh': '1' } }).catch(() => null);
-  if (response?.ok && new URL(response.url).pathname === location.pathname) swapPage(await response.text());
+  if (!response?.ok || new URL(response.url).pathname !== location.pathname) { stale = true; return; }
+  const html = await response.text();
+  if (version !== refreshVersion) return;
+  if (busy()) { stale = true; return; }
+  swapPage(html);
 }
 
 if (document.querySelector('.drawer-side nav') && window.EventSource) {

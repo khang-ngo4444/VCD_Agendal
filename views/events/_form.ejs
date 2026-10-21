@@ -81,6 +81,8 @@
 
   <% if (locals.occurrence) { %>
     <input type="hidden" name="occurrence" value="<%= occurrence.original.toISOString() %>">
+    <p class="mt-4 text-sm text-muted">This event only supports changes to its title, date and times. To change other details, choose this and following events or all events in the series.</p>
+    <% if (errors.scope) { %><p class="mt-2 text-sm text-error" role="alert"><%= errors.scope %></p><% } %>
     <%- include('_scope', { legend: 'Save the changes to', scope, occurrence }) %>
   <% } %>
 

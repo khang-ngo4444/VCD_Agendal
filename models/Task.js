@@ -26,5 +26,6 @@ const taskSchema = new Schema(
 
 taskSchema.index({ owner: 1, dueDate: 1 });
 taskSchema.index({ owner: 1, 'schedule.start': 1 });
+taskSchema.index({ previousOccurrence: 1 }, { unique: true, partialFilterExpression: { previousOccurrence: { $type: 'objectId' } } });
 
 module.exports = model('Task', taskSchema);

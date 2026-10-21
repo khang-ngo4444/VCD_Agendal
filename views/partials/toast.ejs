@@ -27,4 +27,7 @@
     <button type="button" class="min-h-8 font-semibold text-inverse-primary hover:underline" data-toast-action
       <% if (!locals.actionLabel) { %>hidden<% } %>><%= locals.actionLabel || '' %></button>
   <% } %>
+  <button type="button" class="grid size-11 shrink-0 place-items-center rounded-field hover:bg-neutral-content/10" aria-label="Dismiss notification" data-toast-dismiss hidden>
+    <%- include('icon', { icon: 'x', cls: 'size-4' }) %>
+  </button>
 </div>

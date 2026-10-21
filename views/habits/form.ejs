@@ -17,12 +17,13 @@
 %>
 <a href="<%= habit ? `/habits/${habit._id}` : '/habits' %>" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ <%= habit ? habit.name : 'Habits' %></a>
 <h1 class="mt-2 text-3xl font-bold tracking-tight"><%= habit ? 'Edit habit' : 'New habit' %></h1>
+<p class="mt-2 text-sm text-muted">Choose a name, colour and frequency. Check in when you complete the habit. Reminders are optional and use <%= currentUser.timeZone %>.</p>
 
 <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_260px]">
   <form method="post" action="<%= habit ? `/habits/${habit._id}` : '/habits' %>" class="rounded-box bg-base-100 p-5" novalidate>
     <%- include('../partials/csrf') %>
 
-    <label for="name" class="mb-1.5 block text-xs font-semibold">Name</label>
+    <label for="name" class="mb-1.5 block text-xs font-semibold">Name (required)</label>
     <input id="name" name="name" type="text" maxlength="<%= maxNameLength %>" value="<%= values.name %>" placeholder="e.g. Read 20 pages"
       class="input h-11 w-full text-base font-medium <%= errors.name ? 'input-error' : '' %>" <%- describedBy('name') %> <%= habit ? '' : 'autofocus' %>>
     <% if (errors.name) { %><p id="name-error" class="mt-1.5 text-sm text-error"><%= errors.name %></p><% } %>
@@ -64,7 +65,7 @@
       </div>
 
       <div class="mt-3 hidden items-center gap-2 group-has-[[value=timesPerWeek]:checked]:flex">
-        <label for="timesPerWeek" class="sr-only">Times a week</label>
+        <label for="timesPerWeek" class="text-sm font-medium">Weekly target</label>
         <input id="timesPerWeek" name="timesPerWeek" type="number" min="1" max="7" value="<%= values.timesPerWeek %>" class="input h-11 w-20">
         <span class="text-sm text-muted">times a week</span>
       </div>

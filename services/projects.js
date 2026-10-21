@@ -1,4 +1,5 @@
 const Task = require('../models/Task');
+const Project = require('../models/Project');
 
 // Preset project colours (Figma: Project/* variables plus red and graphite from W09).
 const PROJECT_COLOURS = [
@@ -27,4 +28,17 @@ async function taskCounts(owner) {
   return (key) => counts.get(String(key)) ?? { done: 0, total: 0 };
 }
 
-module.exports = { PROJECT_COLOURS, isPresetColour, taskCounts };
+const PROJECT_SORT = { order: 1, createdAt: 1, _id: 1 };
+
+async function moveProject(owner, id, direction) {
+  const projects = await Project.find({ owner }).sort(PROJECT_SORT).select('_id').lean();
+  const index = projects.findIndex((project) => String(project._id) === String(id));
+  if (index < 0) return false;
+  const target = Math.max(0, Math.min(projects.length - 1, index + (direction === 'up' ? -1 : 1)));
+  if (target === index) return false;
+  [projects[index], projects[target]] = [projects[target], projects[index]];
+  await Project.bulkWrite(projects.map((project, order) => ({ updateOne: { filter: { _id: project._id, owner }, update: { $set: { order } } } })));
+  return true;
+}
+
+module.exports = { PROJECT_COLOURS, PROJECT_SORT, isPresetColour, taskCounts, moveProject };

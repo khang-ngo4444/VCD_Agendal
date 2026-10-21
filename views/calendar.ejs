@@ -8,6 +8,7 @@
   <div>
     <% if (eyebrow) { %><p class="text-xs font-semibold tracking-wide text-primary uppercase"><%= eyebrow %></p><% } %>
     <h1 class="mt-1 text-3xl font-bold tracking-tight"><%= heading %></h1>
+    <p class="mt-2 max-w-xl text-sm text-muted">Calendar · times in <%= currentUser.timeZone %>. Select an empty slot to add a task, or use New event. Open a task to change its scheduled time with the keyboard.</p>
   </div>
   <div class="flex flex-wrap items-center gap-2">
     <a href="?view=<%= view %>&date=<%= previous %>" class="btn btn-circle size-11 border-0 bg-fill" aria-label="Previous <%= view %>"><%- include('partials/icon', { icon: 'chevron-left', cls: 'size-4' }) %></a>

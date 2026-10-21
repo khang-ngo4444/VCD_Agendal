@@ -34,12 +34,13 @@ async function checkConfirmation(user, body = {}) {
 // Logged first, so the entry exists even if a later step fails; it keeps the email, since the account goes.
 // Other devices are signed out because their sessions point at a user that no longer exists (requireLogin).
 async function deleteAccount(req, user) {
+  // Windows can temporarily lock an avatar. Fail before deleting the account so the user can safely retry.
+  if (user.avatar) await fs.rm(path.join(AVATAR_DIR, `${user.id}.webp`), { force: true });
   await activity.record(req, { action: 'account_deleted', user, details: 'Deleted by the user · all data removed' });
   const counts = Object.fromEntries(
     await Promise.all(OWNED.map(async (Model) => [Model.modelName, (await Model.deleteMany({ owner: user._id })).deletedCount]))
   );
   await User.deleteOne({ _id: user._id });
-  if (user.avatar) await fs.rm(path.join(AVATAR_DIR, `${user.id}.webp`), { force: true }); // uploaded photo, if any
   return counts;
 }
 

@@ -69,7 +69,12 @@ async function followRepeat(task, wasDone, timeZone) {
   const next = new Task({ owner, project, title, description, priority, repeat, previousOccurrence: task._id, ...dates });
   next.status = reopenedStatus(next, timeZone);
   next.order = await topOrder(owner, next.status);
-  await next.save();
+  try {
+    await next.save();
+  } catch (error) {
+    if (error.code === 11000) return null; // another tab already created this next occurrence
+    throw error;
+  }
 
   // Reminders keep their distance from the task: one 15 minutes before this occurrence is 15 minutes before the next.
   // offsetMinutes marks the P10 reminder presets; it is simply left out until that field is in the Reminder model.

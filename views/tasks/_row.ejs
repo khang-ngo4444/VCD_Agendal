@@ -20,7 +20,7 @@
     <input type="hidden" name="returnTo" value="<%= currentUrl %>">
     <button type="submit" class="group grid size-11 place-items-center rounded-full"
       aria-label="<%= task.completedAt ? `Reopen “${task.title}”` : `Mark “${task.title}” as done` %>">
-      <span class="grid size-5 place-items-center rounded-full border-2 <%= task.completedAt ? 'border-success bg-success text-success-content' : 'border-base-300 group-hover:border-primary' %>">
+      <span class="grid size-5 place-items-center rounded-full border-2 <%= task.completedAt ? 'border-success bg-success text-success-content' : 'border-[var(--control-border)] group-hover:border-primary' %>">
         <% if (task.completedAt) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-3' }) %><% } %>
       </span>
     </button>
@@ -35,8 +35,7 @@
         <span aria-hidden="true">·</span>
       <% } %>
       <% if (project) { %>
-        <span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-full <%= project.colour ? '' : 'bg-base-300' %>"
-          <% if (project.colour) { %>style="background-color: <%= project.colour %>"<% } %> aria-hidden="true"></span><%= project.name %></span>
+        <span class="inline-flex min-w-0 max-w-full items-center gap-1"><%- include('../projects/_symbol', { projectIcon: project.icon, projectColour: project.colour }) %><span class="truncate"><%= project.name %></span></span>
         <span aria-hidden="true">·</span>
       <% } %>
       <%= meta.join(' · ') %>

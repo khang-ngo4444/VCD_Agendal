@@ -89,6 +89,14 @@ exports.update = async (req, res) => {
   const occurrence = occurrenceOf(event, req.body?.occurrence, req.user.timeZone);
   const { values, errors, changes } = parseEventForm(req.body, req.user.timeZone);
   const project = await pickedProject(req, values, errors);
+  if (occurrence && scopeOf(req) === 'this') {
+    const changedDetails = ['location', 'notes'].some((field) => (changes[field] ?? '') !== (event[field] ?? ''))
+      || String(project?._id ?? '') !== String(event.project ?? '')
+      || changes.allDay !== event.allDay
+      || (changes.repeat?.frequency ?? '') !== (event.repeat?.frequency ?? '')
+      || Number(changes.repeat?.until ?? 0) !== Number(event.repeat?.until ?? 0);
+    if (changedDetails) errors.scope = 'For this event only, change its title or time. Choose This and following events or All events in the series to change other details.';
+  }
   if (Object.keys(errors).length) return renderForm(req, res, { event, occurrence, values, errors });
 
   const edited = { ...changes, project: project?._id ?? null };

@@ -17,7 +17,7 @@ const text = (value) => (typeof value === 'string' ? value : '');
 
 const findOwnedTask = (req) => findOwned(Task, req.params.id, req.user._id, { deletedAt: null });
 
-exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal' });
+exports.new = (req, res) => res.render('tasks/new', { title: 'New task · Agendal', values: {}, errors: {} });
 
 const MAX_RESULTS = 50;
 
@@ -53,12 +53,21 @@ exports.create = async (req, res) => {
   const returnTo = safeReturnTo(body.returnTo);
   const title = text(body.title).trim();
   const { error, schedule } = parseSchedule({ scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) }, req.user.timeZone);
-  if (!title || title.length > MAX_TITLE_LENGTH || error) {
-    flash(req, 'error', error ?? (title ? `Keep the title under ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.'));
-    return res.redirect(returnTo);
+  const projectId = text(body.project);
+  const project = projectId && mongoose.isValidObjectId(projectId) ? await Project.findOne({ _id: projectId, owner: req.user._id }) : null;
+  const invalidProject = Boolean(body.project && (!projectId || !project));
+  if (!title || title.length > MAX_TITLE_LENGTH || error || invalidProject) {
+    const errors = {};
+    if (!title || title.length > MAX_TITLE_LENGTH) errors.title = title ? `Use at most ${MAX_TITLE_LENGTH} characters.` : 'Type a title for the task.';
+    if (error) errors.schedule = error;
+    if (invalidProject) errors.project = 'Pick a project from the list.';
+    return res.status(422).render('tasks/new', {
+      title: 'New task · Agendal',
+      values: { title: text(body.title), project: text(body.project), returnTo, scheduleDate: text(body.scheduleDate), scheduleStart: text(body.scheduleStart), scheduleEnd: text(body.scheduleEnd) },
+      errors,
+    });
   }
 
-  const project = body.project ? await findOwned(Project, body.project, req.user._id) : null;
   await Task.create({ owner: req.user._id, project: project?._id ?? null, title, schedule: schedule ?? undefined });
   const when = schedule ? ` for ${formatDay(schedule.start, req.user.timeZone)}, ${formatTime(schedule.start, req.user.timeZone)}` : '';
   flash(req, 'success', `Added “${title}” to ${project ? project.name : 'the Inbox'}${when}.`);

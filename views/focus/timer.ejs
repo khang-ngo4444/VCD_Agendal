@@ -45,7 +45,7 @@
     <p class="sr-only" aria-live="polite" data-announce></p>
 
     <div class="mt-8 flex items-center gap-5" data-controls hidden>
-      <button type="button" class="btn btn-circle size-12 border-0 bg-base-content/10 text-primary shadow-none" aria-label="Restart this block" data-restart>
+      <button type="button" class="btn btn-circle size-12 border-0 bg-base-content/10 text-primary shadow-none" aria-label="Restart this block" title="Restart this block. Unfinished progress will reset." data-restart>
         <%- include('../partials/icon', { icon: 'rotate-ccw', cls: 'size-5' }) %>
       </button>
       <button type="button" class="btn btn-circle size-[4.5rem] border-0 bg-base-content text-base-100 shadow-lg hover:bg-base-content/90" aria-label="Pause" data-toggle>
@@ -58,6 +58,7 @@
       </button>
     </div>
 
+    <p class="mt-4 max-w-sm text-sm text-muted">Only finished focus blocks are saved. Restarting or skipping does not count an unfinished block. Breaks and the next planned block start automatically; pause whenever you need.</p>
     <form method="post" action="/tasks/<%= task._id %>/complete" class="mt-8 w-full max-w-sm sm:w-auto" data-focus-complete>
       <%- include('../partials/csrf') %>
       <input type="hidden" name="done" value="1">

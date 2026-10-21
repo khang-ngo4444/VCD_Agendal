@@ -12,5 +12,6 @@ const focusSessionSchema = new Schema(
 );
 
 focusSessionSchema.index({ owner: 1, startedAt: 1 }); // a day's sessions (the Focus page, Insights)
+focusSessionSchema.index({ owner: 1, task: 1, startedAt: 1 }, { unique: true });
 
 module.exports = model('FocusSession', focusSessionSchema);
