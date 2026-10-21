@@ -32,8 +32,9 @@
   <div class="shrink-0 text-right text-xs tabular-nums">
     <p class="inline-flex items-center gap-1 font-semibold <%= streak.current ? '' : 'text-muted' %>">
       <%- include('../partials/icon', { icon: 'flame', cls: `size-3.5 ${streak.current ? 'text-warning' : ''}` }) %>
-      <%= streak.current %><span class="sr-only"> <%= streak.unit %><%= streak.current === 1 ? '' : 's' %> in a row</span><span aria-hidden="true"><%= streak.unit === 'week' ? 'w' : 'd' %></span>
+      <%= streak.current %><span class="sr-only"> <%= streak.unit %><%= streak.current === 1 ? '' : 's' %> in a row</span><span aria-hidden="true"><%= streak.unit === 'week' ? 'w' : streak.unit === 'day' ? 'd' : ' scheduled' %></span>
     </p>
+    <% if (habit.frequency.type !== 'daily') { %><p class="text-muted">Daily: <%= summary.dailyStreak.current %> <%= summary.dailyStreak.current === 1 ? 'day' : 'days' %></p><% } %>
     <p class="text-muted"><%= week.done %>/<%= week.target %> this week</p>
   </div>
 </li>

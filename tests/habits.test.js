@@ -1,4 +1,4 @@
-const { isDue, streaks, completion, weekProgress, describeFrequency } = require('../services/habits');
+const { isDue, streaks, dailyStreaks, completion, weekProgress, describeFrequency } = require('../services/habits');
 const { addDays, toDateInput } = require('../services/dates');
 
 const daily = { frequency: { type: 'daily' } };
@@ -55,6 +55,42 @@ describe('streaks for habits that are not due every day', () => {
     expect(streaks(monWedFri, done, opts).current).toBe(6);
     done.delete('2026-10-12');
     expect(streaks(monWedFri, done, opts)).toMatchObject({ current: 2, longest: 3 });
+  });
+});
+
+describe('scheduled streaks versus consecutive calendar days', () => {
+  const gymDays = ['2026-09-21', '2026-09-23', '2026-09-25', '2026-09-28', '2026-09-30', '2026-10-02', '2026-10-05', '2026-10-07', '2026-10-09', '2026-10-12', '2026-10-14', '2026-10-16', '2026-10-19', '2026-10-21'];
+  const gymOptions = { start: '2026-09-21', today: '2026-10-21' };
+
+  test('Gym can have 14 scheduled days but 13 completions in the last 30 days and a 1-day daily streak', () => {
+    const done = set(gymDays);
+    expect(streaks(monWedFri, done, gymOptions)).toEqual({ current: 14, longest: 14, unit: 'scheduled day' });
+    expect(completion(monWedFri, done, { ...gymOptions, start: '2026-09-22' })).toEqual({ done: 13, due: 13, rate: 1 });
+    expect(dailyStreaks(done, gymOptions)).toEqual({ current: 1, longest: 1, unit: 'day' });
+  });
+
+  test('undo today retains the previous scheduled streak but a missed due day breaks it', () => {
+    const done = set(gymDays.slice(0, -1));
+    expect(streaks(monWedFri, done, gymOptions).current).toBe(13);
+    expect(dailyStreaks(done, gymOptions).current).toBe(0); // Tuesday was missed
+    done.delete('2026-10-19');
+    expect(streaks(monWedFri, done, gymOptions)).toMatchObject({ current: 0, longest: 12 });
+    done.add('2026-10-21');
+    expect(streaks(monWedFri, done, gymOptions).current).toBe(1);
+  });
+
+  test('off-schedule check-ins extend only the daily streak; future dates do not count', () => {
+    const done = set(gymDays, ['2026-10-20', '2026-10-22']);
+    expect(dailyStreaks(done, gymOptions)).toMatchObject({ current: 3, longest: 3 });
+    expect(streaks(monWedFri, done, gymOptions).current).toBe(14);
+    expect(dailyStreaks(done, { ...gymOptions, today: '2026-10-22' }).current).toBe(4);
+  });
+
+  test('a weekly goal and daily streak have different units and reset boundaries', () => {
+    const done = set(['2026-10-12', '2026-10-13', '2026-10-14']);
+    const options = { start: '2026-10-12', today: '2026-10-16' };
+    expect(streaks(threeAWeek, done, options)).toEqual({ current: 1, longest: 1, unit: 'week' });
+    expect(dailyStreaks(done, options)).toEqual({ current: 0, longest: 3, unit: 'day' });
   });
 });
 

@@ -94,11 +94,11 @@ function semantics(html) {
       }
     }
     for (const element of document.querySelectorAll('input:not([type=hidden]), select, textarea, button, summary')) {
-      if (element.closest('[aria-hidden="true"]')) continue;
+      if (element.closest('[aria-hidden="true"], [hidden]')) continue;
       const name = element.getAttribute('aria-label') || (element.getAttribute('aria-labelledby') || '').split(' ').map((id) => document.getElementById(id)?.textContent || '').join('').trim()
         || [...(element.labels || [])].map((label) => label.textContent.trim()).join('')
         || (['BUTTON', 'SUMMARY'].includes(element.tagName) ? element.textContent.trim() : '') || element.getAttribute('title');
-      assert.ok(name, `Unnamed control: ${element.tagName} ${element.name || element.id}`);
+      assert.ok(name, `Unnamed control: ${element.outerHTML.slice(0, 400)}`);
     }
   } finally { dom.window.close(); }
 }
@@ -275,6 +275,23 @@ async function run() {
       status(await member.get(`/habits/${habit._id}?month=2026-09`), 200); status(await member.get(`/habits/${habit._id}/edit`), 200); await member.post(`/habits/${habit._id}`, { ...habitBase, name: 'Edited habit' }); assert.equal((await Habit.findById(habit._id)).name, 'Edited habit');
     });
     const today = toDateInput(new Date(), owner.timeZone);
+    await check('HABIT scheduled and daily streaks', 'Detail and list distinguish scheduled/daily streaks and update both after Undo', async () => {
+      const scheduled = await Habit.create({ owner: owner._id, name: 'Two scheduled days', colour: '#2f6fde', frequency: { type: 'days', days: [new Date(`${today}T00:00:00Z`).getUTCDay()] }, createdAt: new Date(`${addDays(today, -7)}T00:00:00Z`) });
+      await HabitCheckIn.insertMany([addDays(today, -7), today].map((date) => ({ owner: owner._id, habit: scheduled._id, date })));
+      const readStats = async () => {
+        const response = await member.get(`/habits/${scheduled._id}`); status(response, 200); semantics(response.html);
+        const dom = new JSDOM(response.html);
+        try { return Object.fromEntries([...dom.window.document.querySelectorAll('dt')].map((label) => [label.textContent.trim(), label.nextElementSibling.textContent.trim().replace(/\s+/g, ' ')])); }
+        finally { dom.window.close(); }
+      };
+      let stats = await readStats();
+      assert.equal(stats['Current scheduled streak'], '2 scheduled days'); assert.equal(stats['Current daily streak'], '1 day');
+      assert.equal(stats['Longest scheduled streak'], '2 scheduled days'); assert.equal(stats['Longest daily streak'], '1 day');
+      contains(await member.get('/habits'), 'Daily: 1 day');
+      status(await member.post(`/habits/${scheduled._id}/check-ins`, { date: today, done: '0' }), 302);
+      stats = await readStats(); assert.equal(stats['Current scheduled streak'], '1 scheduled day'); assert.equal(stats['Current daily streak'], '0 days');
+      assert.equal(stats['Longest daily streak'], '1 day'); assert.equal(await HabitCheckIn.countDocuments({ habit: scheduled._id, date: today }), 0);
+    });
     await check('HABIT check-in duplicate', 'Repeated check-in creates only one history entry', async () => {
       await Promise.all([member.post(`/habits/${habit._id}/check-ins`, { date: today, done: '1' }), member.post(`/habits/${habit._id}/check-ins`, { date: today, done: '1' })]); assert.equal(await HabitCheckIn.countDocuments({ habit: habit._id, date: today }), 1);
     });

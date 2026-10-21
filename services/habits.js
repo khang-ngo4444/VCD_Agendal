@@ -51,7 +51,12 @@ function streaks(habit, done, { start, today, weekStartsOn = 1 }) {
     current = count === target ? current + 1 : 0;
     longest = Math.max(longest, current);
   }
-  return { current, longest, unit: isWeekly(habit) ? 'week' : 'day' };
+  return { current, longest, unit: isWeekly(habit) ? 'week' : habit.frequency.type === 'daily' ? 'day' : 'scheduled day' };
+}
+
+// Calendar-day streaks include every date, including days outside the habit's schedule.
+function dailyStreaks(done, options) {
+  return streaks({ frequency: { type: 'daily' } }, done, options);
 }
 
 // Checked-in due days ÷ due days from `start` to `today` (weekly habits: check-ins up to the target ÷ targets).
@@ -106,10 +111,11 @@ async function loadSummaries(user, date, filter = {}) {
       due: isDue(habit, date),
       doneOnDate: done.has(date),
       streak: streaks(habit, done, { start, today: date, weekStartsOn }),
+      dailyStreak: dailyStreaks(done, { start, today: date }),
       week: weekProgress(habit, done, { today: date, weekStartsOn }),
       frequencyLabel: describeFrequency(habit, weekStartsOn),
     };
   });
 }
 
-module.exports = { DAY_NAMES, isDue, streaks, completion, weekProgress, describeFrequency, loadSummaries };
+module.exports = { DAY_NAMES, isDue, streaks, dailyStreaks, completion, weekProgress, describeFrequency, loadSummaries };

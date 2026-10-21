@@ -4,6 +4,32 @@ Ngày 2026-10-21 · nhánh `feature/hci-rules-audit`.
 
 ## Kết quả và cách đọc
 
+### Đính chính sau phản hồi của chủ dự án
+
+Lượt audit ban đầu không xác minh độ thẳng hàng Rename/Colour bằng tọa độ và
+không đối chiếu hai định nghĩa streak trên fixture Gym của ảnh phản hồi. Các
+lượt đo responsive chủ yếu xác nhận không tràn ngang, title/heading và tên
+control; chúng không chứng minh mọi chi tiết bố cục đều đúng. Các test streak
+cũ có daily/weekday/chosen-days/weekly và timezone, nhưng UI chưa cho người dùng
+phân biệt streak theo lịch và streak theo ngày liên tục. Báo cáo dưới đây là
+bằng chứng cho các trường hợp đã chạy, không phải kiểm hết mọi flow/tổ hợp.
+
+Lượt sửa bổ sung ngày 2026-10-21:
+
+- Căn Colour cùng chiều cao 44px với Rename; đo tâm hai control và cả sáu swatch.
+- Theo yêu cầu "cả 2", Habit detail và list hiển thị scheduled/daily riêng;
+  scheduled đơn vị ngày đến lịch hoặc tuần đạt mục tiêu; daily đơn vị ngày lịch.
+- Thêm 4 regression test: fixture Gym 14 scheduled/13-of-13 last30/1 daily,
+  Undo và bỏ lỡ ngày đến lịch, check-in ngoài lịch/ngày tương lai, weekly-vs-daily.
+- Thêm HTTP/DB regression kiểm tra đúng 4 ô scheduled/daily trên HTML, danh sách
+  habit và hai current streak cập nhật sau Undo. Kết quả mới: 240/240 Jest và
+  170/170 HTTP/DB đạt; CSS build thành công.
+- Phát hiện thêm ở 320px: ô lịch 40px chồng nhau vì khoảng cách cột khoảng 34px.
+  Sửa kích thước/padding/gap theo breakpoint; đo ranh giới các ô và tâm weekday,
+  thay vì dùng root overflow làm đại diện cho mọi lỗi reflow.
+- Fetch `origin/develop` lên `1d0b70c` (Focus plan, Insights semester và CI/tests).
+  Không merge các cập nhật đó hoặc sửa nhánh khác trong lượt sửa này.
+
 - 236/236 test Jest, 29 suite: logic, controller và mô phỏng DOM/timer.
 - 169/169 testcase HTTP với MongoDB thật; kiểm tra dữ liệu sau ghi và email trong Mailpit local.
 - 28 testcase tương tác trình duyệt dưới đây, cùng kiểm tra trực quan form, popup và navigation mobile.
@@ -94,7 +120,7 @@ Kiểm tra thêm: theme Light lưu sau reload; form task có label nhìn thấy 
 - Tính bền vững của focus draft cần localStorage hoạt động; private mode/storage hết chỗ có giới hạn. Không thêm offline cache/PWA.
 - Chưa truy cập được Trello/Figma trong phiên; đánh giá dựa trên code/rule và design tokens có trong repository. Notification-only service worker có xung đột rule đã ghi ở AGENTS.md; giữ nguyên tính năng hiện hữu chờ quyết định của chủ dự án.
 
-## Chi tiết 169 testcase HTTP/DB
+## Chi tiết testcase HTTP/DB (170 sau lượt sửa bổ sung)
 
 Mỗi hàng dưới đây tương ứng một `check` trong script; đọc hành động/assertion ngay tại script để tái hiện. Báo cáo ghi lần chạy cuối, không tính các lần chạy lỗi trước khi sửa là PASS.
 
@@ -194,6 +220,7 @@ Mỗi hàng dưới đây tương ứng một `check` trong script; đọc hành
 | HABIT create days | Each supported frequency creates the correct habit | PASS |
 | HABIT create timesPerWeek | Each supported frequency creates the correct habit | PASS |
 | HABIT edit | Habit detail, edit and month navigation render and save changes | PASS |
+| HABIT scheduled and daily streaks | Detail/list show both streak definitions; Undo updates current values and keeps longest history | PASS |
 | HABIT check-in duplicate | Repeated check-in creates only one history entry | PASS |
 | HABIT undo/backfill | Undo removes today; allowed historical day can be checked in | PASS |
 | HABIT invalid toggle | Malformed done value cannot silently remove a valid check-in | PASS |
