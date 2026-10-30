@@ -1,0 +1,24 @@
+<%# Brand panel beside the login and register forms (Figma W05 / W16). Hidden below lg. %>
+<aside class="hidden items-center bg-base-200 px-12 lg:flex xl:px-[72px]">
+  <div class="max-w-md">
+    <div class="grid size-14 place-items-center rounded-2xl bg-neutral text-neutral-content">
+      <%- include('../partials/icon', { icon: 'check', cls: 'size-6' }) %>
+    </div>
+    <p class="mt-8 text-5xl font-bold leading-[1.1] tracking-tight">Say it. Plan it.<br>Get it done.</p>
+    <p class="mt-6 text-muted">Agendal turns what you type into organised tasks, then shows what needs attention today.</p>
+    <ul class="mt-6 space-y-4 text-sm">
+      <li class="flex items-center gap-3">
+        <span class="grid size-9 place-items-center rounded-lg bg-fill" aria-hidden="true">
+          <%- include('../partials/icon', { icon: 'columns', cls: 'size-4' }) %>
+        </span>
+        Kanban, Calendar and Daily List on the same data
+      </li>
+      <li class="flex items-center gap-3">
+        <span class="grid size-9 place-items-center rounded-lg bg-fill" aria-hidden="true">
+          <%- include('../partials/icon', { icon: 'bell', cls: 'size-4' }) %>
+        </span>
+        Reminders that respect your Focus
+      </li>
+    </ul>
+  </div>
+</aside>

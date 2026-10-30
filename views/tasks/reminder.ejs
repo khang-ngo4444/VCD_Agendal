@@ -1,0 +1,9 @@
+<%- include('../partials/shell-top') %>
+<%# The custom reminder form without JavaScript (the task page shows it in a dialog). Locals: task, reminder, defaults. %>
+<a href="/tasks/<%= task._id %>" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ <%= task.title %></a>
+<h1 class="mt-2 text-3xl font-bold tracking-tight">Reminder</h1>
+<p class="mt-1 text-sm text-muted">Now: <%= reminder ? reminder.label : 'none' %></p>
+<div class="mt-6 max-w-md rounded-box bg-base-100 p-5">
+  <%- include('_custom-reminder-form', { task, defaults, idPrefix: 'page-reminder' }) %>
+</div>
+<%- include('../partials/shell-bottom') %>

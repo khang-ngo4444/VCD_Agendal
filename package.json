@@ -1,20 +1,42 @@
 {
   "dependencies": {
     "@tailwindcss/cli": "^4.3.0",
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.3.0",
+    "chart.js": "^4.5.1",
+    "connect-mongo": "^6.0.0",
     "daisyui": "^5.7.50",
     "dotenv": "^18.0.8",
     "ejs": "^7.0.1",
     "express": "^5.3.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
     "mongoose": "^9.11.2",
-    "tailwindcss": "^4.3.3"
+    "multer": "^2.4.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.1.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "sharp": "^0.35.5",
+    "sortablejs": "^1.15.7",
+    "tailwindcss": "^4.3.3",
+    "web-push": "^3.6.7"
   },
   "name": "advanced-web-design",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --watch --env-file-if-exists=.env app.js",
+    "start": "node --env-file-if-exists=.env app.js",
+    "css": "tailwindcss -i src/css/app.css -o public/css/style.css --minify",
+    "css:watch": "tailwindcss -i src/css/app.css -o public/css/style.css --watch",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:unit": "jest tests/unit",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/integration",
+    "seed": "node --env-file-if-exists=.env scripts/seed.js",
+    "seed:users": "node --env-file-if-exists=.env scripts/seed-users.js",
+    "vapid": "web-push generate-vapid-keys"
   },
   "repository": {
     "type": "git",
@@ -26,5 +48,10 @@
   "bugs": {
     "url": "https://github.com/khang-ngo4444/Thay_Dinh_Dep_Trai/issues"
   },
-  "homepage": "https://github.com/khang-ngo4444/Thay_Dinh_Dep_Trai#readme"
+  "homepage": "https://github.com/khang-ngo4444/Thay_Dinh_Dep_Trai#readme",
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "mongodb-memory-server": "^11.3.0",
+    "supertest": "^7.3.1"
+  }
 }

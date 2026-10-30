@@ -1,0 +1,18 @@
+    </main>
+  </div>
+  <div id="app-navigation" class="drawer-side z-40">
+    <label for="app-drawer" aria-label="Close navigation" class="drawer-overlay"></label>
+    <%- include('sidebar') %>
+  </div>
+</div>
+<%- include('modal', {
+  id: 'new-task-dialog',
+  heading: 'New task',
+  body: include('../tasks/_quick-add-form', { projects: sidebarProjects, returnTo: currentUrl, idPrefix: 'dialog-task', autofocus: true, values: {}, errors: {}, inDialog: true }),
+}) %>
+<%# Web Push (public/js/push.js), only when the server has VAPID keys. %>
+<% if (vapidPublicKey) { %>
+  <%- include('../notifications/_permission-dialog') %>
+  <script src="/js/push.js" defer data-key="<%= vapidPublicKey %>" data-channel="<%= currentUser.notifications?.push === false ? 'off' : 'on' %>"></script>
+<% } %>
+<%- include('footer') %>

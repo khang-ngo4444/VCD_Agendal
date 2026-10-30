@@ -1,0 +1,51 @@
+<%- include('../partials/shell-top') %>
+<h1 class="text-3xl font-bold tracking-tight">Settings</h1>
+<div class="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
+  <%- include('_nav') %>
+  <section aria-labelledby="profile-heading">
+    <h2 id="profile-heading" class="text-xl font-bold">Profile</h2>
+    <p class="mt-1 text-sm text-muted">Signed in as <%= currentUser.email %></p>
+
+    <div class="mt-6 flex items-center gap-4">
+      <%- include('../partials/avatar', { user: currentUser, cls: 'size-20 text-2xl' }) %>
+      <form method="post" action="/settings/avatar" enctype="multipart/form-data">
+        <%- include('../partials/csrf') %>
+        <label class="btn h-11 rounded-full border border-base-300 bg-base-100 px-4 text-primary focus-within:outline-2 focus-within:outline-primary">
+          Change photo
+          <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" data-autosubmit>
+        </label>
+        <noscript><button type="submit" class="btn btn-sm ml-2 rounded-full">Upload</button></noscript>
+        <p class="mt-1.5 text-xs text-muted">JPG, PNG, WebP or GIF, up to 2 MB.</p>
+      </form>
+    </div>
+
+    <form method="post" action="/settings/profile" class="mt-6 rounded-box bg-base-100 p-5" novalidate>
+      <%- include('../partials/csrf') %>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label for="name" class="mb-1.5 block text-xs font-semibold">Name</label>
+          <input id="name" name="name" type="text" autocomplete="name" maxlength="80" value="<%= values.name %>"
+            class="input h-11 w-full <%= errors.name ? 'input-error' : '' %>"
+            <% if (errors.name) { %>aria-invalid="true" aria-describedby="name-error"<% } %>>
+          <% if (errors.name) { %><p id="name-error" class="mt-1.5 text-sm text-error"><%= errors.name %></p><% } %>
+        </div>
+        <div>
+          <label for="timeZone" class="mb-1.5 block text-xs font-semibold">Time zone</label>
+          <select id="timeZone" name="timeZone" class="select h-11 w-full <%= errors.timeZone ? 'select-error' : '' %>"
+            <% if (errors.timeZone) { %>aria-invalid="true" aria-describedby="timeZone-error"<% } %>>
+            <% timeZones.forEach((zone) => { %>
+              <option value="<%= zone.value %>" <%= zone.value === values.timeZone ? 'selected' : '' %>><%= zone.label %></option>
+            <% }) %>
+          </select>
+          <p id="timeZone-error" class="mt-1.5 text-sm <%= errors.timeZone ? 'text-error' : 'text-muted' %>">
+            <%= errors.timeZone || 'Used for “today”, due dates and reminders.' %>
+          </p>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
+      </div>
+    </form>
+  </section>
+</div>
+<%- include('../partials/shell-bottom') %>

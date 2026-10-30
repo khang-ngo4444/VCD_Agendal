@@ -1,0 +1,74 @@
+<%- include('../partials/shell-top') %>
+<%# Account & security (Figma W32). Change password and Delete account work. "This device" and "Signed-in devices"
+    are layout only: the controls are disabled until their backend lands (marked TODO-backend). %>
+<h1 class="text-3xl font-bold tracking-tight">Settings</h1>
+<div class="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
+  <%- include('_nav') %>
+  <section aria-labelledby="account-heading" class="max-w-3xl">
+    <h2 id="account-heading" class="text-xl font-bold">Account &amp; security</h2>
+    <p class="mt-1 text-sm text-muted">Signed in as <%= currentUser.email %></p>
+
+    <h3 class="mt-8 mb-3 text-xs font-semibold tracking-wide text-muted uppercase"><%= hasPassword ? 'Change password' : 'Set a password' %></h3>
+    <form method="post" action="/settings/password" novalidate>
+      <%- include('../partials/csrf') %>
+      <div class="grid gap-x-4 sm:grid-cols-2">
+        <% if (hasPassword) { %>
+          <%- include('../partials/field', {
+            name: 'currentPassword', label: 'Current password', type: 'password', icon: 'lock',
+            autocomplete: 'current-password', error: errors.currentPassword, maxlength: 1000,
+          }) %>
+        <% } %>
+        <%- include('../partials/field', {
+          name: 'newPassword', label: 'New password', type: 'password', icon: 'lock', autocomplete: 'new-password', maxlength: 72,
+          error: errors.newPassword, hint: passwordHint,
+        }) %>
+        <%- include('../partials/field', {
+          name: 'confirmPassword', label: 'Confirm new password', type: 'password', icon: 'lock',
+          autocomplete: 'new-password', error: errors.confirmPassword, maxlength: 72,
+        }) %>
+      </div>
+      <p class="mb-3 text-sm text-muted">You’ll stay signed in here. Other devices will be signed out.</p>
+      <button type="submit" class="btn h-11 rounded-full border-0 bg-fill px-5 text-primary">Update password</button>
+    </form>
+
+    <%# TODO-backend: remember-me per device %>
+    <h3 class="mt-10 mb-3 text-xs font-semibold tracking-wide text-muted uppercase">This device</h3>
+    <div class="flex min-h-14 items-center justify-between gap-4 rounded-box bg-base-100 px-5 py-3">
+      <label for="remember-device" class="text-sm font-medium">Remember me on this device</label>
+      <input id="remember-device" type="checkbox" class="toggle toggle-success" checked disabled aria-describedby="remember-hint">
+    </div>
+    <p id="remember-hint" class="mt-2 text-xs text-muted">Without it you are logged out when you close the browser. This switch will work soon.</p>
+
+    <%# TODO-backend: list real sessions and let the user log one out %>
+    <h3 class="mt-10 mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Signed-in devices</h3>
+    <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+      <li class="flex items-center justify-between gap-4 px-5 py-3">
+        <div class="min-w-0">
+          <p class="truncate text-sm font-semibold">This device</p>
+          <p class="text-xs text-muted">Signed in now</p>
+        </div>
+        <span class="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold">
+          <span class="text-success"><%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %></span>
+          Current
+        </span>
+      </li>
+    </ul>
+    <p class="mt-2 text-xs text-muted">Other devices will be listed here, each with a Log out button.</p>
+
+    <%# The button opens the dialog below; without JS it is a link to the same form on its own page. %>
+    <div class="mt-10 flex flex-col gap-4 rounded-box bg-error/[0.08] p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="font-semibold text-error">Delete account</h3>
+        <p class="mt-1 max-w-md text-sm text-muted">Permanently removes your projects, tasks, reminders, habits and check-ins. This cannot be undone.</p>
+      </div>
+      <a href="/settings/account/delete" data-open-modal="delete-account-dialog"
+        class="btn h-11 shrink-0 rounded-full border-0 bg-error/15 px-5 text-error hover:bg-error/25">Delete account</a>
+    </div>
+    <%- include('../partials/modal', {
+      id: 'delete-account-dialog',
+      heading: 'Delete your account?',
+      body: include('_delete-account-form', { hasPassword, errors: {}, inDialog: true }),
+    }) %>
+  </section>
+</div>
+<%- include('../partials/shell-bottom') %>

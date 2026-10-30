@@ -1,0 +1,58 @@
+<%- include('partials/shell-top') %>
+<h1 class="text-3xl font-bold tracking-tight">Components</h1>
+<p class="mt-2 text-muted">Shared UI partials. Try each one with the keyboard and in both themes.</p>
+
+<div class="mt-8 grid gap-6 md:grid-cols-2">
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="toasts-heading">
+    <h2 id="toasts-heading" class="font-semibold">Toast</h2>
+    <p class="mt-1 text-sm text-muted">Disappears after 5 seconds; hover or focus pauses it.</p>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <button type="button" class="btn btn-sm rounded-full" data-demo-toast="success">Success with Undo</button>
+      <button type="button" class="btn btn-sm rounded-full" data-demo-toast="info">Info</button>
+      <button type="button" class="btn btn-sm rounded-full" data-demo-toast="error">Error</button>
+    </div>
+  </section>
+
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="flash-heading">
+    <h2 id="flash-heading" class="font-semibold">Flash message</h2>
+    <p class="mt-1 text-sm text-muted">Set on the server, shown as a toast after the redirect.</p>
+    <form method="post" action="/components/flash" class="mt-4">
+      <%- include('partials/csrf') %>
+      <button type="submit" class="btn btn-sm rounded-full">Post and redirect</button>
+    </form>
+  </section>
+
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="modal-heading">
+    <h2 id="modal-heading" class="font-semibold">Modal</h2>
+    <p class="mt-1 text-sm text-muted">Native &lt;dialog&gt;: focus stays inside and Esc closes it.</p>
+    <button type="button" class="btn btn-primary btn-sm mt-4 rounded-full" data-open-modal="demo-modal">Open modal</button>
+    <%- include('partials/modal', {
+      id: 'demo-modal',
+      heading: 'New project',
+      body: `<p class="text-sm text-muted">Task details and project forms will open in here.</p>
+        <div class="modal-action"><form method="dialog"><button class="btn rounded-full">Done</button></form></div>`,
+    }) %>
+  </section>
+
+  <section class="rounded-box bg-base-100 p-6" aria-labelledby="confirm-section-heading">
+    <h2 id="confirm-section-heading" class="font-semibold">Confirm dialog</h2>
+    <p class="mt-1 text-sm text-muted">Destructive forms ask first. Cancel has the focus.</p>
+    <form method="post" action="/components/delete" class="mt-4"
+      data-confirm="Delete project?" data-confirm-detail="Its 4 tasks will move to Inbox." data-confirm-button="Delete">
+      <%- include('partials/csrf') %>
+      <button type="submit" class="btn btn-sm rounded-full text-error">Delete demo project</button>
+    </form>
+  </section>
+
+  <section class="rounded-box bg-base-100 md:col-span-2" aria-label="Empty state">
+    <%- include('partials/empty-state', {
+      icon: 'inbox',
+      heading: 'Nothing in your Inbox',
+      text: 'Tasks without a project land here. Add one to get started.',
+      action: { href: '/tasks/new', label: 'New task' },
+    }) %>
+  </section>
+</div>
+
+<script src="/js/components.js" defer></script>
+<%- include('partials/shell-bottom') %>

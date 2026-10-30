@@ -1,0 +1,127 @@
+<%- include('../partials/shell-top') %>
+<%# Task detail (Figma W10, as a page). Locals: task, values (form strings), errors, priorities, backHref, backLabel, overdue,
+    reminder, reminderPresets, reminderDefaults (the Reminder picker, W30, in the side column). %>
+<a href="<%= backHref %>" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">‹ <%= backLabel %></a>
+
+<div class="mt-2 flex flex-wrap items-center gap-3">
+  <h1 class="text-3xl font-bold tracking-tight <%= task.completedAt ? 'text-muted line-through' : '' %>"><%= task.title %></h1>
+  <% if (task.completedAt) { %>
+    <span class="badge badge-success badge-soft">Done <%= dates.formatDay(task.completedAt, currentUser.timeZone) %></span>
+  <% } else if (overdue) { %>
+    <span class="badge badge-error badge-soft gap-1"><%- include('../partials/icon', { icon: 'alert', cls: 'size-3.5' }) %>Overdue</span>
+  <% } %>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-[1fr_260px]">
+  <%# group: the Until field hides while "Does not repeat" is picked (CSS :has, no script) %>
+  <form method="post" action="/tasks/<%= task._id %>" class="group rounded-box bg-base-100 p-5" novalidate>
+    <%- include('../partials/csrf') %>
+
+    <label for="title" class="mb-1.5 block text-xs font-semibold">Title (required)</label>
+    <input id="title" name="title" type="text" maxlength="200" value="<%= values.title %>"
+      class="input h-11 w-full text-base font-medium <%= errors.title ? 'input-error' : '' %>"
+      <% if (errors.title) { %>aria-invalid="true" aria-describedby="title-error"<% } %>>
+    <% if (errors.title) { %><p id="title-error" class="mt-1.5 text-sm text-error"><%= errors.title %></p><% } %>
+
+    <label for="description" class="mt-5 mb-1.5 block text-xs font-semibold">Description <span class="font-normal text-muted">(optional)</span></label>
+    <textarea id="description" name="description" rows="3" maxlength="2000" class="textarea w-full <%= errors.description ? 'textarea-error' : '' %>"
+      <% if (errors.description) { %>aria-invalid="true" aria-describedby="description-error"<% } %>><%= values.description %></textarea>
+    <% if (errors.description) { %><p id="description-error" class="mt-1.5 text-sm text-error"><%= errors.description %></p><% } %>
+
+    <div class="mt-5 grid gap-5 sm:grid-cols-3">
+      <div>
+        <label for="priority" class="mb-1.5 block text-xs font-semibold">Priority</label>
+        <select id="priority" name="priority" class="select h-11 w-full <%= errors.priority ? 'select-error' : '' %>"
+          <% if (errors.priority) { %>aria-invalid="true" aria-describedby="priority-error"<% } %>>
+          <% priorities.forEach((priority) => { %>
+            <option value="<%= priority %>" <%= values.priority === priority ? 'selected' : '' %>><%= priority[0].toUpperCase() + priority.slice(1) %></option>
+          <% }) %>
+        </select>
+        <% if (errors.priority) { %><p id="priority-error" class="mt-1.5 text-sm text-error"><%= errors.priority %></p><% } %>
+      </div>
+      <div>
+        <label for="dueDate" class="mb-1.5 block text-xs font-semibold">Due date</label>
+        <input id="dueDate" name="dueDate" type="date" value="<%= values.dueDate %>" class="input h-11 w-full <%= errors.dueDate ? 'input-error' : '' %>"
+          <% if (errors.dueDate) { %>aria-invalid="true" aria-describedby="dueDate-error"<% } %>>
+        <% if (errors.dueDate) { %><p id="dueDate-error" class="mt-1.5 text-sm text-error"><%= errors.dueDate %></p><% } %>
+      </div>
+      <div>
+        <label for="project" class="mb-1.5 block text-xs font-semibold">Project</label>
+        <select id="project" name="project" class="select h-11 w-full <%= errors.project ? 'select-error' : '' %>"
+          <% if (errors.project) { %>aria-invalid="true" aria-describedby="project-error"<% } %>>
+          <% sidebarProjects.forEach((project) => { %>
+            <option value="<%= project.id || '' %>" <%= values.project === (project.id || '') ? 'selected' : '' %>><%= project.name %></option>
+          <% }) %>
+        </select>
+        <% if (errors.project) { %><p id="project-error" class="mt-1.5 text-sm text-error"><%= errors.project %></p><% } %>
+      </div>
+    </div>
+
+    <fieldset class="mt-5" <% if (errors.schedule) { %>aria-describedby="schedule-error"<% } %>>
+      <legend class="mb-1.5 text-xs font-semibold">Scheduled time <span class="font-normal text-muted">(when you’ll work on it)</span></legend>
+      <div class="grid grid-cols-2 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <% [['scheduleDate', 'Date', 'date'], ['scheduleStart', 'Start time', 'time'], ['scheduleEnd', 'End time', 'time']].forEach(([field, label, type]) => { %>
+          <div class="min-w-0 <%= field === 'scheduleDate' ? 'col-span-2 sm:col-span-1' : '' %>">
+            <label for="<%= field %>" class="mb-1.5 block text-xs font-semibold"><%= label %></label>
+            <input id="<%= field %>" name="<%= field %>" type="<%= type %>" value="<%= values[field] %>" aria-describedby="schedule-error"
+              class="input h-11 w-full <%= type === 'time' ? 'sm:w-28' : '' %> <%= errors.schedule ? 'input-error' : '' %>" <% if (errors.schedule) { %>aria-invalid="true"<% } %>>
+          </div>
+        <% }) %>
+      </div>
+      <p id="schedule-error" class="mt-1.5 text-sm <%= errors.schedule ? 'text-error' : 'text-muted' %>">
+        <%= errors.schedule || 'Date, start and end, or leave all three empty.' %>
+      </p>
+      <% if (task.schedule?.start) { %>
+        <button type="submit" form="unschedule-form" class="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Remove schedule</button>
+      <% } %>
+    </fieldset>
+
+    <div class="mt-5 grid gap-5 sm:grid-cols-3">
+      <div>
+        <label for="repeat" class="mb-1.5 block text-xs font-semibold">Repeat</label>
+        <select id="repeat" name="repeat" class="select h-11 w-full <%= errors.repeat ? 'select-error' : '' %>"
+          <% if (errors.repeat) { %>aria-invalid="true" aria-describedby="repeat-error"<% } %>>
+          <% [['', 'Does not repeat'], ['daily', 'Every day'], ['weekly', 'Every week'], ['monthly', 'Every month'], ['yearly', 'Every year']].forEach(([value, label]) => { %>
+            <option value="<%= value %>" <%= value ? '' : 'data-no-repeat' %> <%= values.repeat === value ? 'selected' : '' %>><%= label %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="group-has-[[data-no-repeat]:checked]:hidden">
+        <label for="until" class="mb-1.5 block text-xs font-semibold">Until <span class="font-normal text-muted">(optional)</span></label>
+        <input id="until" name="until" type="date" value="<%= values.until %>" class="input h-11 w-full <%= errors.until ? 'input-error' : '' %>"
+          <% if (errors.until) { %>aria-invalid="true" aria-describedby="until-error"<% } %>>
+      </div>
+    </div>
+    <%- include('../partials/field-error', { id: 'repeat-error', message: errors.repeat }) %>
+    <%- include('../partials/field-error', { id: 'until-error', message: errors.until }) %>
+
+    <div class="mt-6 flex justify-end">
+      <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
+    </div>
+  </form>
+
+  <aside class="space-y-3">
+    <%- include('_reminder', { task, reminder, reminderPresets, reminderDefaults }) %>
+    <% if (!task.completedAt) { %>
+      <a href="/focus/<%= task._id %>" class="btn h-11 w-full rounded-full border-0 bg-fill"><%- include('../partials/icon', { icon: 'timer', cls: 'size-4' }) %> Focus on this task</a>
+    <% } %>
+    <form method="post" action="/tasks/<%= task._id %>/complete">
+      <%- include('../partials/csrf') %>
+      <input type="hidden" name="done" value="<%= task.completedAt ? '0' : '1' %>">
+      <input type="hidden" name="returnTo" value="/tasks/<%= task._id %>">
+      <button type="submit" class="btn h-11 w-full rounded-full <%= task.completedAt ? '' : 'btn-primary' %>">
+        <%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %> <%= task.completedAt ? 'Reopen task' : 'Mark done' %>
+      </button>
+    </form>
+    <%# No confirm step: the toast after deleting offers Undo instead. %>
+    <form method="post" action="/tasks/<%= task._id %>/delete">
+      <%- include('../partials/csrf') %>
+      <button type="submit" class="btn btn-ghost h-11 w-full rounded-full text-error">
+        <%- include('../partials/icon', { icon: 'trash', cls: 'size-4' }) %> Delete task
+      </button>
+    </form>
+  </aside>
+</div>
+
+<form id="unschedule-form" method="post" action="/tasks/<%= task._id %>/unschedule" hidden><%- include('../partials/csrf') %></form>
+<%- include('../partials/shell-bottom') %>

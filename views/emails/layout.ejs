@@ -1,0 +1,35 @@
+<%# HTML version of every email (services/mailer.js also sends a plain-text version). Tables and inline styles because email clients ignore stylesheets. %>
+<!doctype html>
+<html lang="en">
+<body style="margin:0;background:#f5f5f7;font-family:Inter,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#1d1d1f;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:32px;">
+        <tr><td>
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td style="width:32px;height:32px;background:#1d1d1f;border-radius:8px;color:#ffffff;font-weight:700;font-size:18px;text-align:center;line-height:32px;">&#10003;</td>
+            <td style="padding-left:10px;font-weight:700;font-size:18px;">Agendal</td>
+          </tr></table>
+          <h1 style="margin:28px 0 12px;font-size:22px;line-height:28px;"><%= heading %></h1>
+          <% paragraphs.forEach((paragraph) => { %>
+            <p style="margin:0 0 14px;font-size:15px;line-height:22px;color:#1d1d1f;"><%= paragraph %></p>
+          <% }) %>
+          <% if (locals.action) { %>
+            <p style="margin:24px 0;">
+              <a href="<%= action.url %>" style="display:inline-block;background:#0071e3;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:999px;"><%= action.label %></a>
+            </p>
+          <% } %>
+          <% if (locals.footnote) { %>
+            <p style="margin:24px 0 0;font-size:13px;line-height:18px;color:#6e6e73;"><%= footnote %></p>
+          <% } %>
+          <% if (locals.footerLinks && footerLinks.length) { %>
+            <p style="margin:8px 0 0;font-size:13px;line-height:18px;">
+              <% footerLinks.forEach((link, i) => { %><% if (i) { %> &middot; <% } %><a href="<%= link.url %>" style="color:#0071e3;"><%= link.label %></a><% }) %>
+            </p>
+          <% } %>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

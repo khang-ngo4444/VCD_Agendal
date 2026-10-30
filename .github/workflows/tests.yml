@@ -1,0 +1,60 @@
+# Runs only when started by hand (GitHub › Actions › Tests › Run workflow, then pick a branch and which tests),
+# not on every pull request or push: a full run takes a few minutes. It builds the CSS, then runs the chosen tests.
+# The integration tests start their own throwaway MongoDB (mongodb-memory-server), so no database service is needed.
+name: Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Which tests to run
+        type: choice
+        options: [all, unit, integration]
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SESSION_SECRET: ci-only-session-secret
+      # Keep the MongoDB download between runs (about 100 MB).
+      MONGOMS_DOWNLOAD_DIR: ${{ github.workspace }}/.cache/mongodb-binaries
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache the MongoDB binary used by the tests
+        if: inputs.suite != 'unit'
+        uses: actions/cache@v4
+        with:
+          path: .cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: mongodb-binaries-${{ runner.os }}-
+
+      # package-lock.json is not committed (see .gitignore), so `npm ci` cannot be used.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build the CSS
+        run: npm run css
+
+      - name: Run the tests (${{ inputs.suite }})
+        env:
+          SUITE: ${{ inputs.suite }}
+        run: |
+          case "$SUITE" in
+            unit) npm run test:unit -- --ci ;;
+            integration) npm run test:integration -- --ci ;;
+            *) npm test -- --ci ;;
+          esac

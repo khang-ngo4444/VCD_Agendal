@@ -1,0 +1,74 @@
+<%#
+  Reminder picker (Figma W30) on the task page. Locals: task, reminder ({ label, offsetMinutes } or null), reminderPresets,
+  reminderDefaults (the custom form's starting date and time).
+  A <details> menu of small forms, so it works without JavaScript (public/js/reminders.js adds arrow keys).
+  Sits beside the task form, never inside it.
+%>
+<% const scheduled = Boolean(task.schedule?.start); %>
+<section class="rounded-box bg-base-100 p-4" aria-labelledby="reminder-heading">
+  <h2 id="reminder-heading" class="mb-1.5 text-xs font-semibold">Reminder</h2>
+  <%# dropdown-end: the menu lines up with the right edge, so it never runs off a narrow screen %>
+  <details class="dropdown dropdown-end w-full" data-dismissable data-reminder-menu>
+    <summary class="btn h-11 w-full justify-start gap-2 rounded-field border-0 bg-fill px-3 font-normal">
+      <%- include('../partials/icon', { icon: 'bell', cls: 'size-4 shrink-0 text-muted' }) %>
+      <span class="truncate"><%= reminder ? reminder.label : 'None' %></span>
+    </summary>
+    <div class="dropdown-content z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+      <p class="px-3 pt-1 pb-1 text-sm font-semibold">Remind me</p>
+      <% if (!scheduled) { %>
+        <p class="px-3 pb-2 text-xs text-muted">Schedule the task to use these: they count back from its start time.</p>
+      <% } %>
+      <ul class="space-y-0.5">
+        <% reminderPresets.forEach((preset) => { const current = reminder?.offsetMinutes === preset.minutes; %>
+          <li>
+            <form method="post" action="/tasks/<%= task._id %>/reminder">
+              <%- include('../partials/csrf') %>
+              <input type="hidden" name="preset" value="<%= preset.minutes %>">
+              <button type="submit" <%= scheduled ? '' : 'disabled' %> <% if (current) { %>aria-current="true"<% } %>
+                class="flex min-h-11 w-full items-center justify-between rounded-field px-3 text-left text-sm disabled:opacity-40 <%= current ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-base-200' %>">
+                <%= preset.label %>
+                <% if (current) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %><% } %>
+              </button>
+            </form>
+          </li>
+        <% }) %>
+      </ul>
+      <div class="my-1 border-t border-base-300"></div>
+      <%# Opens the dialog below; without JS it is a link to the same form on its own page. %>
+      <a href="/tasks/<%= task._id %>/reminder" data-open-modal="custom-reminder-dialog"
+        class="flex min-h-11 items-center gap-2 rounded-field px-3 text-sm hover:bg-base-200 <%= reminder && reminder.offsetMinutes == null ? 'bg-primary/10 font-semibold text-primary' : '' %>">
+        <%- include('../partials/icon', { icon: 'calendar', cls: 'size-4 shrink-0' }) %>
+        <span class="grow">Custom date &amp; time…</span>
+        <% if (reminder && reminder.offsetMinutes == null) { %><%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %><% } %>
+      </a>
+      <% if (reminder) { %>
+        <div class="my-1 border-t border-base-300"></div>
+        <form method="post" action="/tasks/<%= task._id %>/reminder/remove">
+          <%- include('../partials/csrf') %>
+          <button type="submit" class="flex min-h-11 w-full items-center gap-2 rounded-field px-3 text-left text-sm text-error hover:bg-error/10">
+            <%- include('../partials/icon', { icon: 'trash', cls: 'size-4 shrink-0' }) %> Remove reminder
+          </button>
+        </form>
+      <% } %>
+    </div>
+  </details>
+  <% if (reminder && currentUser.notifications?.push !== false) { %>
+    <%# A gentle nudge when this browser can't show the reminder yet (public/js/push.js shows the matching line). %>
+    <p class="mt-2 text-xs text-muted" data-push-status hidden>
+      <span data-push-when="off" hidden>
+        Get it as a notification on this device too.
+        <button type="button" class="font-semibold text-primary hover:underline" data-push-open>Turn on notifications</button>
+      </span>
+      <span data-push-when="blocked" hidden>
+        Notifications are blocked in this browser.
+        <button type="button" class="font-semibold text-primary hover:underline" data-push-open>How to unblock</button>
+      </span>
+    </p>
+  <% } %>
+  <%# Outside the menu: a closed <details> hides its content, dialog included. %>
+  <%- include('../partials/modal', {
+    id: 'custom-reminder-dialog',
+    heading: 'Remind me at',
+    body: include('_custom-reminder-form', { task, defaults: reminderDefaults, idPrefix: 'dialog-reminder' }),
+  }) %>
+</section>

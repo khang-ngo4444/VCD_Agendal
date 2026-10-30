@@ -1,0 +1,31 @@
+<%#
+  The New task form behind a calendar slot: public/js/calendar.js fills in the day and time that was clicked.
+  Locals: returnTo. The task still starts in Backlog, like every new task.
+%>
+<form method="post" action="/tasks" data-fetch novalidate>
+  <%- include('../partials/csrf') %>
+  <input type="hidden" name="returnTo" value="<%= returnTo %>">
+  <label for="slot-title" class="mb-1.5 block text-xs font-semibold">Title</label>
+  <input id="slot-title" name="title" type="text" maxlength="200" required autofocus placeholder="What needs doing?" class="input h-11 w-full text-base">
+  <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]">
+    <div class="col-span-2 sm:col-span-1">
+      <label for="slot-date" class="mb-1.5 block text-xs font-semibold">Date</label>
+      <input id="slot-date" name="scheduleDate" type="date" class="input h-11 w-full">
+    </div>
+    <div>
+      <label for="slot-start" class="mb-1.5 block text-xs font-semibold">Starts</label>
+      <input id="slot-start" name="scheduleStart" type="time" class="input h-11 w-full sm:w-28">
+    </div>
+    <div>
+      <label for="slot-end" class="mb-1.5 block text-xs font-semibold">Ends</label>
+      <input id="slot-end" name="scheduleEnd" type="time" class="input h-11 w-full sm:w-28">
+    </div>
+  </div>
+  <label for="slot-project" class="mt-4 mb-1.5 block text-xs font-semibold">Project</label>
+  <select id="slot-project" name="project" class="select h-11 w-full">
+    <% sidebarProjects.forEach((project) => { %><option value="<%= project.id || '' %>"><%= project.name %></option><% }) %>
+  </select>
+  <div class="mt-5 flex justify-end">
+    <button type="submit" class="btn btn-primary h-11 rounded-full px-5"><%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %> Add task</button>
+  </div>
+</form>

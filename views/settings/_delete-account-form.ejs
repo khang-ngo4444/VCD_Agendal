@@ -1,0 +1,41 @@
+<%#
+  Delete account form (W32), used in the dialog on the Account page and on /settings/account/delete (no JS, or errors).
+  Locals: hasPassword, errors, inDialog?. Google-only accounts have no password, so they type their email instead.
+%>
+<form method="post" action="/settings/account/delete" novalidate>
+  <%- include('../partials/csrf') %>
+  <p class="mb-4 text-sm text-muted">
+    This permanently deletes your account, projects, tasks, reminders, habits, check-ins, calendar events, focus history and browser subscriptions,
+    and signs you out on every device. It can’t be undone.
+  </p>
+  <% if (hasPassword) { %>
+    <%- include('../partials/field', {
+      name: 'deletePassword', label: 'Your password', type: 'password', icon: 'lock',
+      autocomplete: 'current-password', error: errors.deletePassword, maxlength: 1000,
+    }) %>
+  <% } else { %>
+    <%- include('../partials/field', {
+      name: 'deleteEmail', label: `Type ${currentUser.email} to confirm`, type: 'email', icon: 'mail',
+      autocomplete: 'off', error: errors.deleteEmail, maxlength: 254,
+    }) %>
+  <% } %>
+  <label class="mb-1 flex cursor-pointer items-start gap-3 text-sm">
+    <input type="checkbox" name="understand" class="checkbox checkbox-error checkbox-sm mt-0.5"
+      <% if (errors.understand) { %>aria-invalid="true" aria-describedby="understand-message"<% } %>>
+    <span>I understand that my data will be deleted and can’t be recovered.</span>
+  </label>
+  <% if (errors.understand) { %>
+    <p id="understand-message" class="mb-2 text-sm text-error"><%= errors.understand %></p>
+  <% } %>
+  <div class="mt-5 flex justify-end gap-2">
+    <% if (locals.inDialog) { %>
+      <%# Submits the small method="dialog" form below, which only closes the dialog. Kept out of the main form so
+          app.js's double-submit guard (it disables a sending form's buttons) never disables "Delete my account". %>
+      <button type="submit" form="delete-account-cancel" class="btn h-11 rounded-full border-0 bg-fill px-5 text-primary">Cancel</button>
+    <% } else { %>
+      <a href="/settings/account" class="btn h-11 rounded-full border-0 bg-fill px-5 text-primary">Cancel</a>
+    <% } %>
+    <button type="submit" class="btn h-11 rounded-full border-0 bg-error px-5 text-error-content">Delete my account</button>
+  </div>
+</form>
+<% if (locals.inDialog) { %><form id="delete-account-cancel" method="dialog" hidden></form><% } %>

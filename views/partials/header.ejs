@@ -1,0 +1,36 @@
+<!doctype html>
+<%
+  // Logged-in pages follow the user's saved appearance; "system" leaves the theme to the OS (DaisyUI prefersdark).
+  const prefs = locals.currentUser?.preferences ?? {};
+  const themeName = { light: 'agendal', dark: 'agendal-dark' }[prefs.theme];
+%>
+<html lang="en"<% if (themeName) { %> data-theme="<%= themeName %>"<% } %><% if (prefs.accentColour && prefs.accentColour !== 'blue') { %> data-accent="<%= prefs.accentColour %>"<% } %>>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %></title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <% if (!locals.description) { %><meta name="robots" content="noindex"><% } %>
+  <% if (locals.description) { %>
+    <%# Search and social sharing tags, only on public pages that pass a description %>
+    <meta name="description" content="<%= description %>">
+    <link rel="canonical" href="<%= appUrl + canonicalPath %>">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Agendal">
+    <meta property="og:title" content="<%= title %>">
+    <meta property="og:description" content="<%= description %>">
+    <meta property="og:url" content="<%= appUrl + canonicalPath %>">
+    <meta property="og:image" content="<%= appUrl %>/images/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Agendal: Plan the week. Live the day.">
+    <meta name="twitter:card" content="summary_large_image">
+  <% } %>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/app.js" defer></script>
+  <script src="/js/projects.js" defer></script>
+</head>
+<body class="min-h-screen bg-base-100 text-base-content antialiased">

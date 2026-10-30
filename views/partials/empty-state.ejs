@@ -1,0 +1,14 @@
+<%#
+  Shown where a list has nothing in it yet: say what belongs here and offer the next step.
+  Locals: icon, heading, text, action? { href, label }
+%>
+<div class="flex flex-col items-center px-6 py-12 text-center">
+  <span class="grid size-12 place-items-center rounded-full bg-fill text-muted">
+    <%- include('icon', { icon, cls: 'size-6' }) %>
+  </span>
+  <h2 class="mt-4 font-semibold"><%= heading %></h2>
+  <p class="mt-1 max-w-xs text-sm text-muted"><%= text %></p>
+  <% if (locals.action) { %>
+    <a href="<%= action.href %>" class="btn btn-primary mt-4 h-11 rounded-full px-5"><%= action.label %></a>
+  <% } %>
+</div>

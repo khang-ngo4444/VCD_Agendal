@@ -1,0 +1,13 @@
+<%- include('../partials/header') %>
+<%# Shared frame for the public legal pages: a simple header and a readable column (about 65 characters per line). %>
+<header class="border-b border-base-300">
+  <nav aria-label="Main" class="mx-auto flex h-16 max-w-[1120px] items-center justify-between px-4">
+    <a href="/" class="flex min-h-11 items-center gap-2.5 text-lg font-bold">
+      <span class="grid size-8 place-items-center rounded-lg bg-neutral text-neutral-content"><%- include('../partials/icon', { icon: 'check', cls: 'size-4' }) %></span>
+      Agendal
+    </a>
+    <a href="/login" class="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Log in</a>
+  </nav>
+</header>
+<main id="main" class="mx-auto max-w-2xl px-4 py-12">
+  <article class="[&_h1]:text-4xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-semibold [&_p]:mt-3 [&_p]:leading-7 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6 [&_li]:leading-7 [&_a]:font-semibold [&_a]:text-primary [&_a]:underline">

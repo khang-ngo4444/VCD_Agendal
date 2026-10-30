@@ -121,7 +121,7 @@ The dashboard provides an overview of a user's productivity, including:
 - Tasks grouped by category
 - Productivity trends
 
-Premium users can access advanced statistics and export selected data as CSV files.
+Users can export their tasks and habit check-ins as CSV files.
 
 ### Reminders and Notifications
 
@@ -158,7 +158,6 @@ Administrators can access a separate administration area to:
 
 - View users
 - Lock or unlock user accounts
-- View payment records
 - Review basic system statistics
 - Monitor application activity
 
@@ -222,6 +221,12 @@ The main components are:
 - A user can have many habits.
 - A habit can have many check-ins.
 - A task or habit can have reminders.
+
+### Database ERD
+
+![Agendal ERD](docs/erd.png)
+
+The diagram is generated from [`docs/erd.mmd`](docs/erd.mmd); the re-render command is at the top of that file.
 
 ## Security
 
@@ -364,6 +369,37 @@ MAIL_PASSWORD=
 ```
 
 Do not commit the `.env` file to the repository.
+
+## Running the Tests
+
+```bash
+npm test                   # every test
+npm run test:unit          # tests/unit only: fast, no database
+npm run test:integration   # tests/integration only: real requests and a database
+```
+
+```text
+tests/
+├── helpers/http.js        shared setup for the integration tests
+├── unit/                  no database: calculations, validators, services with fakes
+│   ├── account/           sign-up rules, sessions, account deletion
+│   ├── admin/             admin console data, users, activity log
+│   ├── calendar/          calendar layout, events, repeating dates
+│   ├── focus/             focus sessions
+│   ├── habits/            frequencies, streaks, the habit form
+│   ├── insights/          statistics, CSV export
+│   ├── reminders/         task and habit reminders, daily summary, email and push
+│   ├── shared/            dates and time zones
+│   └── tasks/             the task form, Board columns, search
+└── integration/           the whole app through HTTP
+```
+
+- **Unit tests** check one module at a time, with no database. Put a new one in the folder of its feature.
+- **Integration tests** send real requests to the app (Supertest) against a throwaway in-memory MongoDB (`mongodb-memory-server`), so your own database is never touched. They cover sign-up, login and lockout, the main task flows, habit check-ins and streaks, data isolation between accounts and the admin-only routes.
+- The first integration run downloads a MongoDB binary (about 100 MB); later runs reuse it.
+- `npm test` and `npm run test:integration` run Jest with `--experimental-vm-modules`, because the MongoDB driver loads `os` with a dynamic `import()` that Jest only allows with that flag.
+
+**On GitHub, by hand:** the tests don't run on every pull request or push (a full run takes a few minutes). To run them on GitHub, open **Actions › Tests › Run workflow**, pick the branch and which tests (all, unit or integration), and press **Run workflow** (`.github/workflows/tests.yml`). It builds the CSS first, so a broken stylesheet fails the run too.
 
 ## Project Scope
 

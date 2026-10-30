@@ -1,0 +1,116 @@
+<%- include('partials/header') %>
+<%# Public landing page (Figma W15). Sections the cards leave out (AI assistant, offline) are skipped on purpose. %>
+<header class="sticky top-0 z-30 border-b border-base-300/60 bg-base-100/80 backdrop-blur">
+  <nav aria-label="Main" class="mx-auto flex h-16 max-w-[1120px] items-center gap-8 px-4 lg:h-20">
+    <a href="/" class="flex min-h-11 items-center gap-2.5 text-lg font-bold">
+      <span class="grid size-8 place-items-center rounded-lg bg-neutral text-neutral-content">
+        <%- include('partials/icon', { icon: 'check', cls: 'size-4' }) %>
+      </span>
+      Agendal
+    </a>
+    <ul class="hidden gap-7 whitespace-nowrap text-sm text-muted md:flex">
+      <li><a href="#features" class="inline-flex min-h-11 items-center hover:text-base-content">Features</a></li>
+      <li><a href="#how-it-works" class="inline-flex min-h-11 items-center hover:text-base-content">How it works</a></li>
+    </ul>
+    <div class="ml-auto flex items-center gap-2 whitespace-nowrap md:gap-6">
+      <a href="/login" class="hidden min-h-11 items-center text-sm font-semibold text-primary hover:underline md:inline-flex">Log in</a>
+      <a href="/register" class="btn btn-primary btn-sm h-11 rounded-full px-4">Get started</a>
+      <details class="dropdown dropdown-end md:hidden" data-dismissable>
+        <summary class="btn btn-ghost btn-square size-11 list-none" aria-label="Menu">
+          <%- include('partials/icon', { icon: 'menu', cls: 'size-5' }) %>
+        </summary>
+        <ul class="menu dropdown-content z-40 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg [&_a]:py-3.5">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="/login" class="font-semibold text-primary">Log in</a></li>
+        </ul>
+      </details>
+    </div>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="mx-auto max-w-[680px] px-4 pt-20 pb-24 text-center lg:pt-28">
+    <h1 class="text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
+      Plan the week.<br><span class="text-muted">Live the day.</span>
+    </h1>
+    <p class="mx-auto mt-6 max-w-xl text-lg text-muted">
+      Tasks, habits and projects in one calm place — a Kanban board, a calendar and a daily list that always agree with each other.
+    </p>
+    <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
+      <a href="/register" class="btn btn-primary h-12 rounded-full px-7 text-base">Get started — it’s free</a>
+      <a href="#how-it-works" class="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">See how it works</a>
+    </div>
+  </section>
+
+  <%
+    const features = [
+      { icon: 'sun', tint: 'bg-success/15 text-success', name: 'Daily List', text: 'Only what matters now: today’s tasks, your habits and anything overdue.' },
+      { icon: 'columns', tint: 'bg-primary/10 text-primary', name: 'Kanban board', text: 'Backlog, Upcoming, Active, Done. See where every project really stands.' },
+      { icon: 'calendar', tint: 'bg-warning/15 text-warning', name: 'Calendar', text: 'Drag an unscheduled task onto a free slot. Plan by day, week or month.' },
+      { icon: 'repeat', tint: 'bg-primary/10 text-primary', name: 'Habits', text: 'Check in every day, keep your streak going and watch your completion rate.' },
+    ];
+  %>
+  <section id="features" class="mx-auto max-w-[1120px] scroll-mt-20 px-4 py-20" aria-labelledby="features-heading">
+    <p class="text-sm font-semibold text-primary">One source of truth</p>
+    <h2 id="features-heading" class="mt-3 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">Move a card. Watch the calendar follow.</h2>
+    <p class="mt-4 max-w-2xl text-muted">
+      Every task lives once. Change it anywhere and the Board, Calendar and Daily List update together — no copying, no conflicts.
+    </p>
+    <ul class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <% features.forEach((feature) => { %>
+        <li class="rounded-box bg-base-200 p-7">
+          <span class="grid size-12 place-items-center rounded-xl <%= feature.tint %>">
+            <%- include('partials/icon', { icon: feature.icon, cls: 'size-6' }) %>
+          </span>
+          <h3 class="mt-6 text-xl font-semibold"><%= feature.name %></h3>
+          <p class="mt-2 text-sm text-muted"><%= feature.text %></p>
+        </li>
+      <% }) %>
+    </ul>
+  </section>
+
+  <%
+    const steps = [
+      { name: 'Capture it', text: 'Type a title and press Enter. The details can wait until you need them.' },
+      { name: 'Plan it', text: 'Move it on the board, or drag it into a free slot on the calendar.' },
+      { name: 'Get it done', text: 'Work through your Daily List and tick things off as you go.' },
+    ];
+  %>
+  <section id="how-it-works" class="scroll-mt-20 bg-base-200 py-20" aria-labelledby="how-heading">
+    <div class="mx-auto max-w-[1120px] px-4">
+      <p class="text-sm font-semibold text-primary">How it works</p>
+      <h2 id="how-heading" class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Three steps, every day.</h2>
+      <ol class="mt-10 grid gap-4 md:grid-cols-3">
+        <% steps.forEach((step, index) => { %>
+          <li class="rounded-box bg-base-100 p-7">
+            <span class="grid size-10 place-items-center rounded-full bg-primary font-semibold text-primary-content" aria-hidden="true"><%= index + 1 %></span>
+            <h3 class="mt-6 text-xl font-semibold"><%= step.name %></h3>
+            <p class="mt-2 text-sm text-muted"><%= step.text %></p>
+          </li>
+        <% }) %>
+      </ol>
+    </div>
+  </section>
+
+  <section class="px-4 py-28 text-center" aria-labelledby="cta-heading">
+    <h2 id="cta-heading" class="text-4xl font-bold tracking-tight sm:text-5xl">Your week, finally in one place.</h2>
+    <a href="/register" class="btn btn-primary mt-8 h-12 rounded-full px-8 text-base">Create your free account</a>
+  </section>
+</main>
+
+<footer class="border-t border-base-300">
+  <div class="mx-auto flex max-w-[1120px] flex-col gap-4 px-4 py-8 text-sm text-muted md:flex-row md:items-start md:justify-between">
+    <div>
+      <p>Agendal — a student project · Advanced Web Design, VNUK, 2026</p>
+      <p class="mt-1">Built by Ho Anh Tuan, Ngo Hoang Nhat Khang and Nguyen Nghia Tuan.</p>
+    </div>
+    <div class="md:max-w-xs md:text-right">
+      <a href="/privacy" class="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">Privacy</a> ·
+      <a href="/terms" class="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">Terms</a> ·
+      <a href="https://github.com/khang-ngo4444/VCD_Agendal" class="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">GitHub</a>
+      <p class="mt-1">Your tasks are visible only to your account, and we never share them.</p>
+    </div>
+  </div>
+</footer>
+<%- include('partials/footer') %>

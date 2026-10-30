@@ -1,0 +1,4 @@
+<%# A form field's error under it, linked by aria-describedby. Locals: id (the element id), message (nothing renders when empty). %>
+<% if (locals.message) { %>
+  <p id="<%= id %>" class="mt-1.5 flex items-center gap-1.5 text-sm text-error"><%- include('icon', { icon: 'alert', cls: 'size-4 shrink-0' }) %><span><%= message %></span></p>
+<% } %>

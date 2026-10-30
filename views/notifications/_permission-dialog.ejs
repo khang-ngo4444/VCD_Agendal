@@ -1,0 +1,40 @@
+<%#
+  Notification permission (Figma W29). Explains what notifications are for before the browser's own prompt, which
+  only appears after "Allow notifications". The second panel explains how to unblock them when the browser already
+  said no. Opened by public/js/push.js: on the Daily List the first time (until "Not now"), and from
+  [data-push-open] buttons (Settings → Notifications, the task's Reminder field). Needs JavaScript, like Web Push.
+%>
+<dialog id="push-permission-dialog" class="modal modal-bottom sm:modal-middle" aria-labelledby="push-permission-heading">
+  <div class="modal-box max-w-sm text-center">
+    <div data-push-panel="ask">
+      <span class="mx-auto grid size-14 place-items-center rounded-box bg-primary/10 text-primary">
+        <%- include('../partials/icon', { icon: 'bell', cls: 'size-6' }) %>
+      </span>
+      <h2 id="push-permission-heading" class="mt-4 text-xl font-bold">Get reminders even when Agendal is closed</h2>
+      <ul class="mt-4 space-y-2.5 rounded-box bg-base-200 p-4 text-left text-sm">
+        <li class="flex items-center gap-2.5"><%- include('../partials/icon', { icon: 'check', cls: 'size-4 shrink-0 text-primary' }) %> Tasks, at the time you pick</li>
+        <li class="flex items-center gap-2.5"><%- include('../partials/icon', { icon: 'flame', cls: 'size-4 shrink-0 text-primary' }) %> Habits, at their reminder time</li>
+        <li class="flex items-center gap-2.5"><%- include('../partials/icon', { icon: 'sun', cls: 'size-4 shrink-0 text-primary' }) %> A short summary of your day, if you want one</li>
+      </ul>
+      <p class="mt-4 text-xs text-muted">Your browser will ask next. You can change this anytime in Settings → Notifications.</p>
+      <button type="button" class="btn btn-primary mt-5 h-11 w-full rounded-full" data-push-allow>Allow notifications</button>
+      <form method="dialog"><button class="btn btn-ghost mt-2 h-11 w-full rounded-full text-primary" data-push-later>Not now</button></form>
+    </div>
+
+    <div data-push-panel="blocked" hidden>
+      <span class="mx-auto grid size-14 place-items-center rounded-box bg-error/10 text-error">
+        <%- include('../partials/icon', { icon: 'lock', cls: 'size-6' }) %>
+      </span>
+      <h2 class="mt-4 text-xl font-bold">Notifications are blocked</h2>
+      <p class="mt-2 text-sm text-muted">This browser was told not to show notifications from Agendal. Only you can undo that:</p>
+      <ol class="mt-4 list-decimal space-y-2 rounded-box bg-base-200 p-4 pl-9 text-left text-sm">
+        <li>Click the icon at the left of the address bar (a lock or sliders).</li>
+        <li>Open <b>Site settings</b> (or <b>Permissions</b>), find <b>Notifications</b> and choose <b>Allow</b>.</li>
+        <li>Reload this page, then turn notifications on in Settings → Notifications.</li>
+      </ol>
+      <p class="mt-3 text-xs text-muted">On an iPhone, add Agendal to the Home Screen first: Safari only allows notifications for apps there.</p>
+      <form method="dialog"><button class="btn btn-primary mt-5 h-11 w-full rounded-full">Got it</button></form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button tabindex="-1">Close</button></form>
+</dialog>

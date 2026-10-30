@@ -1,0 +1,314 @@
+@import "tailwindcss";
+@source "../../views";
+
+@plugin "daisyui" {
+  themes: false;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-checkmark: #1d1d1f; /* At least 3:1 against every approved habit fill, in either theme. */
+}
+
+/* Figma tokens DaisyUI has no slot for; each theme below sets the values */
+@theme inline {
+  --color-muted: var(--muted); /* Neutral/Text Secondary */
+  --color-fill: var(--fill); /* Neutral/Fill: input backgrounds */
+  --color-inverse-primary: var(--inverse-primary); /* links on the inverse (toast) surface */
+}
+
+/* Tokens from Figma "00 · Design System" → DS 01 Colour tokens */
+@plugin "daisyui/theme" {
+  name: "agendal";
+  default: true;
+  color-scheme: light;
+  --color-base-100: #ffffff; /* Base/Surface */
+  --color-base-200: #f5f5f7; /* Base/Canvas */
+  --color-base-300: #d2d2d7; /* Neutral/Border */
+  --color-base-content: #1d1d1f; /* Neutral/Text Primary */
+  --muted: #6e6e73;
+  --fill: #7878801f;
+  --inverse-primary: #2997ff;
+  --control-border: #86868b; /* Neutral/Text Tertiary: 3.6:1 on white, so input boundaries pass WCAG 1.4.11 */
+  --color-primary: var(--accent, #0066cc); /* Primary/Accent (Apple link blue: Figma's #0071e3 is 4.3:1 on the grey canvas), or the user's accent colour */
+  --color-primary-content: var(--accent-content, #ffffff);
+  --color-neutral: #1d1d1f;
+  --color-neutral-content: #ffffff;
+  --color-error: #d70015; /* Figma's #ff3b30 is only 3.5:1 on white; this is 5.4:1 and passes AA for small text */
+  --color-error-content: #ffffff;
+  --color-success: #1f7a4f; /* Status text and controls contrast with both light surfaces. */
+  --color-success-content: #ffffff;
+  --color-warning: #9a4c00;
+  --color-warning-content: #ffffff;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --radius-selector: 0.375rem;
+  --size-field: 0.25rem;
+  --size-selector: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "agendal-dark";
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #1c1c1e;
+  --color-base-200: #000000;
+  --color-base-300: #424245;
+  --color-base-content: #f5f5f7;
+  --muted: #a1a1a6;
+  --fill: #7878803d;
+  --inverse-primary: #0071e3;
+  --control-border: #8e8e93;
+  --color-primary: var(--accent-dark, #2997ff);
+  --color-primary-content: var(--accent-dark-content, #1d1d1f); /* dark text: white on the light dark-mode blue is only 3.0:1 */
+  --color-neutral: #f5f5f7;
+  --color-neutral-content: #1d1d1f;
+  --color-error: #ff453a;
+  --color-error-content: #1d1d1f;
+  --color-success: #30d158;
+  --color-success-content: #1d1d1f;
+  --color-warning: #ff9f0a;
+  --color-warning-content: #1d1d1f;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --radius-selector: 0.375rem;
+  --size-field: 0.25rem;
+  --size-selector: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* Accent colours (Figma W31 hues, darkened where needed): the accent is used for button backgrounds AND link text,
+   so each light value must reach 4.5:1 against white. Picked with <html data-accent="…">; blue is the theme default. */
+[data-accent="purple"] {
+  --accent: #7c3aed;
+  --accent-dark: #a78bfa;
+  --accent-dark-content: #1d1d1f;
+}
+[data-accent="green"] {
+  --accent: #1f7a4f;
+  --accent-dark: #30d158;
+  --accent-dark-content: #1d1d1f;
+}
+[data-accent="orange"] {
+  --accent: #c2410c;
+  --accent-dark: #ff9f0a;
+  --accent-dark-content: #1d1d1f;
+}
+[data-accent="graphite"] {
+  --accent: #1d1d1f;
+  --accent-dark: #f5f5f7;
+  --accent-dark-content: #1d1d1f;
+}
+
+/* Visible boundaries for form controls (WCAG 1.4.11 needs 3:1; the soft fill alone is 1.1:1).
+   Unlayered, so it wins over DaisyUI's own border colour; errors and focus keep their colours. Checkboxes and
+   toggles only while off: once checked, their filled colour (checkbox-primary, toggle-success…) is the boundary. */
+.input:not(.input-error),
+.select:not(.select-error),
+.textarea:not(.textarea-error),
+.checkbox:not(:checked),
+.toggle:not(:checked) {
+  --input-color: var(--control-border);
+}
+.input:not(.input-error):focus-within,
+.select:not(.select-error):focus,
+.textarea:not(.textarea-error):focus {
+  --input-color: var(--color-base-content);
+}
+
+/* Admin overview (views/admin/overview.ejs): on large screens it fills at least the screen, and the gap under it
+ equals the gap beside it: the 2rem padding plus whatever the 1440px max width leaves next to the 260px sidebar. */
+@media (min-width: 64rem) {
+  .admin-fit {
+    --side-gap: max(2rem, calc((100vw - 260px - 1440px) / 2 + 2rem));
+    /* min-height, not height: a short screen makes the page longer instead of squeezing the cards together */
+    min-height: max(40rem, calc(100dvh - 2rem - var(--side-gap)));
+  }
+}
+
+/* Admin console micro-interactions (views/admin/_top.ejs sets .admin-console). Motion only when the person allows it. */
+
+/* Keyboard focus is always visible; mouse clicks don't draw a ring. Inputs are left out: see the search box below. */
+.admin-console :is(a, button, summary, .btn):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Search boxes retain a visible group focus indicator for keyboard users. */
+.admin-console .input:is(:focus, :focus-within) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: none;
+  background-color: color-mix(in oklab, var(--color-base-content) 14%, transparent);
+}
+.admin-console .input input:focus-visible {
+  outline: none;
+}
+
+:is(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Flex inputs must shrink alongside password and navigation controls at 320px. */
+.input input { min-width: 0; }
+.drawer-content { min-width: 0; }
+#main { overflow-wrap: anywhere; scroll-margin-top: 5rem; }
+
+/* Grey buttons (Review users, Lock, paging, Load older events) tint blue on hover, like the other buttons. */
+.admin-console .btn.bg-fill:not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--color-primary) 24%, transparent);
+}
+
+/* Shortcut hint in search boxes ("/"): hidden on touch screens, where there is no keyboard to press it on. */
+@media (hover: none) {
+  .admin-console .kbd-hint {
+    display: none;
+  }
+}
+
+/* Loading bar (views/admin/_top.ejs, public/js/admin.js): while the next page is on its way it creeps towards 85%;
+   the new page starts without it. Fast pages never show it (admin.js waits 150 ms first). */
+.admin-console .nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  height: 3px;
+  width: 0;
+  opacity: 0;
+  background-color: var(--color-primary);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--color-primary) 60%, transparent);
+  pointer-events: none;
+}
+.admin-console .nav-progress.is-loading {
+  opacity: 1;
+  width: 85%;
+  transition:
+    width 8s cubic-bezier(0.1, 0.7, 0.2, 1),
+    opacity 150ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-console .nav-progress.is-loading {
+    width: 100%; /* a still bar instead of a moving one */
+    transition: opacity 150ms ease-out;
+  }
+}
+
+/* Skeleton bars in the results table while live search loads (public/js/admin.js builds them, so they are
+   plain CSS here: Tailwind doesn't scan public/js). The shimmer only runs when motion is allowed. */
+.admin-console .skel {
+  display: block;
+  height: 0.875rem;
+  width: 70%;
+  border-radius: 9999px;
+  background: var(--color-fill);
+}
+.admin-console tr:nth-child(odd) td:nth-child(even) .skel {
+  width: 45%;
+}
+.admin-console td:first-child .skel {
+  width: 85%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .admin-console .skel {
+    background: linear-gradient(
+        90deg,
+        var(--color-fill) 0%,
+        color-mix(in oklab, var(--color-base-content) 18%, transparent) 50%,
+        var(--color-fill) 100%
+      )
+      0 0 / 200% 100%;
+    animation: skel-shimmer 1.2s linear infinite;
+  }
+}
+@keyframes skel-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Table rows and buttons ease into their hover and pressed states. */
+  .admin-console tbody tr,
+  .admin-console .bar > div {
+    transition:
+      background-color 150ms ease-out,
+      opacity 150ms ease-out;
+  }
+  .admin-console :is(.btn, nav a):active {
+    scale: 0.98;
+  }
+  .admin-console .btn {
+    transition-property: scale, background-color, color, box-shadow;
+    transition-duration: 150ms;
+  }
+
+  /* The row an admin just locked or unlocked: the redirect ends in #user-<id>, so it is the :target. */
+  .admin-console tr:target {
+    animation: row-flash 1.6s ease-out;
+  }
+  /* The lock dialog already fades and scales in and out: DaisyUI's .modal transitions. */
+
+  /* Overview: the check-in bars rise one after another (--i is the bar's index); the content bars fill from the left. */
+  .admin-console .grow-up {
+    transform-origin: bottom;
+    animation: grow-up 500ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 18ms);
+  }
+  :is(.admin-console, .insights) .grow-x {
+    transform-origin: left;
+    animation: grow-x 700ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation-delay: calc(150ms + var(--i, 0) * 80ms);
+  }
+
+  /* Toasts slide up in and down out. #toast-region (footer.ejs) comes after .admin-console, so app pages are untouched;
+     public/js/app.js waits for the out animation when there is one. */
+  .admin-console ~ #toast-region [data-toast] {
+    animation: toast-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; /* gentle ease-out: quick start, slow settle */
+  }
+  .admin-console ~ #toast-region [data-toast][data-leaving] {
+    animation: toast-out 180ms ease-in both;
+  }
+}
+
+@keyframes grow-up {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+@keyframes row-flash {
+  0%,
+  30% {
+    background-color: color-mix(in oklab, var(--color-warning) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}

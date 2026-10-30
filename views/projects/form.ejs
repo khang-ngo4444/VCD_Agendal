@@ -1,0 +1,46 @@
+<%- include('../partials/shell-top') %>
+<a href="<%= project ? `/projects/${project._id}` : '/projects' %>" class="inline-flex min-h-11 max-w-full items-center gap-1 text-sm font-semibold text-primary">‹ <span class="truncate"><%= project ? project.name : 'Projects' %></span></a>
+<h1 class="mt-2 text-3xl font-bold tracking-tight"><%= project ? 'Customize item' : 'New project item' %></h1>
+<p class="mt-2 text-sm text-muted">This item lives inside Projects and holds its own tasks. Choose any name, colour and an optional emoji. Changes apply across your account.</p>
+<form method="post" action="<%= project ? `/projects/${project._id}` : '/projects' %>" class="mt-6 max-w-lg space-y-5 rounded-box bg-base-100 p-5" novalidate data-project-editor>
+  <%- include('../partials/csrf') %>
+  <% const firstError = ['name', 'icon', 'colour'].find((field) => errors[field]); %>
+  <% [['name', 'Name (required)', 'e.g. Learning Japanese'], ['icon', 'Icon (optional emoji)', 'e.g. 📚'], ['colour', 'Colour (required)', '#2f6fde']].forEach(([field, label, placeholder]) => { %>
+    <div>
+      <label for="item-<%= field %>" class="mb-1.5 block text-sm font-semibold"><%= label %></label>
+      <div class="flex items-center gap-3">
+        <% if (field === 'colour') { %><input type="color" class="h-11 w-11 shrink-0 cursor-pointer rounded-field border border-base-300" aria-label="Pick item colour" value="<%= validColour.test(values.colour) ? values.colour : '#2f6fde' %>" data-project-colour-picker hidden><% } %>
+        <input id="item-<%= field %>" name="<%= field %>" type="text" value="<%= values[field] %>" placeholder="<%= placeholder %>" maxlength="<%= field === 'name' ? maxNameLength : field === 'icon' ? 32 : 7 %>" class="input h-11 min-w-0 w-full <%= errors[field] ? 'input-error' : '' %>" <%= field !== 'icon' ? 'required' : '' %>
+          <%= firstError === field ? 'autofocus' : '' %> <% if (errors[field]) { %>aria-invalid="true"<% } %>
+          <% if (errors[field] || field !== 'name') { %>aria-describedby="<%= field !== 'name' ? `item-${field}-hint` : '' %> <%= errors[field] ? `item-${field}-error` : '' %>"<% } %>>
+      </div>
+      <% if (errors[field]) { %><p id="item-<%= field %>-error" class="mt-1.5 text-sm text-error"><%= errors[field] %></p><% } %>
+      <% if (field === 'icon') { %><p id="item-icon-hint" class="mt-1.5 text-xs text-muted">Use your device’s emoji picker. Leave empty to show a colour dot.</p>
+        <div class="mt-2 flex flex-wrap gap-1" data-project-emoji-picker hidden>
+          <% ['📚', '💼', '🎨', '🏠', '🎯', '🌱', '🧠', '⭐'].forEach((emoji) => { %><button type="button" class="grid size-11 place-items-center rounded-field text-xl hover:bg-base-200" data-project-emoji="<%= emoji %>" aria-label="Use <%= emoji %> icon"><%= emoji %></button><% }) %>
+        </div>
+      <% } %>
+      <% if (field === 'colour') { %><p id="item-colour-hint" class="mt-1.5 text-xs text-muted">Use a six-digit hex code, such as #2f6fde.</p><% } %>
+    </div>
+  <% }) %>
+  <div class="flex items-center gap-3 rounded-field border border-base-300 p-3" aria-label="Item preview" data-project-preview hidden>
+    <span class="max-w-11 shrink-0 truncate" data-project-preview-icon aria-hidden="true"><%= values.icon %></span>
+    <span class="size-3 shrink-0 rounded-full" data-project-preview-dot style="background-color: <%= validColour.test(values.colour) ? values.colour : '#2f6fde' %>" <%= values.icon ? 'hidden' : '' %> aria-hidden="true"></span>
+    <span class="min-w-0 truncate font-semibold" data-project-preview-name><%= values.name || 'Your item' %></span>
+  </div>
+  <div class="flex flex-wrap justify-end gap-2">
+    <a href="<%= project ? `/projects/${project._id}` : '/projects' %>" class="btn btn-ghost h-11 rounded-full">Cancel</a>
+    <button type="submit" class="btn btn-primary h-11 rounded-full"><%= project ? 'Save changes' : 'Create item' %></button>
+  </div>
+</form>
+<% if (project) { %>
+  <section id="delete-project" class="mt-8 max-w-lg rounded-box border border-base-300 p-5" aria-labelledby="delete-item-heading">
+    <h2 id="delete-item-heading" class="font-semibold">Delete item</h2>
+    <p class="mt-2 text-sm text-muted">Its tasks move to Inbox. Calendar events keep their dates with no project. The item’s name, icon and colour are removed.</p>
+    <form method="post" action="/projects/<%= project._id %>/delete" class="mt-3" data-confirm="Delete “<%= project.name %>”?" data-confirm-detail="Tasks move to Inbox. Calendar events keep their dates with no project. This item will be removed." data-confirm-button="Delete item">
+      <%- include('../partials/csrf') %>
+      <button type="submit" class="btn btn-ghost h-11 rounded-full text-error">Delete item</button>
+    </form>
+  </section>
+<% } %>
+<%- include('../partials/shell-bottom') %>

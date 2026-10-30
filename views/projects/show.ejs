@@ -1,0 +1,57 @@
+<%- include('../partials/shell-top') %>
+<%# A project's tasks (Figma W22, cut to the card's scope). project is null for the Inbox. %>
+<header <%= project ? 'data-project-item' : '' %>>
+  <p class="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted uppercase">
+    <% if (project) { %>
+      <%- include('_symbol', { projectIcon: project.icon, projectColour: project.colour }) %> Project item
+    <% } else { %>
+      <%- include('../partials/icon', { icon: 'inbox', cls: 'size-4' }) %> Tasks without a project
+    <% } %>
+  </p>
+  <h1 class="mt-1 text-3xl font-bold tracking-tight [overflow-wrap:anywhere]"><%= project ? project.name : 'Inbox' %></h1>
+  <p class="mt-1 text-sm text-muted"><%= openTasks.length + doneTasks.length ? `${doneTasks.length} of ${openTasks.length + doneTasks.length} done` : 'No tasks yet' %></p>
+
+  <% if (project) { %>
+    <%# The Inbox is built in, so only real projects can be renamed, recoloured or deleted. %>
+    <div class="mt-4 flex flex-wrap items-start gap-2">
+      <a href="/projects/<%= project._id %>/edit" class="btn h-11 rounded-full border border-base-300 bg-base-100 px-4 text-primary">
+        <span class="size-3 shrink-0 rounded-full" style="background-color: <%= project.colour %>" aria-hidden="true"></span>Customize item
+      </a>
+      <%- include('_menu', { item: { id: String(project._id), name: project.name } }) %>
+    </div>
+  <% } %>
+</header>
+
+<section class="mt-6" aria-labelledby="open-heading">
+  <h2 id="open-heading" class="mb-2 font-semibold">Open · <%= openTasks.length %></h2>
+  <label for="project-quick-add" class="mb-1.5 block text-xs font-semibold [overflow-wrap:anywhere]">Add a task to <%= project ? project.name : 'the Inbox' %></label>
+  <form method="post" action="/tasks" class="mb-3 flex gap-2" novalidate>
+    <%- include('../partials/csrf') %>
+    <input type="hidden" name="project" value="<%= project ? project._id : '' %>">
+    <input type="hidden" name="returnTo" value="<%= currentPath %>">
+    <input id="project-quick-add" name="title" type="text" maxlength="200" required
+      placeholder="What needs doing?" class="input h-11 min-w-0 grow bg-base-100">
+    <button type="submit" class="btn btn-primary h-11 rounded-full px-4" aria-label="Add task">
+      <%- include('../partials/icon', { icon: 'plus', cls: 'size-4' }) %><span class="hidden sm:inline">Add</span>
+    </button>
+  </form>
+  <% if (openTasks.length) { %>
+    <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+      <% openTasks.forEach((task) => { %><%- include('../tasks/_row', { task, timeZone: currentUser.timeZone }) %><% }) %>
+    </ul>
+  <% } else { %>
+    <div class="rounded-box bg-base-100">
+      <%- include('../partials/empty-state', { icon: 'check', heading: 'Nothing open here', text: 'Add a task above, or enjoy the free time.' }) %>
+    </div>
+  <% } %>
+</section>
+
+<% if (doneTasks.length) { %>
+  <details class="mt-6">
+    <summary class="mb-2 flex min-h-11 cursor-pointer items-center font-semibold text-muted">Done · <%= doneTasks.length %></summary>
+    <ul class="divide-y divide-base-300/60 rounded-box bg-base-100">
+      <% doneTasks.forEach((task) => { %><%- include('../tasks/_row', { task, timeZone: currentUser.timeZone }) %><% }) %>
+    </ul>
+  </details>
+<% } %>
+<%- include('../partials/shell-bottom') %>
