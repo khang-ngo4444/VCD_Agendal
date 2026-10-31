@@ -85,6 +85,7 @@ exports.updateAppearance = async (req, res) => {
   if (body.weekStartsOn === '0' || body.weekStartsOn === '1') preferences.weekStartsOn = Number(body.weekStartsOn);
 
   await req.user.save();
+  if (req.get('X-Requested-With') === 'fetch') return res.status(204).end();
   flash(req, 'success', 'Appearance saved.');
   res.redirect('/settings/appearance');
 };

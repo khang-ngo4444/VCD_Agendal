@@ -75,11 +75,13 @@
       </fieldset>
       </div>
 
-      <div class="flex justify-end gap-2">
-        <a href="/settings/appearance" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
-        <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
-      </div>
+      <noscript>
+        <div class="flex justify-end gap-2">
+          <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
+        </div>
+      </noscript>
     </form>
   </section>
 </div>
+<script src="/js/appearance.js" defer></script>
 <%- include('../partials/shell-bottom') %>
