@@ -252,6 +252,71 @@ async function postAndSwap(url, fields, submittedForm) {
 window.agendal.post = postAndSwap;
 window.agendal.tabId = tabId; // for scripts that post with their own fetch (public/js/insights.js)
 
+// Forms marked data-autosave save automatically on change/input in the background without reloading the page.
+const autosaveControllers = new WeakMap();
+const autosaveTimers = new WeakMap();
+const AUTOSAVE_DEBOUNCE_MS = 400;
+
+async function autosaveForm(form) {
+  if (!form || !form.matches('form[data-autosave]')) return;
+
+  autosaveControllers.get(form)?.abort();
+  const controller = new AbortController();
+  autosaveControllers.set(form, controller);
+
+  const body = new URLSearchParams(new FormData(form));
+  const csrfToken = form.querySelector('input[name=_csrf]')?.value ?? document.querySelector('input[name=_csrf]')?.value ?? '';
+  const headers = {
+    'X-CSRF-Token': csrfToken,
+    'X-Requested-With': 'fetch',
+    'X-Tab-Id': tabId,
+  };
+
+  try {
+    const response = await fetch(form.action, {
+      method: form.method || 'POST',
+      body,
+      headers,
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    dirtyForms.delete(form);
+    form.dispatchEvent(new CustomEvent('agendal:autosave', { detail: { success: true, response } }));
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      form.dispatchEvent(new CustomEvent('agendal:autosave', { detail: { success: false, error: err } }));
+      toast('Could not save changes. Please check your connection.', { type: 'error' });
+    }
+  }
+}
+
+document.addEventListener('change', (event) => {
+  const form = event.target.closest('form[data-autosave]');
+  if (!form) return;
+  clearTimeout(autosaveTimers.get(form));
+  autosaveForm(form);
+});
+
+document.addEventListener('input', (event) => {
+  const form = event.target.closest('form[data-autosave]');
+  if (!form) return;
+  if (event.target.matches('input[type=text], input[type=time], input[type=date], textarea, input[type=search]')) {
+    clearTimeout(autosaveTimers.get(form));
+    autosaveTimers.set(form, setTimeout(() => autosaveForm(form), AUTOSAVE_DEBOUNCE_MS));
+  }
+});
+
+document.addEventListener('submit', (event) => {
+  const form = event.target;
+  if (form.matches('form[data-autosave]')) {
+    event.preventDefault();
+    clearTimeout(autosaveTimers.get(form));
+    autosaveForm(form);
+  }
+});
+
+window.agendal.autosave = autosaveForm;
+
 // Which form to give focus back to after the swap: data-fetch="<key>" when several forms share one action.
 const fetchKey = (form) => form.dataset.fetch || form.getAttribute('action');
 
