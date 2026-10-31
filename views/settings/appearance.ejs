@@ -20,7 +20,7 @@
     <h2 id="appearance-heading" class="text-xl font-bold">Appearance</h2>
     <p class="mt-1 text-sm text-muted">Saved to your account, so it applies on every device you sign in to.</p>
 
-    <form method="post" action="/settings/appearance" class="mt-6 space-y-8">
+    <form method="post" action="/settings/appearance" class="mt-6 space-y-8" data-autosave>
       <%- include('../partials/csrf') %>
 
       <fieldset>
@@ -75,11 +75,13 @@
       </fieldset>
       </div>
 
-      <div class="flex justify-end gap-2">
-        <a href="/settings/appearance" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
-        <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
-      </div>
+      <noscript>
+        <div class="flex justify-end gap-2">
+          <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
+        </div>
+      </noscript>
     </form>
   </section>
 </div>
+<script src="/js/appearance.js" defer></script>
 <%- include('../partials/shell-bottom') %>

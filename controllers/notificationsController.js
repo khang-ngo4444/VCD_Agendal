@@ -39,6 +39,7 @@ exports.updateSettings = async (req, res) => {
     dailySummaryTime: typeof body.dailySummaryTime === 'string' ? body.dailySummaryTime : '',
   };
   if (!parseTimeInput(values.dailySummaryTime)) {
+    if (req.get('X-Requested-With') === 'fetch') return res.status(422).json({ error: 'Pick a time for the daily summary.' });
     return renderSettings(req, res, { values, errors: { dailySummaryTime: 'Pick a time for the daily summary.' } });
   }
   req.user.set('notifications.push', values.push);
@@ -46,6 +47,7 @@ exports.updateSettings = async (req, res) => {
   req.user.set('notifications.dailySummary.on', values.dailySummary);
   req.user.set('notifications.dailySummary.time', values.dailySummaryTime);
   await req.user.save();
+  if (req.get('X-Requested-With') === 'fetch') return res.status(204).end();
   flash(req, 'success', 'Notification settings saved.');
   res.redirect('/settings/notifications');
 };
