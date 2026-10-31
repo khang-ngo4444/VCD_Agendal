@@ -20,22 +20,23 @@
     <h2 id="appearance-heading" class="text-xl font-bold">Appearance</h2>
     <p class="mt-1 text-sm text-muted">Saved to your account, so it applies on every device you sign in to.</p>
 
-    <form method="post" action="/settings/appearance" class="mt-6 space-y-8">
+    <form method="post" action="/settings/appearance" class="mt-6 space-y-8" data-autosave>
       <%- include('../partials/csrf') %>
 
       <fieldset>
         <legend class="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Theme</legend>
         <div class="grid gap-4 sm:grid-cols-3">
           <% themes.forEach((theme) => { %>
-            <label class="group cursor-pointer">
+            <label class="group relative cursor-pointer" data-theme-option="<%= theme.value %>">
               <input type="radio" name="theme" value="<%= theme.value %>" class="peer sr-only" <%= values.theme === theme.value ? 'checked' : '' %>>
-              <span class="block h-24 rounded-box border-2 border-base-300 p-3 peer-checked:border-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary <%= theme.preview %>" aria-hidden="true">
-                <span class="block h-2 w-10 rounded-full bg-[#0071e3]"></span>
+              <span class="theme-card block h-24 rounded-box border-2 border-base-300 p-3 peer-checked:border-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary <%= theme.preview %>" aria-hidden="true">
+                <span class="theme-pulse-ring"></span>
+                <span class="theme-preview-accent block h-2 w-10 rounded-full"></span>
                 <span class="mt-3 block h-3 w-3/4 rounded <%= theme.panel %>"></span>
                 <span class="mt-2 block h-3 w-1/2 rounded <%= theme.panel %>"></span>
               </span>
               <span class="mt-2 flex items-center gap-2 text-sm font-medium">
-                <span class="size-4 rounded-full border-2 border-base-300 group-has-[:checked]:border-[5px] group-has-[:checked]:border-primary" aria-hidden="true"></span>
+                <span class="theme-dot size-4 rounded-full border-2 border-base-300 group-has-[:checked]:border-[5px] group-has-[:checked]:border-primary" aria-hidden="true"></span>
                 <%= theme.label %>
               </span>
             </label>
@@ -75,11 +76,13 @@
       </fieldset>
       </div>
 
-      <div class="flex justify-end gap-2">
-        <a href="/settings/appearance" class="btn h-11 rounded-full border-0 bg-fill px-5">Cancel</a>
-        <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
-      </div>
+      <noscript>
+        <div class="flex justify-end gap-2">
+          <button type="submit" class="btn btn-primary h-11 rounded-full px-5">Save changes</button>
+        </div>
+      </noscript>
     </form>
   </section>
 </div>
+<script src="/js/appearance.js" defer></script>
 <%- include('../partials/shell-bottom') %>
