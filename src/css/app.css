@@ -357,6 +357,23 @@
   transform: scale(1.15);
 }
 
+.theme-preview-accent {
+  background-color: var(--color-primary);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme-option="light"] .theme-preview-accent {
+  background-color: var(--accent, #0066cc);
+}
+
+[data-theme-option="dark"] .theme-preview-accent {
+  background-color: var(--accent-dark, #2997ff);
+}
+
+[data-theme-option="system"] .theme-preview-accent {
+  background-color: var(--color-primary);
+}
+
 @keyframes theme-pulse-ripple {
   0% {
     transform: scale(1);
