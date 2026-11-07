@@ -146,14 +146,12 @@
   box-shadow: none;
   background-color: color-mix(in oklab, var(--color-base-content) 14%, transparent);
 }
-.admin-console .input input:focus-visible {
-  outline: none;
-}
-
 :is(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+/* The label wrapper (.input) shows the focus state; no second ring on the bare input inside it. */
+.input input:focus-visible { outline: none; }
 
 /* Flex inputs must shrink alongside password and navigation controls at 320px. */
 .input input { min-width: 0; }
