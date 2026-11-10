@@ -31,6 +31,9 @@ const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const app = express();
 
+// Behind Vercel's proxy: without this the `secure` session cookie is never sent, so login would not stick.
+app.set('trust proxy', 1);
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.locals.dates = require('./services/dates'); // views format dates in the user's time zone
@@ -131,6 +134,10 @@ app.use((req, res) => res.status(404).render('errors/404', { title: 'Page not fo
 app.use(require('./middleware/errors'));
 
 module.exports = app;
+
+// Vercel imports this file instead of running it, so connect here (commands queue until it is ready).
+// Background jobs and uploads to public/ do not work on Vercel's serverless runtime.
+if (process.env.VERCEL) mongoose.connect(process.env.MONGODB_URI);
 
 // Exported without listen() so tests can mount the app; `npm run dev` starts the server.
 if (require.main === module) {
