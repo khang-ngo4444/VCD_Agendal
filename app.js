@@ -137,7 +137,9 @@ module.exports = app;
 
 // Vercel imports this file instead of running it, so connect here (commands queue until it is ready).
 // Background jobs and uploads to public/ do not work on Vercel's serverless runtime.
-if (process.env.VERCEL) mongoose.connect(process.env.MONGODB_URI);
+if (process.env.VERCEL) {
+  mongoose.connect(process.env.MONGODB_URI).catch((err) => console.error('MongoDB connection failed:', err.message));
+}
 
 // Exported without listen() so tests can mount the app; `npm run dev` starts the server.
 if (require.main === module) {
